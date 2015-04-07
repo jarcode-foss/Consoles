@@ -129,7 +129,7 @@ public class ConsoleHandler implements Listener {
 		return false;
 	}
 	// thread-safe array list
-	CopyOnWriteArrayList<Console> consoles = new CopyOnWriteArrayList<>();
+	CopyOnWriteArrayList<ManagedConsole> consoles = new CopyOnWriteArrayList<>();
 	// we lock allocation code because it has to be accessed from the painting thread to send packets
 	private final Object ALLOCATION_LOCK = new Object();
 	// this holds all indexes of the maps that the server refers to
@@ -258,7 +258,7 @@ public class ConsoleHandler implements Listener {
 	public void onChunkUnload(ChunkUnloadEvent e) {
 		World world = ((CraftWorld) e.getWorld()).getHandle();
 		for (Entity entity : e.getChunk().getEntities()) {
-			for (Console console : consoles) {
+			for (ManagedConsole console : consoles) {
 				console.bukkitEntities().stream()
 						.filter(frame -> entity == frame)
 						.forEach(frame -> {
@@ -275,7 +275,7 @@ public class ConsoleHandler implements Listener {
 			org.bukkit.Chunk chunk = e.getChunk();
 			Region region = new Region(new LocalPosition(chunk.getX() * 16, 0, chunk.getZ() * 16),
 					new LocalPosition(chunk.getX() * 16 + 15, 0, chunk.getZ() * 16 + 15));
-			for (Console console : consoles) {
+			for (ManagedConsole console : consoles) {
 				console.bukkitEntities().stream()
 						.filter(frame -> frame.getWorld() == e.getWorld())
 						.filter(frame -> region.insideIgnoreY(frame.getLocation()))
@@ -307,7 +307,7 @@ public class ConsoleHandler implements Listener {
 		// shift all the current map IDs to new values for this client
 		allocateNew(player.getName());
 		// toggle all of the map sections for every console for this context
-		for (final Console console : consoles) {
+		for (final ManagedConsole console : consoles) {
 			// toggle switches
 			getPainter().toggle(console, player.getName());
 			// request repaint
@@ -461,7 +461,7 @@ public class ConsoleHandler implements Listener {
 	}
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent e) {
-		for (Console console : consoles.toArray(new Console[consoles.size()])) {
+		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
 				int[] arr = console.intersect(e.getPlayer().getEyeLocation(), 7);
 				if (arr != null) {
@@ -470,45 +470,45 @@ public class ConsoleHandler implements Listener {
 			}
 		}
 	}
-	public Console[] getConsoles() {
-		return consoles.toArray(new Console[consoles.size()]);
+	public ManagedConsole[] getConsoles() {
+		return consoles.toArray(new ManagedConsole[consoles.size()]);
 	}
 	@EventHandler
 	public void onPluginDisable(PluginDisableEvent e) {
 		removeAll();
 	}
 	public boolean isConsoleEntity(ItemFrame entity) {
-		for (Console console : consoles) {
+		for (ManagedConsole console : consoles) {
 			if (console.protect(entity))
 				return true;
 		}
 		return false;
 	}
 	public boolean isConsoleEntity(int id) {
-		for (Console console : consoles) {
+		for (ManagedConsole console : consoles) {
 			if (console.isFrameId(id))
 				return true;
 		}
 		return false;
 	}
-	public Console getConsoleForId(int id) {
-		for (Console console : consoles) {
+	public ManagedConsole getConsoleForId(int id) {
+		for (ManagedConsole console : consoles) {
 			if (console.isFrameId(id))
 				return console;
 		}
 		return null;
 	}
 	public void removeAll() {
-		for (Console console : consoles) {
+		for (ManagedConsole console : consoles) {
 			console.remove(false);
 			handleRemove(console, false);
 		}
 		consoles.clear();
 	}
-	void handleRemove(Console console) {
+	void handleRemove(ManagedConsole console) {
 		handleRemove(console, true);
 	}
-	private void handleRemove(Console console, boolean rm) {
+	private void handleRemove(ManagedConsole console, boolean rm) {
 		if (console.created()) {
 			int size = console.getFrameWidth() * console.getFrameHeight();
 			synchronized (ALLOCATION_LOCK) {
@@ -549,7 +549,7 @@ public class ConsoleHandler implements Listener {
 		}
 		return true;
 	}
-	public List<Console> get(String identifier) {
+	public List<ManagedConsole> get(String identifier) {
 		return consoles.stream()
 				.filter(console -> console.getIdentifier() != null && console.getIdentifier().equals(identifier))
 				.collect(Collectors.toList());

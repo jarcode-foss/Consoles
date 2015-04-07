@@ -7,13 +7,13 @@ import org.bukkit.block.BlockFace;
 /**
  * Represents a console in the game world
  */
-public class CanvasObject {
+public class Console {
 	private final BlockFace face;
 	private final Location location;
 	private final int width, height;
 
 	private boolean created = false;
-	protected Console underlying = null;
+	protected ManagedConsole underlying = null;
 
 	/**
 	 * Prepares a console to be created
@@ -23,7 +23,7 @@ public class CanvasObject {
 	 * @param width the width, in frames
 	 * @param height the height, in frames
 	 */
-	public CanvasObject(BlockFace face, Location location, int width, int height) {
+	public Console(BlockFace face, Location location, int width, int height) {
 		this.location = location;
 		this.face = face;
 		this.width = width;
@@ -31,7 +31,7 @@ public class CanvasObject {
 	}
 
 	/**
-	 * Removes the canvas from the world
+	 * Removes the console from the world
 	 */
 	public final void remove() {
 		if (underlying != null)
@@ -39,16 +39,16 @@ public class CanvasObject {
 	}
 
 	/**
-	 * Gets the location of this canvas
+	 * Gets the location of this console
 	 *
-	 * @return the location of the canvas
+	 * @return the location of the console
 	 */
 	public Location getLocation() {
 		return location.clone();
 	}
 
 	/**
-	 * Gets the width of this canvas, in frames
+	 * Gets the width of this console, in frames
 	 *
 	 * @return the width, in frames
 	 */
@@ -57,7 +57,7 @@ public class CanvasObject {
 	}
 
 	/**
-	 * Gets the height of this canvas, in frames
+	 * Gets the height of this console, in frames
 	 *
 	 * @return the height, in frames
 	 */
@@ -75,11 +75,11 @@ public class CanvasObject {
 	}
 
 	/**
-	 * Creates the canvas and adds it to the world.
+	 * Creates the console and adds it to the world.
 	 */
 	public final void create() {
 		if (created) return;
-		underlying = new Console(width, height, false);
+		underlying = new ManagedConsole(width, height, false);
 		underlying.setName("Custom");
 		underlying.create(face, location);
 		created = true;

@@ -32,27 +32,27 @@ public class CommandMapTest extends CommandBase {
 		}
 		if (args[0].equalsIgnoreCase("clear")) {
 			ConsoleHandler.getInstance().get("maptest")
-					.forEach(Console::remove);
+					.forEach(ManagedConsole::remove);
 			sender.sendMessage("Removed all test consoles.");
 			return true;
 		}
 		if (args[0].equalsIgnoreCase("repaintall")) {
-			for (Console console : ConsoleHandler.getInstance().getConsoles())
+			for (ManagedConsole console : ConsoleHandler.getInstance().getConsoles())
 				ConsoleHandler.getInstance().getPainter().repaintFor(console, player);
 			return true;
 		}
 		if (args[0].equalsIgnoreCase("forceall")) {
-			for (Console console : ConsoleHandler.getInstance().getConsoles())
+			for (ManagedConsole console : ConsoleHandler.getInstance().getConsoles())
 				ConsoleHandler.getInstance().getPainter().updateFor(console, player, true, true);
 			return true;
 		}
 		if (args[0].equalsIgnoreCase("updateall")) {
-			for (Console console : ConsoleHandler.getInstance().getConsoles())
+			for (ManagedConsole console : ConsoleHandler.getInstance().getConsoles())
 				ConsoleHandler.getInstance().getPainter().updateFor(console, player, false, true);
 			return true;
 		}
 		if (args[0].equalsIgnoreCase("sendall")) {
-			for (Console console : ConsoleHandler.getInstance().getConsoles())
+			for (ManagedConsole console : ConsoleHandler.getInstance().getConsoles())
 				ConsoleHandler.getInstance().getPainter().updateFor(console, player, false, false);
 			return true;
 		}
@@ -63,12 +63,12 @@ public class CommandMapTest extends CommandBase {
 		if (args[0].equalsIgnoreCase("link")) {
 			BlockState block = player.getLocation().clone().add(0, -1, 0).getBlock().getState();
 			if (block instanceof CommandBlock) {
-				List<Console> list = ConsoleHandler.getInstance().get("maptest");
+				List<ManagedConsole> list = ConsoleHandler.getInstance().get("maptest");
 				if (list.size() == 0) {
 					sender.sendMessage("Spawn a console first!");
 				}
 				else {
-					Console console = list.get(0);
+					ManagedConsole console = list.get(0);
 					ConsoleTextArea area = (ConsoleTextArea) console.getComponents()[0];
 					area.link((CommandBlock) block);
 				}
@@ -87,7 +87,7 @@ public class CommandMapTest extends CommandBase {
 			return true;
 		}
 
-		final Console console = new Console(4, 3);
+		final ManagedConsole console = new ManagedConsole(4, 3);
 		console.setIdentifier("maptest");
 		console.create(face, player.getLocation());
 		final ConsoleTextArea area = ConsoleTextArea.createOver(console);

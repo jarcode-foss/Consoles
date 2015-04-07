@@ -10,7 +10,7 @@ import java.net.URL;
 public class ImageConsole {
 
 	protected URL url;
-	protected Console console;
+	protected ManagedConsole console;
 	private boolean created = false;
 	private BlockFace face;
 	private Location location;
@@ -63,7 +63,7 @@ public class ImageConsole {
 			int w = image.getWidth() % 128 == 0 ? wt : wt + 1;
 			int ht = image.getHeight() / 128;
 			int h = image.getHeight() % 128 == 0 ? ht : ht + 1;
-			console = new Console(w, h, false);
+			console = new ManagedConsole(w, h, false);
 			console.setName("Image");
 			console.putComponent(new Position2D(0, 0), new ImageComponent(console, image));
 			console.create(face, location);

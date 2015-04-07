@@ -3,7 +3,7 @@ package jarcode.consoles.bungee;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import jarcode.consoles.Console;
+import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
 import org.bukkit.Bukkit;
@@ -31,7 +31,7 @@ public class ConsoleBungeeHook implements PluginMessageListener, Listener {
 					arr[t] = input.readShort();
 				}
 				handler.blacklist(player, arr);
-				for (Console console : handler.getConsoles())
+				for (ManagedConsole console : handler.getConsoles())
 					handler.getPainter().updateFor(console, player);
 			}
 			@Override
@@ -45,7 +45,7 @@ public class ConsoleBungeeHook implements PluginMessageListener, Listener {
 		});
 		commands.put("clear", (IncomingHookCommand) (player, input) -> {
 			handler.clearAllocations(player);
-			for (Console console : handler.getConsoles())
+			for (ManagedConsole console : handler.getConsoles())
 				handler.getPainter().updateFor(console, player);
 		});
 	}

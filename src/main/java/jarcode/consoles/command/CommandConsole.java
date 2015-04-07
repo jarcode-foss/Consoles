@@ -1,6 +1,6 @@
 package jarcode.consoles.command;
 
-import jarcode.consoles.Console;
+import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.ConsoleHandler;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -21,7 +21,7 @@ public class CommandConsole extends CommandBase {
 		else if (args[0].equalsIgnoreCase("list")) {
 			sender.sendMessage(ChatColor.YELLOW + "Consoles:");
 			int count = 1;
-			for (Console console : ConsoleHandler.getInstance().getConsoles()) {
+			for (ManagedConsole console : ConsoleHandler.getInstance().getConsoles()) {
 				if (console == null)
 					sender.sendMessage(count + " - " + ChatColor.GRAY + "null");
 				else if (!console.created()) {
@@ -42,7 +42,7 @@ public class CommandConsole extends CommandBase {
 				return true;
 			}
 			i--;
-			Console[] arr = ConsoleHandler.getInstance().getConsoles();
+			ManagedConsole[] arr = ConsoleHandler.getInstance().getConsoles();
 			if (i >= arr.length || i < 0) {
 				sender.sendMessage(ChatColor.RED + "Index too large or too small: " + args[1]);
 				return true;

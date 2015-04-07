@@ -37,7 +37,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		printContent(text);
 	}
 	private void printContent(String text) {
-		text = Console.removeUnsupportedCharacters(text);
+		text = ManagedConsole.removeUnsupportedCharacters(text);
 		String stripped = ChatColor.stripColor(text + getLastLine());
 		if (font.getWidth(stripped) > maxWidth) {
 			String[] split = text.split(" ");

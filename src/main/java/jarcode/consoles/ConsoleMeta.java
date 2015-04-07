@@ -17,8 +17,8 @@ public class ConsoleMeta {
 		this.w = w;
 		this.h = h;
 	}
-	public Console spawnConsole() {
-		Console console = new Console(w, h);
+	public ManagedConsole spawnConsole() {
+		ManagedConsole console = new ManagedConsole(w, h);
 		console.create(face, location);
 		return console;
 	}

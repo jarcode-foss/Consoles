@@ -6,7 +6,7 @@ import org.bukkit.map.MinecraftFont;
 
 import java.lang.reflect.Field;
 
-public class Console extends ConsoleRenderer {
+public class ManagedConsole extends ConsoleRenderer {
 
 	private static final String SUPPORTED_CHARACTERS;
 
@@ -39,10 +39,10 @@ public class Console extends ConsoleRenderer {
 	private short index;
 	private String identifier = null;
 
-	public Console(int w, int h) {
+	public ManagedConsole(int w, int h) {
 		this(w, h, true);
 	}
-	public Console(int w, int h, boolean cacheBackground) {
+	public ManagedConsole(int w, int h, boolean cacheBackground) {
 		super(w, h, cacheBackground);
 		index = ConsoleHandler.getInstance().allocate(w * h);
 		ConsoleHandler.getInstance().consoles.add(this);

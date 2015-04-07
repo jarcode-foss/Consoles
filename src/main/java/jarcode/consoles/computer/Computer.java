@@ -22,7 +22,7 @@ public class Computer implements Runnable {
 
 	private String hostname;
 
-	private Console console;
+	private ManagedConsole console;
 
 	private FSFolder root = new FSFolder();
 
@@ -39,7 +39,7 @@ public class Computer implements Runnable {
 	public Computer(String hostname, UUID owner, int width, int height) {
 		this.hostname = hostname;
 		this.owner = owner;
-		console = new Console(width, height);
+		console = new ManagedConsole(width, height);
 		feeds[0] = new Terminal(this);
 		setScreenIndex(0);
 	}
@@ -127,7 +127,7 @@ public class Computer implements Runnable {
 	public String getHostname() {
 		return hostname;
 	}
-	public Console getConsole() {
+	public ManagedConsole getConsole() {
 		return console;
 	}
 	public UUID getOwner() {
