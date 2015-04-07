@@ -1,0 +1,5 @@
+ name: Consoles
+ load: STARTUP
+ version: 1.0.0
+ author: Jarcode
+ main: jarcode.consoles.Consoles
