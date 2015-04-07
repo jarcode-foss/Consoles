@@ -22,3 +22,13 @@ Behind the scenes, this API:
 In progress:
 
 - A ComputerCraft-inspired feature that allows players to create and manage fully-featured UNIX-like computers. See source code.
+
+Non-API features:
+
+- Reliable image rendering from URLs! Works great.
+
+Notes:
+ - May not be compatible with ProtocolLib. If this is the case, I will add support by either using ProtocolLib as an alternative packet listener, or by applying my packet wrapper after ProtocolLib does its instrumentation shenanigans.
+ - This replaces maps, and _completely_ removes handheld map functionality. Fake map handlers/items are injected to ensure that the normal map system does not send packets and map out world regions.
+ - This plugin/API is strictly for _map canvases_, which are sets of (modified) item frames in a grid containing maps that can display pixels in its own screen coordinates, for each player.
+ - I use Java 8. If you're not using Java 8, go away.
