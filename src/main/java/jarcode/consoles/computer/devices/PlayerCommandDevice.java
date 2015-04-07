@@ -1,5 +1,7 @@
 package jarcode.consoles.computer.devices;
 
+import jarcode.consoles.computer.filesystem.FSFile;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 

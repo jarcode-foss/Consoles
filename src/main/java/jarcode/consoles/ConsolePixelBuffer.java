@@ -35,7 +35,7 @@ public class ConsolePixelBuffer {
 	}
 	void onCreate() {
 		listener = new PlayerListener();
-		Bukkit.getPluginManager().registerEvents(listener, PluginController.getInstance());
+		Bukkit.getPluginManager().registerEvents(listener, Consoles.getInstance());
 		for (Player player : Bukkit.getOnlinePlayers()) {
 			updateFor(player, true, true);
 		}
@@ -113,7 +113,7 @@ public class ConsolePixelBuffer {
 		// this painting is updated for them (because they haven't had it rendered since they joined!)
 		public void onPlayerJoin(final PlayerJoinEvent e) {
 			// delay initial map packets
-			Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 				if (renderer.pos.getWorld() == e.getPlayer().getWorld()
 						&& renderer.pos.distanceSquared(e.getPlayer().getLocation()) <= 1280) {
 					updateFor(e.getPlayer(), true, true);

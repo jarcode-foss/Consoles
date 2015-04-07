@@ -91,7 +91,7 @@ public class ConsoleBungeeHook implements PluginMessageListener, Listener {
 		if (cmd != null && cmd instanceof OutgoingHookCommand) {
 			out.writeUTF(command.toLowerCase());
 			((OutgoingHookCommand) cmd).handle(player, args, out);
-			player.sendPluginMessage(PluginController.getInstance(), "Console", out.toByteArray());
+			player.sendPluginMessage(Consoles.getInstance(), "Console", out.toByteArray());
 			return true;
 		}
 		else return false;

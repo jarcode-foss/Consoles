@@ -84,7 +84,7 @@ public class ConsoleButton extends ConsoleComponent
 				try {
 					listener.actionPerformed(new ButtonEvent(this, toggle));
 				} catch (Throwable e) {
-					PluginController.getInstance().getLogger().severe("Console button listener threw an exception:");
+					Consoles.getInstance().getLogger().severe("Console button listener threw an exception:");
 					e.printStackTrace();
 				}
 			}

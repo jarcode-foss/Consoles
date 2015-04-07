@@ -5,6 +5,9 @@ import com.google.common.collect.HashBiMap;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import jarcode.consoles.util.LocalPosition;
+import jarcode.consoles.util.PacketUtils;
+import jarcode.consoles.util.Region;
 import net.minecraft.server.v1_8_R1.*;
 import net.minecraft.server.v1_8_R1.World;
 import org.bukkit.*;
@@ -268,7 +271,7 @@ public class ConsoleHandler implements Listener {
 
 	@EventHandler
 	public void onChunkLoad(ChunkLoadEvent e) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			org.bukkit.Chunk chunk = e.getChunk();
 			Region region = new Region(new LocalPosition(chunk.getX() * 16, 0, chunk.getZ() * 16),
 					new LocalPosition(chunk.getX() * 16 + 15, 0, chunk.getZ() * 16 + 15));
@@ -280,10 +283,10 @@ public class ConsoleHandler implements Listener {
 							EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
 							World world = ((CraftWorld) e.getWorld()).getHandle();
 							if (!world.addEntity(nms)) {
-								PluginController.getInstance().getLogger().severe("Failed to spawn console item frame: "
+								Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
 										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
-							} else {
-								PluginController.getInstance().getLogger().info("Spawned item frame: "
+							} else if (Consoles.DEBUG) {
+								Consoles.getInstance().getLogger().info("Spawned item frame: "
 										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
 							}
 						});
@@ -343,10 +346,10 @@ public class ConsoleHandler implements Listener {
 		}
 	}
 	private void doLater(Runnable runnable) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), runnable);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);
 	}
 	private void doLater(Runnable runnable, long delay) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), runnable, delay);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable, delay);
 	}
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {

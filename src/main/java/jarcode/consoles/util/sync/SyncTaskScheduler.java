@@ -1,7 +1,6 @@
 package jarcode.consoles.util.sync;
 
 import jarcode.consoles.Consoles;
-import jarcode.controller.PluginController;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;

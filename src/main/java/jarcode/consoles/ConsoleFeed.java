@@ -176,7 +176,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 
 		final String split[] = text.split("\n");
 
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			for (int t = 0; t < split.length; t++) {
 				if (!split[t].isEmpty())
 					write(split[t]);

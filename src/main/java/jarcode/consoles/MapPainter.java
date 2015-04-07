@@ -221,6 +221,6 @@ public class MapPainter implements Runnable {
 		}
 	}
 	private enum EntryType {
-		UPDATE, TOGGLE;
+		UPDATE, TOGGLE
 	}
 }

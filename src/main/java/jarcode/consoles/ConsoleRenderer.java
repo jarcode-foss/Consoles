@@ -466,7 +466,7 @@ public abstract class ConsoleRenderer {
 		}
 	}
 	protected void doLater(Runnable runnable, long delay) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), runnable, delay);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable, delay);
 	}
 	public final int getFrameWidth() {
 		return width;

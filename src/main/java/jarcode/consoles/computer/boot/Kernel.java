@@ -1,6 +1,11 @@
 package jarcode.consoles.computer.boot;
 
 import com.google.common.collect.HashBiMap;
+import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.bin.CurrentDirectoryProgram;
+import jarcode.consoles.computer.bin.ShowDirectoryProgram;
+import jarcode.consoles.computer.filesystem.*;
 import net.md_5.bungee.api.ChatColor;
 
 import java.io.FileNotFoundException;

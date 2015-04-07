@@ -1,6 +1,6 @@
 package jarcode.consoles.util.gson;
 
-import jarcode.controller.base.util.LocalPosition;
+import jarcode.consoles.util.LocalPosition;
 import org.bukkit.craftbukkit.libs.com.google.gson.*;
 
 import java.lang.reflect.Type;

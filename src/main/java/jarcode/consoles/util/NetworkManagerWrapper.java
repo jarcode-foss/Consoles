@@ -3,7 +3,7 @@ package jarcode.consoles.util;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.GenericFutureListener;
-import jarcode.controller.loader.UnsafeTools;
+import jarcode.consoles.util.unsafe.UnsafeTools;
 import net.minecraft.server.v1_8_R1.*;
 
 import javax.crypto.SecretKey;

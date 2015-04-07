@@ -1,5 +1,7 @@
 package jarcode.consoles.computer.filesystem;
 
+import jarcode.consoles.computer.Computer;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

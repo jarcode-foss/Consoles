@@ -1,5 +1,9 @@
 package jarcode.consoles.computer.boot;
 
+import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.devices.CommandDevice;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;

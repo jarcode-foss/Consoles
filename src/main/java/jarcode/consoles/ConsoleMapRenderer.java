@@ -1,5 +1,6 @@
 package jarcode.consoles;
 
+import jarcode.consoles.util.MapInjector;
 import net.minecraft.server.v1_8_R1.*;
 import org.bukkit.*;
 import org.bukkit.craftbukkit.v1_8_R1.inventory.CraftItemStack;
@@ -119,7 +120,7 @@ public class ConsoleMapRenderer {
 	// old code used to manually update the metadata of an item frame
 	@Deprecated
 	public void updateMap(final PlayerConnection connection, final short mapId) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			Integer entityId = renderer.entityMap().get(id);
 			DataWatcher watcher = new DataWatcher(null);
 			watcher.a(0, (byte) 0);

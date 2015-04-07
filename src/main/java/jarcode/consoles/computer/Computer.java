@@ -1,5 +1,10 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.*;
+import jarcode.consoles.computer.boot.Kernel;
+import jarcode.consoles.computer.filesystem.FSBlock;
+import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -73,7 +78,7 @@ public class Computer implements Runnable {
 		for (int t = 0; t < 3; t++) {
 			printAfter(".", 58 + (t * 8));
 		}
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			kernel = boot("boot/vmlinuz", Kernel.class);
 			if (!root.exists("boot/vmlinuz")) {
 				Kernel.install(Computer.this);
@@ -81,14 +86,14 @@ public class Computer implements Runnable {
 			}
 			kernel.routine("boot");
 			// register main task
-			taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), Computer.this);
+			taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), Computer.this);
 			getCurrentTerminal().clear();
 			getCurrentTerminal().onStart();
 			console.repaint();
 		}, 80L);
 	}
 	private void printAfter(final String text, long delay) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(PluginController.getInstance(), () -> {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			getCurrentTerminal().print(text);
 			console.repaint();
 		}, delay);

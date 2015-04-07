@@ -8,6 +8,9 @@ package jarcode.consoles.computer.boot;
 // We do this in the main server thread, checking for input from the devices each tick and then handling the input
 // accordingly. DO NOT USE BLOCKING INPUT!!
 
+import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.filesystem.FSFile;
+
 // Also, there is one driver instance per file.
 public abstract class Driver<T extends FSFile> {
 

@@ -1,5 +1,11 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.ConsoleFeed;
+import jarcode.consoles.computer.filesystem.FSBlock;
+import jarcode.consoles.computer.filesystem.FSFile;
+import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import net.md_5.bungee.api.ChatColor;
 
 import java.io.FileNotFoundException;

@@ -1,5 +1,10 @@
 package jarcode.consoles.computer.bin;
 
+import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.filesystem.FSBlock;
+import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import org.bukkit.ChatColor;
 
 import java.util.Map;

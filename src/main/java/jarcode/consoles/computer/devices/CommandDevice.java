@@ -1,5 +1,9 @@
 package jarcode.consoles.computer.devices;
 
+import jarcode.consoles.ConsoleHandler;
+import jarcode.consoles.ConsoleListener;
+import jarcode.consoles.computer.LinkedStream;
+import jarcode.consoles.computer.filesystem.FSFile;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.CommandSender;
 

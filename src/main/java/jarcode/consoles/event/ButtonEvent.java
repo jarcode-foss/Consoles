@@ -1,5 +1,7 @@
 package jarcode.consoles.event;
 
+import jarcode.consoles.ConsoleButton;
+
 public class ButtonEvent extends ConsoleEvent<ConsoleButton> {
 	private boolean on;
 	public ButtonEvent(ConsoleButton context, boolean on) {

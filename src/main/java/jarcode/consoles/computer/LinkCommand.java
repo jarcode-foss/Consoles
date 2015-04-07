@@ -5,7 +5,7 @@ import net.minecraft.server.v1_8_R1.*;
 import java.lang.reflect.Field;
 
 // This is a vanilla command. I need to use this because command blocks send commands
-// as the console. Bukkit is stupid sometimes.
+// as the console, and I need to get the command block that sent it.
 public class LinkCommand extends CommandAbstract {
 	@Override
 	public String getCommand() {
@@ -17,7 +17,7 @@ public class LinkCommand extends CommandAbstract {
 		return "/link <hostname>";
 	}
 	@Override
-	public void execute(ICommandListener iCommandListener, String[] strings) throws ExceptionUsage, CommandException {
+	public void execute(ICommandListener iCommandListener, String[] strings) throws CommandException {
 		if (iCommandListener instanceof TileEntityCommandListener) {
 			TileEntityCommandListener tile = (TileEntityCommandListener) iCommandListener;
 			TileEntityCommand command;
