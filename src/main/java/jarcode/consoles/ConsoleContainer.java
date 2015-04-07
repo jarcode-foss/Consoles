@@ -1,11 +1,13 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasComponent;
+import jarcode.consoles.api.CanvasContainer;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ConsoleContainer extends ConsoleComponent {
+public abstract class ConsoleContainer extends ConsoleComponent implements CanvasContainer {
 
 	protected static int maxHeightOf(ConsoleComponent[] list) {
 		int max = 0;
@@ -59,7 +61,7 @@ public abstract class ConsoleContainer extends ConsoleComponent {
 		return max;
 	}
 	@Override
-	protected final void handleClick(int x, int y, Player player) {
+	public final void handleClick(int x, int y, Player player) {
 		contained.stream().filter(ConsoleComponent::enabled).forEach(comp -> {
 			Position2D pos = getUnderlingComponentCoordinates(comp);
 			if (pos != null && x >= pos.getX() && y >= pos.getY()
@@ -69,6 +71,6 @@ public abstract class ConsoleContainer extends ConsoleComponent {
 		});
 		onClick(x, y, player);
 	}
-	protected abstract void onClick(int x, int y, Player player);
-	protected abstract Position2D getUnderlingComponentCoordinates(ConsoleComponent component);
+	public abstract void onClick(int x, int y, Player player);
+	public abstract Position2D getUnderlingComponentCoordinates(CanvasComponent component);
 }

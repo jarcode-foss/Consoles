@@ -1,9 +1,11 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasComponent;
+import jarcode.consoles.api.CanvasPainter;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 
-public abstract class ConsoleComponent {
+public abstract class ConsoleComponent implements CanvasComponent, CanvasPainter {
 	private byte bg = -1;
 	private int w, h;
 	private boolean enabled;
@@ -60,11 +62,9 @@ public abstract class ConsoleComponent {
 	protected void repaint() {
 		renderer.repaint();
 	}
-	protected void handleClick(int x, int y, Player player) {}
+	public void handleClick(int x, int y, Player player) {}
 	public void onRemove() {}
 	protected void doLater(Runnable runnable, long delay) {
 		renderer.doLater(runnable, delay);
 	}
-	// this is async. Don't be stupid and ignore synchronizing this with your fields.
-	public abstract void paint(ConsoleGraphics g, String context);
 }

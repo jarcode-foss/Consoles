@@ -1,10 +1,13 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasComponent;
+import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.api.WrappedComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
-public class ConsoleGraphics {
+public class ConsoleGraphics implements CanvasGraphics {
 
 	private final ConsoleRenderer renderer;
 	private final ConsoleComponent component;
@@ -17,11 +20,12 @@ public class ConsoleGraphics {
 		this.component = component;
 		this.pos = pos;
 	}
-	public ConsoleGraphics subInstance(ConsoleComponent component, int x, int y) {
+	public ConsoleGraphics subInstance(CanvasComponent component, int x, int y) {
 		return subInstance(component, new Position2D(x, y));
 	}
-	public ConsoleGraphics subInstance(ConsoleComponent component, Position2D pos) {
-		return new ConsoleGraphics(renderer, component, pos);
+	public ConsoleGraphics subInstance(CanvasComponent comp, Position2D pos) {
+		return new ConsoleGraphics(renderer, comp instanceof WrappedComponent ?
+				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp, pos);
 	}
 
 	public Position2D containerPosition() {

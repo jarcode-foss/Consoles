@@ -3,6 +3,9 @@ package jarcode.consoles;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+import jarcode.consoles.api.Canvas;
+import jarcode.consoles.api.CanvasComponent;
+import jarcode.consoles.api.WrappedComponent;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.Region;
 import net.minecraft.server.v1_8_R1.*;
@@ -23,7 +26,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public abstract class ConsoleRenderer {
+public abstract class ConsoleRenderer implements Canvas {
 
 	private int width;
 	private int height;
@@ -343,7 +346,9 @@ public abstract class ConsoleRenderer {
 	ConsolePixelBuffer getPixelBuffer() {
 		return screen;
 	}
-	public void putComponent(Position2D position, ConsoleComponent object) {
+	public void putComponent(Position2D position, CanvasComponent comp) {
+		ConsoleComponent object = comp instanceof WrappedComponent ?
+				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp;
 		if (components.get(position) != null)
 			removeComponent(position, false);
 

@@ -1,5 +1,7 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasComponent;
+import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MinecraftFont;
@@ -42,10 +44,13 @@ public class ConsoleDialog extends ConsoleContainer {
 			this.text = text;
 	}
 	@Override
-	protected void onClick(int x, int y, Player player) {}
+	public void onClick(int x, int y, Player player) {}
 
 	@Override
-	protected Position2D getUnderlingComponentCoordinates(ConsoleComponent component) {
+	public void add(CanvasComponent component) {}
+
+	@Override
+	public Position2D getUnderlingComponentCoordinates(CanvasComponent component) {
 		int w = totalContainedWidth(MARGIN);
 		int at = 0;
 		for (ConsoleComponent comp : contained) {
@@ -56,7 +61,7 @@ public class ConsoleDialog extends ConsoleContainer {
 		return null;
 	}
 	@Override
-	public void paint(ConsoleGraphics g, String context) {
+	public void paint(CanvasGraphics g, String context) {
 		g.drawBackground();
 		g.setRelative(false);
 		int x = g.containerX();
