@@ -22,7 +22,7 @@ public class CanvasContainerBuilder {
 	List<CanvasPainter> painters = new ArrayList<>();
 	List<CanvasInteractListener> listeners = new ArrayList<>();
 	List<Consumer<CanvasComponent>> constructors = new ArrayList<>();
-
+	Function<CanvasComponent, Position2D> mapper = null;
 
 	CanvasContainerBuilder(CanvasComponentBuilder builder) {
 		this.width = builder.width;
@@ -45,7 +45,12 @@ public class CanvasContainerBuilder {
 		return this;
 	}
 
-	public CanvasContainer create(Function<CanvasComponent, Position2D> mapper) {
+	public CanvasContainerBuilder map(Function<CanvasComponent, Position2D> mapper) {
+		this.mapper = mapper;
+		return this;
+	}
+
+	public CanvasContainer create() {
 		return new ConsoleContainer(width, height, (ConsoleRenderer) canvas) {
 			{
 				toAdd.stream().forEach(this::add);
@@ -57,7 +62,7 @@ public class CanvasContainerBuilder {
 
 			@Override
 			public Position2D getUnderlingComponentCoordinates(CanvasComponent component) {
-				return mapper.apply(component);
+				return mapper == null ? null : mapper.apply(component);
 			}
 
 			@Override
