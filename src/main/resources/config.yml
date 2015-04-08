@@ -1,0 +1,4 @@
+# Whether to expect a bungee instance to interact with. This is used to
+# manage per-player map ID allocations to avoid maps locking up and failing
+# to update.
+bungee-forward: false

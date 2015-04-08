@@ -65,6 +65,7 @@ public class ConsoleGraphics implements CanvasGraphics {
 				ChatColor chatColor = ChatColor.getByChar((arr[i + 1] + "").toLowerCase().charAt(0));
 				// not all colors properly implemented, so some are just set to white (32)
 				// I need to finish sampling these later
+				// TODO: finish
 				switch (chatColor) {
 					case WHITE: color = 32; break;
 					case DARK_GRAY: color = 24; break;

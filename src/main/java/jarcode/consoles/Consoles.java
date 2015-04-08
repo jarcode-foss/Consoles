@@ -25,6 +25,8 @@ public class Consoles extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		commandHandler = new CommandHandler(CommandConsole.class, CommandImage.class);
+		boolean forward = getConfig().getBoolean("bungee-forward", false);
+		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
 			try {
 				commandHandler.addCommand(CommandMapTest.class);

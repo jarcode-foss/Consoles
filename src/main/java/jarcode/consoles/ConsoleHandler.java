@@ -46,7 +46,6 @@ public class ConsoleHandler implements Listener {
 	// allow 20 index space for whatever
 	private static final short STARTING_INDEX = 20;
 	private static final ConsoleHandler INSTANCE = new ConsoleHandler();
-	private static final boolean USE_BUNGEE = true;
 
 
 	private static final Field PACKET_LIST;
@@ -143,7 +142,7 @@ public class ConsoleHandler implements Listener {
 
 	private ConsoleBungeeHook hook;
 
-	public boolean local = !USE_BUNGEE;
+	public boolean local = true;
 	{
 		paintThread.setDaemon(true);
 		paintThread.setName("Console Painting Thread");

@@ -47,16 +47,20 @@ jarcode/consoles/util/MapInjector.class
 jarcode/consoles/ConsolePixelBuffer$1.class
 jarcode/consoles/computer/devices/NullDevice$3.class
 jarcode/consoles/ConsoleFeed.class
+jarcode/bungee/consoles/ConsoleMessageHandler.class
 jarcode/consoles/ConsoleRenderer.class
 jarcode/consoles/ConsoleFeed$1.class
 jarcode/consoles/computer/filesystem/SerializedFilesystem$1.class
 jarcode/consoles/util/sync/SyncTaskScheduler$SyncTaskRunnable.class
 jarcode/consoles/computer/boot/Kernel$1.class
+jarcode/bungee/consoles/HookCommand.class
 jarcode/consoles/Consoles.class
 jarcode/consoles/util/sync/SyncTaskScheduler.class
 jarcode/consoles/computer/devices/NullDevice$2.class
 jarcode/consoles/computer/devices/PlayerCommandDevice.class
+jarcode/bungee/consoles/OutgoingHookCommand.class
 jarcode/consoles/MapPainter$StackEntry.class
+jarcode/bungee/consoles/IncomingHookCommand.class
 jarcode/consoles/util/CustomPacketListener.class
 jarcode/consoles/computer/filesystem/SerializedFilesystem$BlockSerializer.class
 jarcode/consoles/ConsoleGraphics$1.class
@@ -68,6 +72,7 @@ jarcode/consoles/api/CanvasPainter.class
 jarcode/consoles/Position2D.class
 jarcode/consoles/api/CanvasGraphics.class
 jarcode/consoles/ImageConsoleHandler.class
+jarcode/bungee/consoles/BungeeConsoles.class
 jarcode/consoles/util/LocalPosition.class
 jarcode/consoles/ConsoleContainer.class
 jarcode/consoles/computer/filesystem/FSBlock.class
@@ -85,6 +90,7 @@ jarcode/consoles/computer/filesystem/FSGroup.class
 jarcode/consoles/computer/filesystem/FSStoredFile.class
 jarcode/consoles/ListenableComponent.class
 jarcode/consoles/computer/filesystem/FSFolder.class
+jarcode/bungee/consoles/ConsoleMessageHandler$1.class
 jarcode/consoles/ImageConsoleHandler$2.class
 jarcode/consoles/util/unsafe/UnsafeTools.class
 jarcode/consoles/ImageConsoleHandler$5.class
