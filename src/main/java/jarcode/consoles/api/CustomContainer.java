@@ -5,7 +5,9 @@ import jarcode.consoles.Position2D;
 import org.bukkit.entity.Player;
 
 /**
- * An implementable class for custom containers
+ * An implementable class for custom containers. This object acts as
+ * a wrapper that builds the underlying container when it is added
+ * to a canvas.
  */
 public abstract class CustomContainer implements CanvasPainter, CanvasContainer, CanvasComponent,
 		WrappedComponent, PreparedComponent {
