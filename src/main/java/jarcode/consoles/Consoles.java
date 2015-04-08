@@ -35,7 +35,7 @@ public class Consoles extends JavaPlugin {
 			}
 		register(
 				ConsoleHandler::getInstance, ConsoleBungeeHook::new, SyncTaskScheduler::create,
-				this::getCommandHandler
+				this::getCommandHandler, ImageConsoleHandler::new
 		);
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
