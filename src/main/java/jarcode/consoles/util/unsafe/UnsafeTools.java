@@ -21,6 +21,7 @@ import java.util.*;
  *
  * @author Jarcode
  */
+@SuppressWarnings("unused")
 public class UnsafeTools {
 	// Used for keeping track of objects that aren't being tracked by the JVM.
 	private static final ArrayList<Object> UNMANAGED = new ArrayList<>();
