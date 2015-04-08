@@ -1,5 +1,5 @@
 # Consoles
-A replacement map API and plugin for craftbukkit &amp; spigot servers. *Requires Java 8!*
+A replacement map API and plugin for craftbukkit &amp; spigot servers. **Requires Java 8!**
 
 The API is meant to does the following:
 
