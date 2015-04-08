@@ -2,6 +2,9 @@ package jarcode.consoles.api;
 
 import org.bukkit.entity.Player;
 
+/**
+ * Interact listener for components
+ */
 @FunctionalInterface
 public interface CanvasInteractListener {
 	/**

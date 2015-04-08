@@ -47,9 +47,6 @@ public class ConsoleDialog extends ConsoleContainer {
 	public void onClick(int x, int y, Player player) {}
 
 	@Override
-	public void add(CanvasComponent component) {}
-
-	@Override
 	public Position2D getUnderlingComponentCoordinates(CanvasComponent component) {
 		int w = totalContainedWidth(MARGIN);
 		int at = 0;

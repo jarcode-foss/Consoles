@@ -1,7 +1,6 @@
 package jarcode.consoles;
 
-import jarcode.consoles.api.CanvasComponent;
-import jarcode.consoles.api.CanvasContainer;
+import jarcode.consoles.api.*;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -37,10 +36,20 @@ public abstract class ConsoleContainer extends ConsoleComponent implements Canva
 	public ConsoleContainer(int w, int h, ConsoleRenderer renderer, boolean enabled) {
 		super(w, h, renderer, enabled);
 	}
-	public void add(ConsoleComponent component) {
-		component.setContained(true);
-		contained.add(component);
+	public final void add(CanvasComponent comp) {
+		if (comp instanceof RootComponent) {
+			throw new IllegalArgumentException("You cannot add root components to a container.");
+		}
+		if (comp instanceof PreparedComponent) {
+			((PreparedComponent) comp).prepare(getRenderer());
+		}
+		ConsoleComponent object = comp instanceof WrappedComponent ?
+				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp;
+		object.setContained(true);
+		contained.add(object);
+		onAdd(comp);
 	}
+	public void onAdd(CanvasComponent comp) {}
 	protected final int totalContainedWidth(int margin) {
 		int width = 0;
 		for (int t = 0; t < contained.size(); t++) {
@@ -51,6 +60,14 @@ public abstract class ConsoleContainer extends ConsoleComponent implements Canva
 
 		}
 		return width;
+	}
+	public final void remove(CanvasComponent comp) {
+		ConsoleComponent object = comp instanceof WrappedComponent ?
+				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp;
+		contained.remove(object);
+	}
+	public final CanvasComponent[] components() {
+		return contained.toArray(new CanvasComponent[contained.size()]);
 	}
 	protected final int maxContainedHeight() {
 		int max = 0;

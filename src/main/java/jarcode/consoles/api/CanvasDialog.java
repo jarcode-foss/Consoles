@@ -1,59 +1,90 @@
 package jarcode.consoles.api;
 
 import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.ConsoleDialog;
+import jarcode.consoles.ConsoleRenderer;
 import org.bukkit.entity.Player;
 
-//TODO: finish!
-public class CanvasDialog implements CanvasComponent, CanvasPainter, WrappedComponent {
+/**
+ * A wrapper for the dialog component.
+ */
+public class CanvasDialog implements CanvasComponent, CanvasPainter, WrappedComponent, RootComponent {
+
+	private ConsoleDialog underlying = null;
+	private String text;
+	private CanvasComponent[] children;
+
+	/**
+	 * Creates a dialog component. The component is not actually created until
+	 * it is added to a console. This component cannot be added to containers.
+	 * If you call methods from this method that query the properties of this
+	 * component before it has been added to a console, a {@link java.lang.NullPointerException}
+	 * will be thrown.
+	 *
+	 * @param text the text to display on the dialog
+	 * @param children the underlying components in this dialog, usually buttons.
+	 */
+	public CanvasDialog(String text, CanvasComponent... children) {
+		this.text = text;
+		this.children = children;
+	}
 	@Override
 	public int getWidth() {
-		return 0;
+		return underlying.getWidth();
 	}
 
 	@Override
 	public int getHeight() {
-		return 0;
+		return underlying.getHeight();
 	}
 
 	@Override
 	public boolean isContained() {
-		return false;
+		return underlying.isContained();
 	}
 
 	@Override
 	public byte getBackground() {
-		return 0;
+		return underlying.getBackground();
 	}
 
 	@Override
 	public void setBackground(byte bg) {
-
+		underlying.setBackground(bg);
 	}
 
 	@Override
 	public boolean enabled() {
-		return false;
+		return underlying.enabled();
 	}
 
 	@Override
 	public void setEnabled(boolean enabled) {
-
+		underlying.setEnabled(enabled);
 	}
 
 	@Override
 	public void handleClick(int x, int y, Player player) {
-
-	}
-
-	@Override
-	public ConsoleComponent underlying() {
-		return null;
+		underlying.handleClick(x, y, player);
 	}
 
 	@Override
 	public void paint(CanvasGraphics g, String context) {
-
+		underlying.paint(g, context);
 	}
 
-	public CanvasDialog
+	@Override
+	public ConsoleComponent underlying() {
+		return underlying;
+	}
+
+	@Override
+	public void place(ConsoleRenderer renderer) {
+		ConsoleComponent[] components = new ConsoleComponent[children.length];
+		for (int t = 0; t < components.length; t++) {
+			components[t] = children[t] instanceof WrappedComponent ?
+					((WrappedComponent) children[t]).underlying() : (ConsoleComponent) children[t];
+		}
+		underlying = ConsoleDialog.show(renderer, text, components);
+	}
 }

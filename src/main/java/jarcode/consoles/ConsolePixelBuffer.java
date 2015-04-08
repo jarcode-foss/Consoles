@@ -21,6 +21,8 @@ public class ConsolePixelBuffer {
 	// flipped when a single map needs to update
 	// triggered on forced repaints/updates and when a pixel in this map is modified
 	HashMap<String, UpdateSwitch[][]> switches = new HashMap<>();
+	// flipped when the buffer needs to be repainted for a context
+	HashMap<String, Boolean> paintSwitches = new HashMap<>();
 	// player listener, used to trigger updates on certain events
 	private PlayerListener listener;
 	// console renderer this belongs to
@@ -76,7 +78,15 @@ public class ConsolePixelBuffer {
 			return b;
 		}
 	}
-
+	boolean needsRepaint(String context) {
+		return paintSwitches.containsKey(context) ? paintSwitches.get(context) : true;
+	}
+	void switchRepaint(String context, boolean repaint) {
+		paintSwitches.put(context, repaint);
+	}
+	void callRepaint() {
+		paintSwitches.clear();
+	}
 	byte[] getBuffer(String context, int x, int y) {
 		return !buffers.containsKey(context) ?
 				null : buffers.get(context)[x][y];

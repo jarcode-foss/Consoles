@@ -3,9 +3,7 @@ package jarcode.consoles;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
-import jarcode.consoles.api.Canvas;
-import jarcode.consoles.api.CanvasComponent;
-import jarcode.consoles.api.WrappedComponent;
+import jarcode.consoles.api.*;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.Region;
 import net.minecraft.server.v1_8_R1.*;
@@ -347,6 +345,14 @@ public abstract class ConsoleRenderer implements Canvas {
 		return screen;
 	}
 	public void putComponent(Position2D position, CanvasComponent comp) {
+		if (comp instanceof RootComponent) {
+			((RootComponent) comp).place(this);
+			cacheBackground();
+			return;
+		}
+		if (comp instanceof PreparedComponent) {
+			((PreparedComponent) comp).prepare(this);
+		}
 		ConsoleComponent object = comp instanceof WrappedComponent ?
 				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp;
 		if (components.get(position) != null)
@@ -369,7 +375,7 @@ public abstract class ConsoleRenderer implements Canvas {
 			}
 		}
 	}
-	public void removeComponent(ConsoleComponent object) {
+	public void removeComponent(CanvasComponent object) {
 		synchronized (RENDERER_LOCK) {
 			List<Position2D> positions = components.entrySet().stream()
 					.filter(entry -> entry.getValue() == object)

@@ -1,8 +1,11 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.ConsoleComponent;
 import jarcode.consoles.Position2D;
 
+/**
+ * This class is used as a mutable graphics instance that is
+ * used to paint pixels that belong to a particular component.
+ */
 public interface CanvasGraphics {
 
 	/**

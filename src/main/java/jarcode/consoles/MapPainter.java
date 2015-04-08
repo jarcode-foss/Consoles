@@ -58,14 +58,37 @@ public class MapPainter implements Runnable {
 							renderer.getPixelBuffer().resetSwitches(context);
 						}
 					}
+					else if (entry.type == EntryType.REPAINT_TOGGLE) {
+						// removes all contexts in the repaint stack for the buffer
+						// this makes it so that every player who walks in range of the
+						// console will have have it repainted
+						renderer.getPixelBuffer().callRepaint();
+					}
 					else if (entry.type == EntryType.UPDATE) {
 						if (renderer.created()) {
 							for (int t = 0; t < entry.connections.length; t++) {
-								boolean force = false;
-								if ((entry.paint || (entry.paintIfNew
-										&& !renderer.getPixelBuffer().contextExists(entry.identifiers[t])))
-										&& !paintedContexts.contains(entry.identifiers[t])) {
-										force = true;
+								if ((
+								// We only repaint if:
+								// a repaint is required for this context (the content changed)
+
+										renderer.getPixelBuffer().needsRepaint(context)
+
+								// the update requested a repaint (for whatever reason)
+
+										|| entry.paint
+
+								// if this has not been painted for this player before, and the update allows painting
+								// for new consoles
+
+								        || (entry.paintIfNew && !renderer.getPixelBuffer()
+										.contextExists(entry.identifiers[t])))
+
+								// And we also do not re-repaint, so if we've already handled a paint
+								// request for this context, we ignore any other ones.
+
+										&& !paintedContexts.contains(entry.identifiers[t])
+
+										){
 									try {
 										context = entry.identifiers[t];
 										at = System.currentTimeMillis();
@@ -84,15 +107,18 @@ public class MapPainter implements Runnable {
 										context = null;
 									}
 									paintedContexts.add(entry.identifiers[t]);
+									renderer.getPixelBuffer().switchRepaint(context, true);
 								}
 								at = System.currentTimeMillis();
 								for (ConsoleMapRenderer map : renderer.renderers()) {
-									if (entry.force || force)
+									// if this request forces updates, toggle switches
+									if (entry.force)
 										map.forceSwitch(entry.identifiers[t]);
+									// send packets
 									map.update(entry.connections[t], entry.identifiers[t]);
-									if (System.currentTimeMillis() - at > 20)
-										System.out.println("Warning, took more than 20ms to send packet!");
 								}
+								if (System.currentTimeMillis() - at > 20)
+									System.out.println("Warning, took more than 20ms to send packet!");
 							}
 						}
 					}
@@ -126,12 +152,15 @@ public class MapPainter implements Runnable {
 				.collect(Collectors.toList());
 
 		synchronized (LOCK) {
+			// repaint switch
+			stack.add(new StackEntry(renderer));
 			PlayerConnection[] arr = new PlayerConnection[close.size()];
 			String[] names = new String[close.size()];
 			for (int t = 0; t < arr.length; t++) {
 				arr[t] = (((CraftPlayer) close.get(t)).getHandle().playerConnection);
 				names[t] = close.get(t).getName();
 			}
+			// add update requests
 			stack.add(new StackEntry(renderer, arr, names, true, false, false));
 			LOCK.notify();
 		}
@@ -219,8 +248,12 @@ public class MapPainter implements Runnable {
 			this.identifiers = contexts;
 			type = EntryType.TOGGLE;
 		}
+		public StackEntry(ConsoleRenderer renderer) {
+			this.renderer = renderer;
+			type = EntryType.REPAINT_TOGGLE;
+		}
 	}
 	private enum EntryType {
-		UPDATE, TOGGLE
+		UPDATE, TOGGLE, REPAINT_TOGGLE
 	}
 }

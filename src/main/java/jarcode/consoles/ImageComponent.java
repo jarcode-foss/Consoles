@@ -1,5 +1,7 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasGraphics;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -87,7 +89,7 @@ public class ImageComponent extends ConsoleComponent {
 		buffer = image.data;
 	}
 	@Override
-	public void paint(ConsoleGraphics g, String context) {
+	public void paint(CanvasGraphics g, String context) {
 		for (int t = 0; t < getWidth(); t++) {
 			for (int j = 0; j < getHeight(); j++) {
 				byte b = buffer[t][j];

@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+
+/**
+ * Container builder for easy construction of custom containers
+ */
 public class CanvasContainerBuilder {
 
 	List<Consumer<CanvasComponent>> adders = new ArrayList<>();
@@ -35,21 +39,47 @@ public class CanvasContainerBuilder {
 		this.painters = builder.painters;
 	}
 
+	/**
+	 * Handles the passed functionality for each component added to this container.
+	 * Multiple consumers can be passed and handled for each component
+	 *
+	 * @param adder A {@link java.util.function.Consumer} that handles
+	 * @return this container builder
+	 */
 	public CanvasContainerBuilder onAdd(Consumer<CanvasComponent> adder) {
 		adders.add(adder);
 		return this;
 	}
 
+	/**
+	 * Schedules the given component to be added when the container is created
+	 *
+	 * @param component the component to add
+	 * @return this container builder
+	 */
 	public CanvasContainerBuilder add(CanvasComponent component) {
 		toAdd.add(component);
 		return this;
 	}
 
-	public CanvasContainerBuilder map(Function<CanvasComponent, Position2D> mapper) {
+	/**
+	 * Sets the mapper that assigns underlying components to positions in this container.
+	 * Positions are relevant to the container's origin. This function is used to
+	 * resolve the absolute positions of added components when handling click events.
+	 *
+	 * @param mapper the component mapper to use
+	 * @return this container builder
+	 */
+	public CanvasContainerBuilder position(Function<CanvasComponent, Position2D> mapper) {
 		this.mapper = mapper;
 		return this;
 	}
 
+	/**
+	 * Creates the container
+	 *
+	 * @return a new {@link jarcode.consoles.api.CanvasContainer} object
+	 */
 	public CanvasContainer create() {
 		return new ConsoleContainer(width, height, (ConsoleRenderer) canvas) {
 			{
@@ -71,7 +101,7 @@ public class CanvasContainerBuilder {
 			}
 
 			@Override
-			public void add(CanvasComponent component) {
+			public void onAdd(CanvasComponent component) {
 				adders.stream().forEach(adder -> adder.accept(component));
 			}
 		};

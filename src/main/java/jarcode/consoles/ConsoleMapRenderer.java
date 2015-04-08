@@ -97,7 +97,7 @@ public class ConsoleMapRenderer {
 		short clientId = ConsoleHandler.getInstance().translateIndex(context, id);
 		// send an update if an update was fired, or if the context map id hasn't been seen to this player before
 		short lastId = getLastId(context);
-		if ((update != null && update.wasFired() && pixelBuffer.contextExists(context)) || lastId != clientId) {
+		if ((update != null && update.wasFired()) || lastId != clientId) {
 			byte[] data = pixelBuffer.getBuffer(context, x, y);
 			// if the id of the map for this player changed, send them an update packet
 			if (lastId != clientId) {
