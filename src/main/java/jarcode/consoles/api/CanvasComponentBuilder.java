@@ -55,7 +55,7 @@ public class CanvasComponentBuilder {
 
 	/**
 	 * Sets the functions to be used for {@link jarcode.consoles.api.CanvasComponent#setEnabled(boolean)} and
-	 * {@link jarcode.consoles.api.CanvasComponent#enabled)}. If any of the arguments are null, the default
+	 * {@link jarcode.consoles.api.CanvasComponent#enabled}. If any of the arguments are null, the default
 	 * behaviour for the respective function is used.
 	 *
 	 * @param supplier the supplier function
@@ -84,8 +84,8 @@ public class CanvasComponentBuilder {
 	 * Registers a click listener for this component. Listeners are called in the
 	 * order that they are registered.
 	 *
-	 * @param listener
-	 * @return
+	 * @param listener the listener to register
+	 * @return this builder
 	 */
 	public CanvasComponentBuilder listen(CanvasInteractListener listener) {
 		listeners.add(listener);

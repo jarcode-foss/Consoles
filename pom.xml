@@ -26,6 +26,30 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.2</version>
+                <configuration>
+                    <groups>
+                        <group>
+                            <title>API Docs</title>
+                            <packages>jarcode.consoles.api</packages>
+                        </group>
+                    </groups>
+                    <sourceFileExcludes>
+                        <!-- For some reason, I can't produce docs for some of these classes -->
+                        <exclude>jarcode/consoles/util/**</exclude>
+                        <exclude>jarcode/consoles/*.java</exclude>
+                        <exclude>jarcode/consoles/computer/**</exclude>
+                        <exclude>jarcode/consoles/bungee/**</exclude>
+                        <exclude>jarcode/bungee/**</exclude>
+                        <exclude>jarcode/consoles/event/**</exclude>
+                        <exclude>jarcode/consoles/command/**</exclude>
+                    </sourceFileExcludes>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
