@@ -3,7 +3,7 @@ A replacement map API and plugin for craftbukkit &amp; spigot servers. **Require
 
 The API is meant to does the following:
 
-- Serves as a replacement for maps in the minecraft server
+- Serves as a replacement for the default map renderer in the minecraft server
 - Provides a fast interface for painting to 'canvases' (that are actually a grid of maps)
 - Provides a workaround for this issue: https://bugs.mojang.com/browse/MC-46345
 - Provides pixel-accurate interaction events with the map canvas and its components
