@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,6 +28,8 @@ public class CanvasContainerBuilder {
 	List<CanvasInteractListener> listeners = new ArrayList<>();
 	List<Consumer<CanvasComponent>> constructors = new ArrayList<>();
 	Function<CanvasComponent, Position2D> mapper = null;
+	BooleanSupplier enabledSupplier = null;
+	Consumer<Boolean> enabledConsumer = null;
 
 	CanvasContainerBuilder(CanvasComponentBuilder builder) {
 		this.width = builder.width;
@@ -37,6 +40,8 @@ public class CanvasContainerBuilder {
 		this.constructors = builder.constructors;
 		this.listeners = builder.listeners;
 		this.painters = builder.painters;
+		this.enabledConsumer = builder.enabledConsumer;
+		this.enabledSupplier = builder.enabledSupplier;
 	}
 
 	/**
@@ -103,6 +108,18 @@ public class CanvasContainerBuilder {
 			@Override
 			public void onAdd(CanvasComponent component) {
 				adders.stream().forEach(adder -> adder.accept(component));
+			}
+
+			@Override
+			public boolean enabled() {
+				return enabledSupplier != null ? enabledSupplier.getAsBoolean() : super.enabled();
+			}
+
+			@Override
+			public void setEnabled(boolean enabled) {
+				if (enabledConsumer != null)
+					enabledConsumer.accept(enabled);
+				else super.setEnabled(enabled);
 			}
 		};
 	}

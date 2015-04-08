@@ -28,20 +28,40 @@ public class ConsoleGraphics implements CanvasGraphics {
 				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp, pos);
 	}
 
+
+	@Override
 	public Position2D containerPosition() {
 		return pos.copy();
 	}
 
+	@Override
 	public int containerX() {
 		return pos.getX();
 	}
 
+	@Override
+	public int getWidth() {
+		return component.getWidth();
+	}
+
+	@Override
+	public int getHeight() {
+		return component.getWidth();
+	}
+
+	@Override
 	public int containerY() {
 		return pos.getY();
 	}
 
+	@Override
 	public void setRelative(boolean relative) {
 		this.relative = relative;
+	}
+
+	@Override
+	public CanvasComponent getComponent() {
+		return component;
 	}
 
 	public boolean isRelative() {

@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /**
@@ -20,6 +21,8 @@ public class CanvasComponentBuilder {
 	List<CanvasPainter> painters = new ArrayList<>();
 	List<CanvasInteractListener> listeners = new ArrayList<>();
 	List<Consumer<CanvasComponent>> constructors = new ArrayList<>();
+	BooleanSupplier enabledSupplier = null;
+	Consumer<Boolean> enabledConsumer = null;
 
 	CanvasComponentBuilder(Canvas canvas, int width, int height) {
 		this.canvas = canvas;
@@ -39,13 +42,29 @@ public class CanvasComponentBuilder {
 	}
 
 	/**
-	 * Sets whether the component is enabled or disabled by default
+	 * Sets whether the component is enabled or disabled by default,
+	 * internally calling {@link jarcode.consoles.api.CanvasComponent#setEnabled(boolean)}
 	 *
 	 * @param enabled enabled flag
 	 * @return this builder
 	 */
 	public CanvasComponentBuilder enabled(boolean enabled) {
 		this.enabled = enabled;
+		return this;
+	}
+
+	/**
+	 * Sets the functions to be used for {@link jarcode.consoles.api.CanvasComponent#setEnabled(boolean)} and
+	 * {@link jarcode.consoles.api.CanvasComponent#enabled)}. If any of the arguments are null, the default
+	 * behaviour for the respective function is used.
+	 *
+	 * @param supplier the supplier function
+	 * @param consumer the consumer function
+	 * @return this builder
+	 */
+	public CanvasComponentBuilder enabledHandler(BooleanSupplier supplier, Consumer<Boolean> consumer) {
+		enabledSupplier = supplier;
+		enabledConsumer = consumer;
 		return this;
 	}
 
@@ -104,6 +123,18 @@ public class CanvasComponentBuilder {
 			@Override
 			public void handleClick(int x, int y, Player player) {
 				listeners.stream().forEach(listener -> listener.handle(x, y, player));
+			}
+
+			@Override
+			public boolean enabled() {
+				return enabledSupplier != null ? enabledSupplier.getAsBoolean() : super.enabled();
+			}
+
+			@Override
+			public void setEnabled(boolean enabled) {
+				if (enabledConsumer != null)
+					enabledConsumer.accept(enabled);
+				else super.setEnabled(enabled);
 			}
 		};
 	}

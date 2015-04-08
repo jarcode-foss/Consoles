@@ -53,6 +53,27 @@ public interface CanvasGraphics {
 	public int containerX();
 
 	/**
+	 * Width of the component this graphics object belongs to
+	 *
+	 * @return width, in pixels
+	 */
+	public int getWidth();
+
+	/**
+	 * Height of the component this graphics object belongs to
+	 *
+	 * @return height, in pixels
+	 */
+	public int getHeight();
+
+	/**
+	 * Returns the component this graphics object belong to
+	 *
+	 * @return the {@link jarcode.consoles.api.CanvasComponent} object
+	 */
+	public CanvasComponent getComponent();
+
+	/**
 	 * Returns the position of this component's container
 	 *
 	 * @return position of this component's container

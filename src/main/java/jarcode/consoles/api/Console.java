@@ -1,8 +1,14 @@
 package jarcode.consoles.api;
 
 import jarcode.consoles.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Player;
+
+import java.util.Random;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Represents a console in the game world
@@ -94,5 +100,21 @@ public class Console {
 	 */
 	public CanvasComponentBuilder newComponent(int width, int height) {
 		return getCanvas().newComponent(width, height);
+	}
+	{
+		byte[] colors = new byte[4];
+		CanvasComponent comp = newComponent(5, 6).listen((x, y, player) ->
+						Bukkit.getLogger().info(String.format("%s interacted with a console at (%d, %d)", player, x, y))
+		).construct(component -> {
+			Random random = new Random();
+			for (int index = 0; index < 4; index++)
+				colors[index] = (byte) (random.nextInt(139) + 4);
+		}).painter((g, context) -> {
+			for (int x = 0; x < g.getWidth(); x++) {
+				for (int y = 0; y < g.getHeight(); y++) {
+					g.draw(x, y, colors[x % 4]);
+				}
+			}
+		}).create();
 	}
 }
