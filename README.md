@@ -1,14 +1,14 @@
 # Consoles
 A replacement map API and plugin for craftbukkit &amp; spigot servers. **Requires Java 8!**
 
-The API is meant to does the following:
+The API provides:
 
-- Serves as a replacement for the default map renderer in the minecraft server
-- Provides a fast interface for painting to 'canvases' (that are actually a grid of maps)
-- Provides a workaround for this issue: https://bugs.mojang.com/browse/MC-46345
-- Provides pixel-accurate interaction events with the map canvas and its components
-- Provides different map data for each player (per-player rendering)
-- Provides hooks for overriding commandblock functionality to link up to console components
+- A replacement for the default map renderer in the minecraft server
+- A fast interface for painting to 'canvases' (that are actually a grid of maps)
+- A workaround for this issue: https://bugs.mojang.com/browse/MC-46345
+- Pixel-accurate interaction events with the map canvas and its components
+- Different map data for each player (per-player rendering)
+- Hooks for overriding command block functionality to link up to console components
 
 Behind the scenes, this API:
 
