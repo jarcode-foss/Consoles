@@ -1,5 +1,6 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
 import org.bukkit.ChatColor;
@@ -55,7 +56,7 @@ public class ConsoleButton extends ConsoleComponent
 	}
 	
 	@Override
-	public void paint(ConsoleGraphics g, String context) {
+	public void paint(CanvasGraphics g, String context) {
 		for (int i = 0; i < getWidth(); i++) {
 			for (int j = 0; j < getHeight(); j++) {
 				g.draw(i, j, toggle ? activeBackground : background);

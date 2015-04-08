@@ -1,5 +1,6 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MinecraftFont;
 
@@ -138,7 +139,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		return stack.size() == 0 ? "" : stack.get(currentLine());
 	}
 	@Override
-	public void paint(ConsoleGraphics g, String context) {
+	public void paint(CanvasGraphics g, String context) {
 		g.drawBackground();
 		for (int t = 0; t < stack.size(); t++) {
 			lastColor = g.drawFormatted(0, (t * textHeight), lastColor, stack.get(t));
