@@ -80,7 +80,7 @@ public class Console {
 	public final void create() {
 		if (created) return;
 		underlying = new ManagedConsole(width, height, false);
-		underlying.setName("Custom");
+		underlying.setType("Custom");
 		underlying.create(face, location);
 		created = true;
 	}

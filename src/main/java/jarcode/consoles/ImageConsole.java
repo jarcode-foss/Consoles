@@ -64,7 +64,7 @@ public class ImageConsole {
 			int ht = image.getHeight() / 128;
 			int h = image.getHeight() % 128 == 0 ? ht : ht + 1;
 			console = new ManagedConsole(w, h, false);
-			console.setName("Image");
+			console.setType("Image");
 			console.putComponent(new Position2D(0, 0), new ImageComponent(console, image));
 			console.create(face, location);
 			if (save)

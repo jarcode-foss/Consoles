@@ -171,7 +171,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		pos = pos.getBlock().getLocation();
 		screen.onCreate();
 	}
-	public void setName(String name) {
+	public void setType(String name) {
 		this.name = name;
 	}
 	// I don't expect you to understand this.
