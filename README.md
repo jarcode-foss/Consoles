@@ -1,16 +1,14 @@
 # Consoles
-A replacement map API and plugin for craftbukkit &amp; spigot servers
+A replacement map API and plugin for craftbukkit &amp; spigot servers. *Requires Java 8!*
 
-Just porting this over from a private repository - so this won't compile yet, but all the code is done & working.
+The API is meant to does the following:
 
-The API is meant to do this following:
-
-- Serve as a replacement for maps in the minecraft server
-- Provide a fast interface for painting to 'canvases' (that are actually a grid of maps)
-- Provide a workaround for this issue: https://bugs.mojang.com/browse/MC-46345
-- Provide pixel-accurate interaction events with the map canvas and its components
-- Provide different map data for each player (per-player rendering)
-- Provide hooks for overriding commandblock functionality to link up to console components
+- Serves as a replacement for maps in the minecraft server
+- Provides a fast interface for painting to 'canvases' (that are actually a grid of maps)
+- Provides a workaround for this issue: https://bugs.mojang.com/browse/MC-46345
+- Provides pixel-accurate interaction events with the map canvas and its components
+- Provides different map data for each player (per-player rendering)
+- Provides hooks for overriding commandblock functionality to link up to console components
 
 Behind the scenes, this API:
 
@@ -25,10 +23,9 @@ In progress:
 
 Non-API features:
 
-- Reliable image rendering from URLs! Works great.
+- Reliable image rendering from URLs!
 
 Notes:
  - May not be compatible with ProtocolLib. If this is the case, I will add support by either using ProtocolLib as an alternative packet listener, or by applying my packet wrapper after ProtocolLib does its instrumentation shenanigans.
  - This replaces maps, and _completely_ removes handheld map functionality. Fake map handlers/items are injected to ensure that the normal map system does not send packets and map out world regions.
  - This plugin/API is strictly for _map canvases_, which are sets of (modified) item frames in a grid containing maps that can display pixels in its own screen coordinates, for each player.
- - I use Java 8. If you're not using Java 8, go away.
