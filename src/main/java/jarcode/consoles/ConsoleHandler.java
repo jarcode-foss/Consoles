@@ -8,14 +8,15 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.PacketUtils;
 import jarcode.consoles.util.Region;
-import net.minecraft.server.v1_8_R1.*;
-import net.minecraft.server.v1_8_R1.World;
+import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R2.DataWatcher.WatchableObject;
+import net.minecraft.server.v1_8_R2.World;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.block.CommandBlock;
-import org.bukkit.craftbukkit.v1_8_R1.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R1.block.CraftCommandBlock;
-import org.bukkit.craftbukkit.v1_8_R1.entity.CraftItemFrame;
+import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
+import org.bukkit.craftbukkit.v1_8_R2.entity.CraftItemFrame;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -84,8 +85,8 @@ public class ConsoleHandler implements Listener {
 			Field field = CraftCommandBlock.class.getDeclaredField("commandBlock");
 			field.setAccessible(true);
 			TileEntityCommand entity = (TileEntityCommand) field.get(block);
-			Object obj = entity.getCommandBlock();
-			return !(obj instanceof TileEntityCommandListener);
+			CommandBlockListenerAbstract obj = entity.getCommandBlock();
+			return obj instanceof ConsoleCommandBlockListener;
 		}
 		catch (NoSuchFieldException | IllegalAccessException e) {
 			e.printStackTrace();
@@ -97,10 +98,9 @@ public class ConsoleHandler implements Listener {
 			Field field = CraftCommandBlock.class.getDeclaredField("commandBlock");
 			field.setAccessible(true);
 			TileEntityCommand entity = (TileEntityCommand) field.get(block);
-			Object obj = entity.getCommandBlock();
-			if (obj instanceof TileEntityCommandListener) {
-				TileEntityCommandListener old = (TileEntityCommandListener) obj;
-				field.set(entity, new ConsoleCommandBlockListener(old, listener));
+			CommandBlockListenerAbstract obj = entity.getCommandBlock();
+			if (!(obj instanceof ConsoleCommandBlockListener)) {
+				field.set(entity, new ConsoleCommandBlockListener(obj, listener, entity));
 				return true;
 			}
 			else return false;

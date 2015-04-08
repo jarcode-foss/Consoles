@@ -1,10 +1,10 @@
 package jarcode.consoles.computer;
 
-import net.minecraft.server.v1_8_R1.TileEntityCommand;
+import net.minecraft.server.v1_8_R2.TileEntityCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.craftbukkit.v1_8_R1.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R1.command.VanillaCommandWrapper;
+import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;

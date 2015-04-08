@@ -1,8 +1,8 @@
 package jarcode.consoles.util;
 
 import com.google.common.collect.BiMap;
-import net.minecraft.server.v1_8_R1.*;
-import org.bukkit.craftbukkit.v1_8_R1.entity.CraftPlayer;
+import net.minecraft.server.v1_8_R2.*;
+import org.bukkit.craftbukkit.v1_8_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Field;
@@ -21,9 +21,9 @@ public class PacketUtils {
 		final String name = player.getName();
 		return registerInListener(Packet.class, player, packet -> {
 			if (!(packet instanceof PacketPlayInKeepAlive)
-					&& !(packet instanceof PacketPlayInLook)
-					&& !(packet instanceof PacketPlayInPositionLook)
-					&& !(packet instanceof PacketPlayInPosition)
+					&& !(packet instanceof PacketPlayInFlying.PacketPlayInLook)
+					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPositionLook)
+					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPosition)
 					&& !(packet instanceof PacketPlayInFlying))
 				System.out.println("[PACKET] Packet from player " + name + ": " + packet.getClass());
 			return true;

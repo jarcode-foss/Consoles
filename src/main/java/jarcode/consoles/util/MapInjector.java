@@ -1,9 +1,9 @@
 package jarcode.consoles.util;
 
-import net.minecraft.server.v1_8_R1.*;
+import net.minecraft.server.v1_8_R2.*;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R1.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 
 import java.io.File;
 import java.io.IOException;
@@ -120,9 +120,9 @@ public class MapInjector extends WorldMap {
 	@Override
 	@SuppressWarnings("unchecked")
 	public WorldMapHumanTracker a(EntityHuman entityhuman) {
-		WorldMapHumanTracker worldmaphumantracker = (WorldMapHumanTracker)this.i.get(entityhuman);
+		WorldMapHumanTracker worldmaphumantracker = this.i.get(entityhuman);
 		if(worldmaphumantracker == null) {
-			worldmaphumantracker = new FakeTracker(this, entityhuman);
+			worldmaphumantracker = new FakeTracker(entityhuman);
 			this.i.put(entityhuman, worldmaphumantracker);
 			this.g.add(worldmaphumantracker);
 		}
@@ -156,8 +156,8 @@ public class MapInjector extends WorldMap {
 		}
 	}
 	public class FakeTracker extends WorldMapHumanTracker {
-		public FakeTracker(WorldMap worldmap, EntityHuman entityhuman) {
-			super(worldmap, entityhuman);
+		public FakeTracker(EntityHuman entityhuman) {
+			super(entityhuman);
 		}
 		// tracker/update packet, send nothing
 		public Packet a(ItemStack itemstack) {

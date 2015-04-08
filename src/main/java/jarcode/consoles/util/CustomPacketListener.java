@@ -1,6 +1,6 @@
 package jarcode.consoles.util;
 
-import net.minecraft.server.v1_8_R1.*;
+import net.minecraft.server.v1_8_R2.*;
 
 import java.util.function.Predicate;
 

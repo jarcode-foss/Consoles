@@ -2,9 +2,10 @@ package jarcode.consoles.util;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import jarcode.consoles.util.unsafe.UnsafeTools;
-import net.minecraft.server.v1_8_R1.*;
+import net.minecraft.server.v1_8_R2.*;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
@@ -28,7 +29,6 @@ public class NetworkManagerWrapper extends NetworkManager {
 	private static final Method CHANNEL_READ_0;
 	private static final Method HANDLE_LISTENER;
 	private static final Field PROTOCOL_DIRECTION;
-	private static final Field CHANNEL;
 
 	static {
 		try {
@@ -37,10 +37,8 @@ public class NetworkManagerWrapper extends NetworkManager {
 			CHANNEL_READ_0.setAccessible(true);
 			HANDLE_LISTENER = NetworkManager.class.getDeclaredMethod("a", ChannelHandlerContext.class, Packet.class);
 			HANDLE_LISTENER.setAccessible(true);
-			PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("g");
+			PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("h");
 			PROTOCOL_DIRECTION.setAccessible(true);
-			CHANNEL = NetworkManager.class.getDeclaredField("i");
-			CHANNEL.setAccessible(true);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -60,12 +58,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 	public static NetworkManagerWrapper wrap(NetworkManager manager) {
 
 		// check protocol state, this wrapper is only meant for 'play'
-		Object protocol;
-		try {
-			protocol = ((Channel) CHANNEL.get(manager)).attr(c).get();
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException("Could not obtain protocol", e);
-		}
+		Object protocol = manager.k.attr(c).get();
 		if (protocol != EnumProtocol.PLAY) {
 			throw new RuntimeException("Wrong protocol: " + protocol);
 		}
@@ -92,13 +85,12 @@ public class NetworkManagerWrapper extends NetworkManager {
 		// underlying, 'real' network manager
 		this.underlying = underlying;
 		// copy references to public fields in original object
-		this.j = underlying.j;
+		this.l = underlying.l;
 		this.spoofedUUID = underlying.spoofedUUID;
 		this.spoofedProfile = underlying.spoofedProfile;
 		this.preparing = underlying.preparing;
+		this.k = underlying.k;
 		try {
-			// copy the channel instance, because there's a static method to obtain it
-			CHANNEL.set(this, CHANNEL.get(underlying));
 			// copy protocol direction
 			PROTOCOL_DIRECTION.set(this, PROTOCOL_DIRECTION.get(underlying));
 		}
@@ -143,12 +135,12 @@ public class NetworkManagerWrapper extends NetworkManager {
 	}
 
 	@Override
-	public void channelInactive(ChannelHandlerContext channelhandlercontext) {
+	public void channelInactive(ChannelHandlerContext channelhandlercontext) throws Exception {
 		underlying.channelInactive(channelhandlercontext);
 	}
 
 	@Override
-	public void exceptionCaught(ChannelHandlerContext channelhandlercontext, Throwable throwable) {
+	public void exceptionCaught(ChannelHandlerContext channelhandlercontext, Throwable throwable) throws Exception {
 		underlying.exceptionCaught(channelhandlercontext, throwable);
 	}
 
@@ -202,9 +194,11 @@ public class NetworkManagerWrapper extends NetworkManager {
 		underlying.handle(packet);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public void a(Packet packet, GenericFutureListener genericfuturelistener, GenericFutureListener... listeners) {
-		underlying.a(packet, genericfuturelistener, listeners);
+	public final void a(Packet packet, GenericFutureListener<? extends Future<? super Void>> future,
+	                    GenericFutureListener<? extends Future<? super Void>>... listeners) {
+		underlying.a(packet, future, listeners);
 	}
 
 	@Override
@@ -295,7 +289,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext channelhandlercontext, Object object) {
+	protected void channelRead0(ChannelHandlerContext channelhandlercontext, Packet object) {
 		// we can't access protected methods, use reflection
 		try {
 			CHANNEL_READ_0.invoke(underlying, channelhandlercontext, object);

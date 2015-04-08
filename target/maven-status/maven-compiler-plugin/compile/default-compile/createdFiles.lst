@@ -6,6 +6,8 @@ jarcode/consoles/ImageConsoleHandler$6.class
 jarcode/consoles/ConsoleFeed$FeedEncoder.class
 jarcode/consoles/ConsoleComponent.class
 jarcode/consoles/util/gson/LocalPositionTypeAdapter.class
+jarcode/consoles/api/CanvasContainerBuilder.class
+jarcode/consoles/api/CanvasComponentBuilder$1.class
 jarcode/consoles/event/ConsoleEvent.class
 jarcode/consoles/event/ConsoleEventListener.class
 jarcode/consoles/util/Allocation$Range.class
@@ -15,17 +17,22 @@ jarcode/consoles/util/MapInjector$FakeItemWorldMap.class
 jarcode/consoles/ImageComponent.class
 jarcode/consoles/computer/boot/Driver.class
 jarcode/consoles/util/unsafe/UnsafeTools$NestedObjectCloner.class
+jarcode/consoles/api/CanvasContainer.class
 jarcode/consoles/computer/ProgramInstance.class
 jarcode/consoles/bungee/ConsoleBungeeHook$1.class
 jarcode/consoles/computer/filesystem/FSStoredFile$1.class
 jarcode/consoles/command/CommandMapTest.class
+jarcode/consoles/ManagedConsole.class
 jarcode/consoles/util/PacketUtils.class
 jarcode/consoles/computer/devices/NullDevice$1.class
 jarcode/consoles/computer/LinkCommand.class
 jarcode/consoles/computer/boot/Kernel.class
 jarcode/consoles/ConsoleTextArea.class
 jarcode/consoles/MapPainter$EntryType.class
+jarcode/consoles/api/CanvasComponentBuilder.class
+jarcode/consoles/api/RootComponent.class
 jarcode/consoles/ImageConsoleHandler$1.class
+jarcode/consoles/api/CanvasDialog.class
 jarcode/consoles/ConsoleRenderer$1.class
 jarcode/consoles/computer/filesystem/SerializedFilesystem$2.class
 jarcode/consoles/PreparedMapImage.class
@@ -33,6 +40,8 @@ jarcode/consoles/computer/boot/Kernel$2.class
 jarcode/consoles/ConsoleHandler.class
 jarcode/consoles/computer/devices/CommandDevice$1.class
 jarcode/consoles/computer/LinkedStream.class
+jarcode/consoles/api/PreparedComponent.class
+jarcode/consoles/api/CanvasContainerBuilder$1.class
 jarcode/consoles/ConsoleButton.class
 jarcode/consoles/util/MapInjector.class
 jarcode/consoles/ConsolePixelBuffer$1.class
@@ -55,7 +64,9 @@ jarcode/consoles/util/sync/SyncTaskResponse.class
 jarcode/consoles/computer/bin/CurrentDirectoryProgram.class
 jarcode/consoles/computer/devices/NullDevice.class
 jarcode/consoles/command/CommandBase.class
+jarcode/consoles/api/CanvasPainter.class
 jarcode/consoles/Position2D.class
+jarcode/consoles/api/CanvasGraphics.class
 jarcode/consoles/ImageConsoleHandler.class
 jarcode/consoles/util/LocalPosition.class
 jarcode/consoles/ConsoleContainer.class
@@ -66,8 +77,8 @@ jarcode/consoles/computer/bin/ShowDirectoryProgram.class
 jarcode/consoles/bungee/ConsoleBungeeHook.class
 jarcode/consoles/ConsoleDialog.class
 jarcode/consoles/util/sync/SyncTask.class
+jarcode/consoles/api/CanvasComponent.class
 jarcode/consoles/util/sync/SyncTaskScheduler$SyncResponseRunnable.class
-jarcode/consoles/Console.class
 jarcode/consoles/ConsoleListener.class
 jarcode/consoles/command/CommandImage.class
 jarcode/consoles/computer/filesystem/FSGroup.class
@@ -78,6 +89,7 @@ jarcode/consoles/ImageConsoleHandler$2.class
 jarcode/consoles/util/unsafe/UnsafeTools.class
 jarcode/consoles/ImageConsoleHandler$5.class
 jarcode/consoles/computer/devices/CommandDevice$2.class
+jarcode/consoles/api/Canvas.class
 jarcode/consoles/bungee/OutgoingHookCommand.class
 jarcode/consoles/computer/filesystem/SerializedFilesystem$3.class
 jarcode/consoles/command/Command.class
@@ -87,9 +99,11 @@ jarcode/consoles/ConsoleGraphics.class
 jarcode/consoles/MapPainter.class
 jarcode/consoles/command/CommandConsole.class
 jarcode/consoles/ConsolePixelBuffer.class
+jarcode/consoles/api/WrappedComponent.class
 jarcode/consoles/util/PacketUtils$ProtocolDirection.class
 jarcode/consoles/computer/filesystem/FSFile.class
 jarcode/consoles/computer/LinkedStream$1.class
+jarcode/consoles/api/CanvasInteractListener.class
 jarcode/consoles/computer/Computer.class
 jarcode/consoles/util/MapInjector$FakeTracker.class
 jarcode/consoles/ConsolePixelBuffer$UpdateSwitch.class
@@ -100,7 +114,6 @@ jarcode/consoles/bungee/IncomingHookCommand.class
 jarcode/consoles/ImageConsoleHandler$4.class
 jarcode/consoles/util/Region.class
 jarcode/consoles/command/CommandBuilder.class
-jarcode/consoles/SimpleConsole.class
 jarcode/consoles/computer/Terminal.class
 jarcode/consoles/ConsolePixelBuffer$PlayerListener.class
 jarcode/consoles/event/ButtonEvent.class
@@ -108,6 +121,7 @@ jarcode/consoles/command/CommandHandler.class
 jarcode/consoles/command/CommandBuilder$BuiltCommand.class
 jarcode/consoles/computer/boot/CommandBlockDriver.class
 jarcode/consoles/computer/filesystem/SerializedFilesystem.class
+jarcode/consoles/api/Console.class
 jarcode/consoles/WritableComponent.class
 jarcode/consoles/ConsoleMeta.class
 jarcode/consoles/computer/devices/CommandDevice$3.class

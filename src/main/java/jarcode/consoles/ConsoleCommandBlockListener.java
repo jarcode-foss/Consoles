@@ -1,27 +1,24 @@
 package jarcode.consoles;
 
-import net.minecraft.server.v1_8_R1.*;
+import com.google.gson.JsonPrimitive;
+import net.minecraft.server.v1_8_R2.*;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.libs.com.google.gson.JsonObject;
-import org.bukkit.craftbukkit.libs.com.google.gson.JsonPrimitive;
-import org.bukkit.craftbukkit.v1_8_R1.command.CraftBlockCommandSender;
+import com.google.gson.JsonObject;
+import org.bukkit.craftbukkit.v1_8_R2.command.CraftBlockCommandSender;
 
 import java.lang.reflect.Field;
 
 public class ConsoleCommandBlockListener extends CommandBlockListenerAbstract {
+
 	TileEntityCommand tileEntity;
 	private ConsoleListener consoleListener;
-	ConsoleCommandBlockListener(TileEntityCommandListener listener, ConsoleListener consoleListener) {
+
+	ConsoleCommandBlockListener(CommandBlockListenerAbstract listener, ConsoleListener consoleListener,
+	                            TileEntityCommand tileEntity) {
+
 		this.consoleListener = consoleListener;
-		try {
-			Field field = TileEntityCommandListener.class.getDeclaredField("a");
-			field.setAccessible(true);
-			this.tileEntity = (TileEntityCommand) field.get(listener);
-			this.sender = new CraftBlockCommandSender(listener);
-		}
-		catch (NoSuchFieldException | IllegalAccessException e) {
-			throw new IllegalArgumentException("Invalid listener", e);
-		}
+		this.tileEntity = tileEntity;
+		this.sender = new CraftBlockCommandSender(listener);
 	}
 
 	public BlockPosition getChunkCoordinates() {
@@ -40,7 +37,7 @@ public class ConsoleCommandBlockListener extends CommandBlockListenerAbstract {
 		object.add("text", new JsonPrimitive(str));
 		object.add("color", new JsonPrimitive("aqua"));
 
-		IChatBaseComponent component = ChatSerializer.a(object.toString());
+		IChatBaseComponent component = IChatBaseComponent.ChatSerializer.a(object.toString());
 		try {
 			Field field = CommandBlockListenerAbstract.class.getDeclaredField("d");
 			field.setAccessible(true);
@@ -55,7 +52,7 @@ public class ConsoleCommandBlockListener extends CommandBlockListenerAbstract {
 				(double)this.tileEntity.getPosition().getY() + 0.5D, (double)this.tileEntity.getPosition().getZ() + 0.5D);
 	}
 	public void a(World world) {
-		execute(this.sender, this.e);
+		execute(this.sender, this.getCommand());
 	}
 	public World getWorld() {
 		return this.tileEntity.getWorld();

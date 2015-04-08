@@ -4,8 +4,8 @@ import jarcode.consoles.util.gson.LocationTypeAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.libs.com.google.gson.*;
-import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.io.FileOutputStream;
