@@ -1,6 +1,7 @@
 package jarcode.consoles.command;
 
 import jarcode.consoles.*;
+import jarcode.consoles.api.*;
 import jarcode.consoles.util.PacketUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -12,6 +13,8 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Random;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 // this is for testing
 public class CommandMapTest extends CommandBase {
@@ -59,6 +62,20 @@ public class CommandMapTest extends CommandBase {
 		if (args[0].equalsIgnoreCase("debug")) {
 			PacketUtils.debugPackets(player);
 			return true;
+		}
+		if (args[0].equalsIgnoreCase("api")) {
+			Console console = new Console(BlockFace.NORTH, ((Player) sender).getLocation(), 4, 5);
+			CanvasComponent component = console.newComponent(4 * 128, 5 * 128).listen((x, y, player1) -> {
+
+			}).enabledHandler(() -> true, aBoolean -> {}).painter((g, context) -> {
+				for (int x = 0; x < g.getWidth(); x++) {
+					for (int y = 0; y < g.getHeight(); y++) {
+						g.draw(x, y, (byte) 60);
+					}
+				}
+			}).create();
+			console.getCanvas().putComponent(0, 0, component);
+			console.create();
 		}
 		if (args[0].equalsIgnoreCase("link")) {
 			BlockState block = player.getLocation().clone().add(0, -1, 0).getBlock().getState();
