@@ -21,7 +21,7 @@ public class CommandMapTest extends CommandBase {
 
 	public CommandMapTest() {
 		super("maptest");
-		setNode("controller.maptest");
+		setNode("consoles.maptest");
 		setDescription("tests stuff");
 	}
 	@Override

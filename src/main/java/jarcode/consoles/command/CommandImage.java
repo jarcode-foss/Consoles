@@ -13,7 +13,7 @@ import java.net.URL;
 public class CommandImage extends CommandBase {
 	public CommandImage() {
 		super("image", "im");
-		setNode("controller.image");
+		setNode("consoles.image");
 		setDescription("Renders data from URLs");
 	}
 

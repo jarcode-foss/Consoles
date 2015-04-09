@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 public class CommandConsole extends CommandBase {
 	public CommandConsole() {
 		super("console");
-		setNode("controller.console");
+		setNode("consoles.console");
 		setDescription("manages all console instances");
 	}
 
