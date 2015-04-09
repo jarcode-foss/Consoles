@@ -58,6 +58,6 @@ public class CommandConsole extends CommandBase {
 				"lists the current consoles");
 		sender.sendMessage(ChatColor.BLUE + "/console remove [index]" + ChatColor.WHITE + " - " +
 				"removes a console at the given index");
-		sender.sendMessage(ChatColor.RED + "Do not use this command for removing scoreboards!");
+		sender.sendMessage(ChatColor.RED + "This is a command for developers/debugging");
 	}
 }

@@ -108,7 +108,7 @@ public class CommandImage extends CommandBase {
 	private void printHelp(CommandSender sender) {
 		sender.sendMessage(ChatColor.RED + "Image command usage:");
 		sender.sendMessage(ChatColor.BLUE + "/im create [N/E/S/W] [URL]" + ChatColor.WHITE + " - " +
-				"creates an image at the current position for the given plugin");
+				"creates an image at the current position");
 		sender.sendMessage(ChatColor.BLUE + "/im list" + ChatColor.WHITE + " - " +
 				"lists the current images");
 		sender.sendMessage(ChatColor.BLUE + "/im remove [index]" + ChatColor.WHITE + " - " +

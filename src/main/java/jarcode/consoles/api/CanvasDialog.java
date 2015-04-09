@@ -8,7 +8,8 @@ import org.bukkit.entity.Player;
 /**
  * A wrapper for the dialog component.
  */
-public class CanvasDialog implements CanvasComponent, CanvasPainter, WrappedComponent, RootComponent {
+@SuppressWarnings("unused")
+public final class CanvasDialog implements CanvasComponent, CanvasPainter, WrappedComponent, RootComponent {
 
 	private ConsoleDialog underlying = null;
 	private String text;
