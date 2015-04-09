@@ -281,6 +281,7 @@ public class ConsoleHandler implements Listener {
 						.forEach(frame -> {
 							EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
 							World world = ((CraftWorld) e.getWorld()).getHandle();
+							nms.dead = false;
 							if (!world.addEntity(nms)) {
 								Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
 										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
