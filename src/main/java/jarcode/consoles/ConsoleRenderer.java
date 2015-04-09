@@ -196,7 +196,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		double c = vertical ? pos.getX() + (d == EnumDirection.WEST ? 1 - (1/16D) : (1/16D))
 				: pos.getZ() + (d == EnumDirection.NORTH ? 1 - (1/16D) : (1/16D));
 
-		// no we need two points for this process, which we use from the above
+		// now we need two points for this process, which we use from the above
 		// we're supposed to use v1 - v0 here, but that's just (v0 + h) - v0, simplifying to h.
 		// now, 't' from parametric equation
 		double t = vertical ? ((c - eye.getX()) / xp) : ((c - eye.getZ()) / zp);

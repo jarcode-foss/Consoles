@@ -35,10 +35,13 @@ public class Kernel extends FSProvidedProgram {
 		driverMappings.put("cmd", CommandBlockDriver.class);
 	}
 
-	public static void install(Computer computer) {
+	public static Kernel install(Computer computer) throws Exception {
+		Kernel kernel = new Kernel();
 		FSFolder boot = new FSFolder();
-		boot.contents.put("vmlinuz", new Kernel());
+		boot.contents.put("vmlinuz", kernel);
 		computer.getRoot().contents.put("boot", boot);
+		kernel.run("", computer);
+		return kernel;
 	}
 
 	{

@@ -64,7 +64,7 @@ public class Terminal extends ConsoleFeed {
 		updatePrompt();
 		prompt();
 	}
-	private Terminal(Computer computer, boolean setupPrompt) {
+	Terminal(Computer computer, boolean setupPrompt) {
 		super(computer.getConsole());
 		this.root = computer.getRoot();
 		this.computer = computer;

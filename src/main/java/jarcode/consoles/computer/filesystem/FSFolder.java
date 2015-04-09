@@ -18,10 +18,10 @@ public class FSFolder extends FSBlock {
 		this.contents = new HashMap<>();
 	}
 	public FSBlock get(String path) throws FileNotFoundException {
-		String sub = path.split("/")[0];
+		String sub = section(path, "/")[0];
 		FSBlock block = contents.get(sub);
 		if (block == null)
-			throw new FileNotFoundException();
+			throw new FileNotFoundException(sub + " (" + path + ")");
 		String remaining = sub.length() == path.length() ? sub : path.substring(sub.length() + 1);
 		if (remaining.length() > 0 && !(block instanceof FSFolder)) {
 			throw new FileNotFoundException(sub + " is a file or program");
@@ -32,7 +32,7 @@ public class FSFolder extends FSBlock {
 		else return block;
 	}
 	public boolean exists(String path) {
-		String sub = path.split("/")[0];
+		String sub = section(path, "/")[0];
 		FSBlock block = contents.get(sub);
 		if (block == null)
 			return false;
@@ -58,7 +58,7 @@ public class FSFolder extends FSBlock {
 	}
 	@SuppressWarnings("SimplifiableIfStatement")
 	public boolean mkdir(String path) {
-		String sub = path.split("/")[0];
+		String sub = section(path, "/")[0];
 		FSBlock at = contents.get(sub);
 		String remaining = sub.length() == path.length() ? sub : path.substring(sub.length() + 1);
 		if (at == null && remaining.length() > 0)

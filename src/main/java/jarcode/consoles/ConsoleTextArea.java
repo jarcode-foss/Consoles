@@ -6,6 +6,8 @@ import org.bukkit.map.MinecraftFont;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
@@ -33,9 +35,32 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	public void print(String text) {
 		text = text.replace("\t", "    ");
+		if (text.contains("\n")) {
+			List<String> list = section(text);
+			for (int t = 0; t < list.size(); t++) {
+				print(list.get(t));
+				if (t != list.size() - 1)
+					advanceLine();
+			}
+			return;
+		}
 		if (!text.startsWith("\u00A7"))
 			text = ChatColor.RESET + text;
 		printContent(text);
+	}
+	protected List<String> section(String text) {
+		List<String> list = new ArrayList<>();
+		Matcher matcher = Pattern.compile("\\n").matcher(text);
+		int first = 0;
+		while (matcher.find()) {
+			list.add(text.substring(first, matcher.start()));
+			first = matcher.end();
+		}
+		if (first < list.size() - 1 && first != -1) {
+			list.add(text.substring(first, list.size()));
+		}
+		else list.add("");
+		return list;
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);

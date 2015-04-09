@@ -2,6 +2,7 @@ package jarcode.consoles;
 
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
+import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.event.Listener;
@@ -32,7 +33,11 @@ public class Consoles extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		commandHandler = new CommandHandler(CommandConsole.class, CommandImage.class);
+		commandHandler = new CommandHandler(
+				CommandConsole.class, CommandImage.class,
+				// experimental, computers
+				CommandComputer.class
+		);
 		saveDefaultConfig();
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
 		ConsoleHandler.getInstance().local = !forward;
@@ -44,7 +49,9 @@ public class Consoles extends JavaPlugin {
 			}
 		register(
 				ConsoleHandler::getInstance, ConsoleBungeeHook::new, SyncTaskScheduler::create,
-				this::getCommandHandler, ImageConsoleHandler::new
+				this::getCommandHandler, ImageConsoleHandler::new,
+				// experimental, computers
+				ComputerHandler::new
 		);
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);

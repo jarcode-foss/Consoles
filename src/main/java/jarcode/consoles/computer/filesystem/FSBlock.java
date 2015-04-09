@@ -1,7 +1,11 @@
 package jarcode.consoles.computer.filesystem;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class FSBlock {
 
@@ -90,5 +94,19 @@ public abstract class FSBlock {
 			if (x) permissions |= 0x10; else permissions &= ~0x10;
 		if (group == FSGroup.ALL)
 			if (x) permissions |= 0x02; else permissions &= ~0x02;
+	}
+	protected String[] section(String text, String regex) {
+		List<String> list = new ArrayList<>();
+		Matcher matcher = Pattern.compile(regex).matcher(text);
+		int first = 0;
+		while (matcher.find()) {
+			list.add(text.substring(first, matcher.start()));
+			first = matcher.end();
+		}
+		if (first < list.size() - 1 && first != -1)) {
+			list.add(text.substring(first, list.size()));
+		}
+		else list.add("");
+		return list.toArray(new String[list.size()]);
 	}
 }

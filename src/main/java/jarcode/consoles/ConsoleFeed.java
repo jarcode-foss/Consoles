@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.List;
 
 @SuppressWarnings("unused")
 public class ConsoleFeed extends ConsoleTextArea implements Runnable {
@@ -174,13 +175,13 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	}
 	private void writeConsole(String text) {
 
-		final String split[] = text.split("\n");
+		final List<String> split = section(text);
 
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			for (int t = 0; t < split.length; t++) {
-				if (!split[t].isEmpty())
-					write(split[t]);
-				if (t != split.length - 1)
+			for (int t = 0; t < split.size(); t++) {
+				if (!split.get(t).isEmpty())
+					write(split.get(t));
+				if (t != split.size() - 1)
 					advanceLine();
 				repaint();
 			}

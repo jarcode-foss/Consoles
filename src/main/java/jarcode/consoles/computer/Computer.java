@@ -40,7 +40,7 @@ public class Computer implements Runnable {
 		this.hostname = hostname;
 		this.owner = owner;
 		console = new ManagedConsole(width, height);
-		feeds[0] = new Terminal(this);
+		feeds[0] = new Terminal(this, false);
 		setScreenIndex(0);
 	}
 
@@ -73,16 +73,26 @@ public class Computer implements Runnable {
 		printAfter("Loading vmlinuz", 20);
 		for (int t = 0; t < 3; t++) {
 			printAfter(".", 28 + (t * 8));
+			if (t == 2)
+				printAfter("\n", 29 + (t * 8));
 		}
 		printAfter("Loading initrd.gz", 50);
 		for (int t = 0; t < 3; t++) {
 			printAfter(".", 58 + (t * 8));
+			if (t == 2)
+				printAfter("\n", 59 + (t * 8));
 		}
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			kernel = boot("boot/vmlinuz", Kernel.class);
 			if (!root.exists("boot/vmlinuz")) {
-				Kernel.install(Computer.this);
-				kernel.routine("install");
+				try {
+					kernel = Kernel.install(Computer.this);
+					kernel.routine("install");
+				} catch (Exception e) {
+					printAfter("Failed to install kernel: " + e.getClass(), 2);
+					e.printStackTrace();
+					return;
+				}
 			}
 			kernel.routine("boot");
 			// register main task
