@@ -1,5 +1,12 @@
 package jarcode.consoles;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
@@ -10,7 +17,21 @@ public class ConsoleMeta {
 	public int w, h;
 
 	public ConsoleMeta() {}
-
+        
+        public ConsoleMeta(byte[] arr) {
+            try {
+                ByteArrayInputStream in = new ByteArrayInputStream(arr);
+                DataInputStream din = new DataInputStream(in);
+                double x = din.readDouble(), y = din.readDouble(), z = din.readDouble();
+                float yaw = din.readFloat(), pitch = din.readFloat();
+                String world din.readUTF();
+                location = new Location(Bukkit.getWorld(world), x, y, z, yaw, pitch);
+                face = BlockFace.valueOf(din.readUTF());
+                w = din.readInt(), h = din.readInt();
+            } catch (IOException ex) {
+                throw new RuntimeException("Could not create console metadata from serialized data: ", ex);
+            }
+        }
 	public ConsoleMeta(Location location, BlockFace face, int w, int h) {
 		this.location = location;
 		this.face = face;
@@ -22,4 +43,34 @@ public class ConsoleMeta {
 		console.create(face, location);
 		return console;
 	}
+        
+        public byte[] toBytes() {
+            try {
+                // serialize location
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                DataOutputStream dout = new DataOutputStream(out);
+                double x = location.getX();
+                double y = location.getY();
+                double z = location.getZ();
+                float yaw = location.getYaw();
+                float pitch = location.getPitch();
+                String world = location.getWorld().getName();
+                dout.writeDouble(x);
+                dout.writeDouble(y);
+                dout.writeDouble(z);
+                dout.writeFloat(yaw);
+                dout.writeFloat(pitch);
+                dout.writeUTF(world);
+                // block face
+                dout.writeUTF(face.name());
+                // width and height
+                dout.writeInt(w);
+                dout.writeInt(h);
+            }
+            // this shouldn't be thrown, we're writing to a stream whose underlying
+            // type is ByteArrayOutputStream
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 }
