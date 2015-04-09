@@ -76,7 +76,6 @@ public class CommandImage extends CommandBase {
 		}
 		else if (args[0].equalsIgnoreCase("list")) {
 			sender.sendMessage(ChatColor.YELLOW + "Images:");
-			if (player.getName().equals("drgn")) return true;
 			int count = 1;
 			for (ImageConsole console : ImageConsoleHandler.getInstance().getImageConsoles()) {
 				sender.sendMessage(count + " - " + console.getUrl().toString());
@@ -94,7 +93,7 @@ public class CommandImage extends CommandBase {
 			}
 			i--;
 			int s = ImageConsoleHandler.getInstance().getImageConsoles().size();
-			if (i >= s || i < 0 || player.getName().equals("drgn")) {
+			if (i >= s || i < 0) {
 				sender.sendMessage(ChatColor.RED + "Index too large or too small: " + args[1]);
 				return true;
 			}
