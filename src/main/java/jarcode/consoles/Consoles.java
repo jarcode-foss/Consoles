@@ -2,6 +2,7 @@ package jarcode.consoles;
 
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
+import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,11 +14,18 @@ public class Consoles extends JavaPlugin {
 	public static final boolean DEBUG = true;
 
 	private static Consoles instance;
-	{
-		instance = this;
+
+	static {
+		MapInjector.injectTypes();
+		MapInjector.clearNBTMapFiles();
 	}
+
 	public static Consoles getInstance() {
 		return instance;
+	}
+
+	{
+		instance = this;
 	}
 
 	private CommandHandler commandHandler;

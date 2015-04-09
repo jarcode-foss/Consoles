@@ -160,6 +160,7 @@ public class MapInjector extends WorldMap {
 			super(entityhuman);
 		}
 		// tracker/update packet, send nothing
+		@Override
 		public Packet a(ItemStack itemstack) {
 			return null;
 		}
