@@ -294,11 +294,15 @@ public class ConsoleHandler implements Listener {
 	}
 	@EventHandler
 	public void onPlayerWorldChange(PlayerChangedWorldEvent e) {
+		if (Consoles.DEBUG)
+			Consoles.getInstance().getLogger().info("World changed: " + e.getPlayer().getName());
 		shiftMapValues(e.getPlayer());
 	}
 	// dimension change on respawn bug
 	@EventHandler
 	public void onPlayerRespawn(final PlayerRespawnEvent e) {
+		if (Consoles.DEBUG)
+			Consoles.getInstance().getLogger().info("Player respawned: " + e.getPlayer().getName());
 		shiftMapValues(e.getPlayer());
 	}
 	// here's the ultimate fix for the static map bug that's been annoying me:
@@ -441,6 +445,8 @@ public class ConsoleHandler implements Listener {
 	@EventHandler
 	public void onEntityInteract(PlayerInteractEntityEvent e) {
 		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked())) {
+			if (Consoles.DEBUG)
+				e.getPlayer().sendMessage("map_id: " + ((ItemFrame) e.getRightClicked()).getItem().getData());
 			e.setCancelled(true);
 		}
 	}
