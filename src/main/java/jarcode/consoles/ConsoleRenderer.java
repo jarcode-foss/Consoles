@@ -156,7 +156,7 @@ public abstract class ConsoleRenderer implements Canvas {
 				EntityItemFrame itemFrame = new EntityItemFrame(mcWorld, new BlockPosition(
 						pos.getBlockX() + xm, pos.getBlockY() + (height - y) - 1, pos.getBlockZ() + zm), d);
 				if (pos.getWorld().isChunkLoaded(itemFrame.getBlockPosition().getX() / 16,
-						itemFrame.getBlockPosition().getY() / 16))
+						itemFrame.getBlockPosition().getZ() / 16))
 				// add the entity if chunk is loaded
 					mcWorld.addEntity(itemFrame);
 				// set item in frame
