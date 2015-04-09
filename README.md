@@ -1,7 +1,7 @@
 # Consoles
 A replacement map API and plugin for craftbukkit &amp; spigot servers. **Requires Java 8!**
 
-License: [https://www.gnu.org/licenses/gpl.html](GPL Version 3)
+License: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
 The API provides:
 
