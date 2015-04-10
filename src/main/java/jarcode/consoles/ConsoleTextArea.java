@@ -1,11 +1,13 @@
 package jarcode.consoles;
 
+import com.google.common.base.Joiner;
 import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MinecraftFont;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,42 +38,39 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	public void print(String text) {
 		text = text.replace("\t", "    ");
 		if (text.contains("\n")) {
-			List<String> list = section(text);
-			for (int t = 0; t < list.size(); t++) {
-				print(list.get(t));
-				if (t != list.size() - 1)
-					advanceLine();
-			}
+			section(text, this::print, this::advanceLine, "\n");
 			return;
 		}
 		if (!text.startsWith("\u00A7"))
 			text = ChatColor.RESET + text;
 		printContent(text);
 	}
-	protected List<String> section(String text) {
-		List<String> list = new ArrayList<>();
-		Matcher matcher = Pattern.compile("\\n").matcher(text);
+	// used to split on newlines and handle accordingly
+	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex) {
+		int count = 0;
+		Matcher matcher = Pattern.compile(regex).matcher(text);
 		int first = 0;
 		while (matcher.find()) {
-			list.add(text.substring(first, matcher.start()));
+			String before = text.substring(first, matcher.start());
+			count++;
+			if (!before.isEmpty())
+				handleText.accept(before);
+			onSplit.run();
 			first = matcher.end();
 		}
-		if (first < list.size() - 1 && first != -1) {
-			list.add(text.substring(first, text.length()));
+		if (count == 0 || (first < text.length() && first != -1)) {
+			handleText.accept(text.substring(first, text.length()));
 		}
-		else list.add("");
-		return list;
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);
 		String stripped = ChatColor.stripColor(text + getLastLine());
 		if (font.getWidth(stripped) > maxWidth) {
 			String[] split = text.split(" ");
-			StringBuilder combined = new StringBuilder();
 			int index = 0;
 			for (String s : split) {
-				combined.append(s);
-				if (font.getWidth(ChatColor.stripColor(combined.toString() + getLastLine())) <= maxWidth) {
+				String comb = ChatColor.stripColor(Joiner.on(" ").join(split) + getLastLine());
+				if (font.getWidth(comb) <= maxWidth) {
 					index++;
 				}
 				else break;
@@ -82,11 +81,12 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 				if (ChatColor.stripColor(getLastLine()).isEmpty()) {
 					StringBuilder builder = new StringBuilder();
 					StringBuilder check = new StringBuilder();
-					char[] arr = text.toCharArray();
+					char[] arr = stripped.toCharArray();
 					int t;
-					for (t = 0; t < text.length(); t++) {
+					for (t = 0; t < stripped.length(); t++) {
 						check.append(arr[t]);
-						if (font.getWidth(ChatColor.stripColor(check.toString())) > maxWidth) {
+						String bare = check.toString();
+						if (font.getWidth(bare) > maxWidth) {
 							break;
 						}
 						else builder.append(arr[t]);

@@ -14,13 +14,13 @@ public class LinkedStream extends InputStream {
 
 	@Override
 	public int read() throws IOException {
-		if (end) return -1;
 		try {
-			while (buffer.length == 0) {
+			while (!end && buffer.length == 0) {
 				synchronized (this) {
 					this.wait();
 				}
 			}
+			if (end && buffer.length == 0) return -1;
 			synchronized (this) {
 				byte b = buffer[0];
 				advance();
@@ -40,6 +40,7 @@ public class LinkedStream extends InputStream {
 		synchronized (this) {
 			if (b == - 1) {
 				end();
+				this.notify();
 				return;
 			}
 			byte[] old = buffer.clone();
@@ -54,7 +55,7 @@ public class LinkedStream extends InputStream {
 	}
 	@Override
 	public synchronized int available() {
-		return buffer.length;
+		return buffer.length + (end ? 1 : 0);
 	}
 	@Override
 	public void close() {

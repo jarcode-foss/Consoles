@@ -250,6 +250,8 @@ public class Computer implements Runnable {
 		// start from root
 		if (input.startsWith("/")) {
 			input = input.substring(1);
+			if (input.isEmpty())
+				return root;
 			try {
 				return root.get(input);
 			}
@@ -260,7 +262,11 @@ public class Computer implements Runnable {
 		// start from current directory
 		else {
 			try {
-				FSBlock block = root.get(currentDirectory);
+				String str;
+				if (currentDirectory.startsWith("/"))
+					str = currentDirectory.substring(1);
+				else str = currentDirectory;
+				FSBlock block = root.get(str);
 				return ((FSFolder) block).get(input);
 			}
 			catch (FileNotFoundException e) {

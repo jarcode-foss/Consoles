@@ -17,8 +17,14 @@ public class CurrentDirectoryProgram extends FSProvidedProgram {
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
 		if (block == null)
 			println("cd: " + str + ": No such file or directory");
-		else if (block instanceof FSFolder)
-			terminal.setCurrentDirectory(str);
+		else if (block instanceof FSFolder) {
+			if (str.startsWith("/"))
+				terminal.setCurrentDirectory("/" + str);
+			else if (terminal.getCurrentDirectory().endsWith("/"))
+				terminal.setCurrentDirectory(terminal.getCurrentDirectory() + str);
+			else
+				terminal.setCurrentDirectory(terminal.getCurrentDirectory() + "/" + str);
+		}
 		else
 			println("cd: " + str + ": No such file or directory");
 	}

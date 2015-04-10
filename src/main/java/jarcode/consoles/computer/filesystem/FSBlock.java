@@ -100,13 +100,13 @@ public abstract class FSBlock {
 		Matcher matcher = Pattern.compile(regex).matcher(text);
 		int first = 0;
 		while (matcher.find()) {
-			list.add(text.substring(first, matcher.start()));
+			String before = text.substring(first, matcher.start());
+			list.add(before);
 			first = matcher.end();
 		}
-		if (list.size() == 0 || (first < list.size() - 1 && first != -1)) {
+		if (list.size() == 0 || (first < text.length() && first != -1)) {
 			list.add(text.substring(first, text.length()));
 		}
-		else list.add("");
 		return list.toArray(new String[list.size()]);
 	}
 }

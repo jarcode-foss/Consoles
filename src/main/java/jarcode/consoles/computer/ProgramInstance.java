@@ -1,5 +1,6 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
 
@@ -68,6 +69,15 @@ public class ProgramInstance implements Runnable {
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
+			if (Consoles.DEBUG)
+				e.printStackTrace();
+		}
+		finally {
+			try {
+				stdout.write((byte) -1); // write -1 (EOF) to signal stream end
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	private void write(String text) {

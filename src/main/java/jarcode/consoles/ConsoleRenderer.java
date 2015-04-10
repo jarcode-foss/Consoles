@@ -345,6 +345,10 @@ public abstract class ConsoleRenderer implements Canvas {
 		return screen;
 	}
 	public void putComponent(Position2D position, CanvasComponent comp) {
+		if (comp == null) {
+			removeComponent(position);
+			return;
+		}
 		if (comp instanceof RootComponent) {
 			((RootComponent) comp).place(this);
 			cacheBackground();

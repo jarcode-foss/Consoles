@@ -18,6 +18,8 @@ public class FSFolder extends FSBlock {
 		this.contents = new HashMap<>();
 	}
 	public FSBlock get(String path) throws FileNotFoundException {
+		if (path.trim().equals("/") || path.trim().isEmpty())
+			return this;
 		String sub = section(path, "/")[0];
 		FSBlock block = contents.get(sub);
 		if (block == null)

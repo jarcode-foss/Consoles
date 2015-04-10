@@ -31,7 +31,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	// whether the IO thread is running
 	private volatile boolean running = false;
 	// whether the IO thread has ended
-	private volatile boolean ended = false;
+	private volatile boolean ended = true;
 	private Exception exception = null;
 	private final Object LOCK = new Object();
 	private FeedEncoder encoder = null;
@@ -70,11 +70,14 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		print(prompt);
 	}
 	public void startFeed() {
+		if (running && !ended)
+			throw new IllegalStateException("Feed is already set up to IO");
 		running = true;
 		ended = false;
 		feed = new Thread(this);
 		feed.setName("Minecraft Console IO Feed");
 		feed.setDaemon(true);
+		feed.setPriority(Thread.MIN_PRIORITY);
 		feed.start();
 	}
 	public Thread getFeedThread() {
@@ -98,15 +101,15 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	// non-blocking
 	public void write(String string) {
 		print(string);
-		if (creator != null && (!running || ended)) {
+		if (creator != null && ended) {
 			creator.from(string);
 			String result = creator.result();
+			advanceLine();
 			if (result == null) {
 				setIO(creator.getInputStream(), creator.getOutputStream(), creator.getEncoder());
 				startFeed();
 			}
 			else {
-				advanceLine();
 				if (!result.isEmpty())
 					println(result);
 				if (prompt != null)
@@ -157,7 +160,8 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 							eof = true;
 							break;
 						}
-						buffer.write(v);
+						else
+							buffer.write(v);
 					}
 					if (buffer.size() > 0) {
 						String result = encoder.get(buffer.toByteArray());
@@ -165,18 +169,23 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 							writeConsole(result);
 						buffer = new ByteArrayOutputStream();
 					}
-					if (eof) throw new EOFException();
-					Thread.sleep(50);
+					if (eof) {
+						break;
+					}
 				}
+				Thread.sleep(50);
 			}
 		}
 		catch (Exception e) {
 			synchronized (LOCK) {
+				if (Consoles.DEBUG)
+					e.printStackTrace();
 				exception = e;
 			}
 		}
 		finally {
 			ended = true;
+			running = false;
 			synchronized (LOCK) {
 				if (prompt != null)
 					writeConsole("\n" + prompt);
@@ -184,17 +193,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 	}
 	private void writeConsole(String text) {
-
-		final List<String> split = section(text);
-
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			for (int t = 0; t < split.size(); t++) {
-				if (!split.get(t).isEmpty())
-					write(split.get(t));
-				if (t != split.size() - 1)
-					advanceLine();
-				repaint();
-			}
+			this.print(text);
+			repaint();
 		});
 	}
 	public interface FeedEncoder {

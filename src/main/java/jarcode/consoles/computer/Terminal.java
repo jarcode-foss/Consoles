@@ -47,7 +47,7 @@ public class Terminal extends ConsoleFeed {
 		terminal.onStart();
 		return terminal;
 	}
-	private String currentDirectory = "home/admin";
+	private String currentDirectory = "/home/admin";
 	private FSFolder root;
 	private Computer computer;
 
@@ -57,7 +57,7 @@ public class Terminal extends ConsoleFeed {
 		this(computer, true);
 	}
 	public void onStart() {
-		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (stable)");
+		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
 		advanceLine();
 		Random random = new Random();
 		println(JOKES[random.nextInt(JOKES.length)]);
@@ -79,7 +79,10 @@ public class Terminal extends ConsoleFeed {
 		return creator.getLastInstance();
 	}
 	public void setCurrentDirectory(String directory) {
+		if (directory.endsWith("/"))
+			directory = directory.substring(0, directory.length() - 1);
 		currentDirectory = directory;
+		updatePrompt();
 	}
 	public String getCurrentDirectory() {
 		return currentDirectory;
@@ -88,6 +91,6 @@ public class Terminal extends ConsoleFeed {
 		return computer;
 	}
 	public void updatePrompt() {
-		setPrompt(String.format("root@%s:%s$ ", computer.getHostname(), currentDirectory));
+		setPrompt(String.format("admin@%s:%s$ ", computer.getHostname(), currentDirectory));
 	}
 }

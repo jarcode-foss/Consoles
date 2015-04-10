@@ -12,16 +12,16 @@ import java.util.Map;
 public class ShowDirectoryProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+		str = handleEncapsulation(str.trim());
 		Terminal terminal = computer.getTerminal(this);
 		String cd = terminal.getCurrentDirectory();
-		FSBlock block = computer.getRoot().get(cd);
+		FSBlock block = computer.getBlock(str, cd);
 		if (!(block instanceof FSFolder)) {
 			println("Invalid current directory");
 			return;
 		}
 		FSFolder folder = (FSFolder) block;
-		println(cd);
-		nextln();
+		println(ChatColor.BLUE + "contents of: " + ChatColor.WHITE + cd);
 		StringBuilder builder = new StringBuilder();
 		int index = 0;
 		for (Map.Entry<String, FSBlock> entry : folder.contents.entrySet()) {

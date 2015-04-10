@@ -110,8 +110,9 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			return;
 		}
 		if (!(ConsoleHandler.getInstance().commandBlocksEnabled || override())) {
+			setChatComponent(new ChatComponentText("You cannot use server commands"));
+			h();
 			setResult(0);
-			sendMessage(new ChatComponentText("You cannot use server commands"));
 			return;
 		}
 		if(world.isClientSide) {

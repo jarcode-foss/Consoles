@@ -68,7 +68,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 			}
 		}
 		// system path or current dir
-		else if (!input.contains("/")) {
+		else check: if (!input.contains("/")) {
 
 			// cd
 			try {
@@ -78,18 +78,15 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 			catch (FileNotFoundException ignored) {
 				block = null;
 			}
-
 			// loop through path entries if no match in current directory
-			if (block != null) for (String path : terminal.getComputer().getSystemPath()) {
+			if (block == null) for (String path : terminal.getComputer().getSystemPath()) {
 				try {
 					FSBlock pathBlock = terminal.getComputer().getRoot().get(path);
 					if (pathBlock instanceof FSFolder) {
 						FSFolder folder = (FSFolder) pathBlock;
 						try {
 							block = folder.get(input);
-							// if this is a program or file, then it's a match
-							if (block instanceof FSFile || block instanceof FSProvidedProgram)
-								break;
+							break check;
 						}
 						// program doesn't exist in this path entry, try another
 						catch (FileNotFoundException ignored) {}
