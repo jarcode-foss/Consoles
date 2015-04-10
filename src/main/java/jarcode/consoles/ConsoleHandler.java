@@ -14,6 +14,7 @@ import net.minecraft.server.v1_8_R2.World;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.block.CommandBlock;
+import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
 import org.bukkit.craftbukkit.v1_8_R2.entity.CraftItemFrame;
@@ -33,6 +34,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +52,7 @@ public class ConsoleHandler implements Listener {
 
 	private static final Field PACKET_LIST;
 	private static final Field PACKET_ENTITY_ID;
+	private static final Field COMMAND_LISTENER;
 
 	static {
 		try {
@@ -57,6 +60,9 @@ public class ConsoleHandler implements Listener {
 			PACKET_LIST.setAccessible(true);
 			PACKET_ENTITY_ID = PacketPlayOutEntityMetadata.class.getDeclaredField("a");
 			PACKET_ENTITY_ID.setAccessible(true);
+			COMMAND_LISTENER = TileEntityCommand.class.getDeclaredField("a");
+			COMMAND_LISTENER.setAccessible(true);
+			overrideFinal(COMMAND_LISTENER);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -80,52 +86,48 @@ public class ConsoleHandler implements Listener {
 		return INSTANCE;
 	}
 	public static boolean isRegistered(CommandBlock block) {
-		try {
-			Field field = CraftCommandBlock.class.getDeclaredField("commandBlock");
-			field.setAccessible(true);
-			TileEntityCommand entity = (TileEntityCommand) field.get(block);
-			CommandBlockListenerAbstract obj = entity.getCommandBlock();
-			return obj instanceof ConsoleCommandBlockListener;
-		}
-		catch (NoSuchFieldException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		return false;
+		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
+		CommandBlockListenerAbstract obj = entity.getCommandBlock();
+		return obj instanceof CommandBlockListenerWrapper && ((CommandBlockListenerWrapper) obj).listening();
 	}
 	public static boolean registerListener(CommandBlock block, ConsoleListener listener) {
+		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
+		CommandBlockListenerAbstract obj = entity.getCommandBlock();
+		if (obj instanceof CommandBlockListenerWrapper && !isRegistered(block)) {
+			((CommandBlockListenerWrapper) obj).setConsoleListener(listener);
+			return true;
+		}
+		else return false;
+	}
+	public static boolean wrap(CommandBlock block) {
 		try {
-			Field field = CraftCommandBlock.class.getDeclaredField("commandBlock");
-			field.setAccessible(true);
-			TileEntityCommand entity = (TileEntityCommand) field.get(block);
+			TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 			CommandBlockListenerAbstract obj = entity.getCommandBlock();
-			if (!(obj instanceof ConsoleCommandBlockListener)) {
-				field.set(entity, new ConsoleCommandBlockListener(obj, listener, entity));
+			if (!(obj instanceof CommandBlockListenerWrapper)) {
+				COMMAND_LISTENER.set(entity, new CommandBlockListenerWrapper(obj, entity));
 				return true;
 			}
 			else return false;
 		}
-		catch (NoSuchFieldException | IllegalAccessException e) {
+		catch (IllegalAccessException e) {
 			e.printStackTrace();
 		}
 		return false;
 	}
 	public static boolean restoreCommandBlock(CommandBlock block) {
-		try {
-			Field field = CraftCommandBlock.class.getDeclaredField("commandBlock");
-			field.setAccessible(true);
-			TileEntityCommand entity = (TileEntityCommand) field.get(block);
-			Object obj = entity.getCommandBlock();
-			if (obj instanceof ConsoleCommandBlockListener) {
-				ConsoleCommandBlockListener listener = (ConsoleCommandBlockListener) obj;
-				field.set(entity,listener.tileEntity);
-				return true;
-			}
-			else return false;
+		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
+		Object obj = entity.getCommandBlock();
+		if (obj instanceof CommandBlockListenerWrapper) {
+			((CommandBlockListenerWrapper) obj).setConsoleListener(null);
+			return true;
 		}
-		catch (NoSuchFieldException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		return false;
+		else return false;
+	}
+	private static void overrideFinal(Field field) throws NoSuchFieldException, IllegalAccessException {
+		Field modifiersField = Field.class.getDeclaredField("modifiers");
+		modifiersField.setAccessible(true);
+		// remove the final flag on the security int/bytes
+		modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
 	}
 	// thread-safe array list
 	CopyOnWriteArrayList<ManagedConsole> consoles = new CopyOnWriteArrayList<>();
@@ -140,12 +142,15 @@ public class ConsoleHandler implements Listener {
 	// the single thread used for painting
 	private final Thread paintThread = new Thread(painter);
 
+	public boolean commandBlocksEnabled = ((CraftServer) Bukkit.getServer()).getServer().getEnableCommandBlock();
+
 	private ConsoleBungeeHook hook;
 
 	public boolean local = true;
 	{
 		paintThread.setDaemon(true);
 		paintThread.setName("Console Painting Thread");
+		((CraftServer) Bukkit.getServer()).getServer().getPropertyManager().setProperty("enable-command-block", true);
 	}
 
 	public void setHook(ConsoleBungeeHook hook) {
@@ -252,6 +257,12 @@ public class ConsoleHandler implements Listener {
 	}
 	public MapPainter getPainter() {
 		return painter;
+	}
+	@EventHandler
+	public void wrapCommandBlocks(PlayerInteractEvent e) {
+		if (e.getClickedBlock() != null && e.getClickedBlock().getState() instanceof CommandBlock) {
+			wrap((CommandBlock) e.getClickedBlock().getState());
+		}
 	}
 	@EventHandler
 	public void onChunkUnload(ChunkUnloadEvent e) {

@@ -361,6 +361,11 @@ public abstract class ConsoleRenderer implements Canvas {
 		components.put(position, object);
 		cacheBackground();
 	}
+	public boolean componentAt(Position2D position) {
+		synchronized (RENDERER_LOCK) {
+			return components.containsKey(position);
+		}
+	}
 	public void removeComponent(Position2D position) {
 		removeComponent(position, true);
 	}
@@ -439,7 +444,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		}
 	}
 	void handleClick(int x, int y, Player player) {
-		for (Map.Entry<Position2D, ConsoleComponent> entry : components.entrySet()) {
+		for (Map.Entry<Position2D, ConsoleComponent> entry : Collections.unmodifiableCollection(components.entrySet())) {
 			Position2D pos = entry.getKey();
 			ConsoleComponent comp = entry.getValue();
 			if (comp.enabled() && x >= pos.getX() && y >= pos.getY()

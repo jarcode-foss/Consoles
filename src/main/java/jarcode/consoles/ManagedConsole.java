@@ -8,20 +8,8 @@ import java.lang.reflect.Field;
 
 public class ManagedConsole extends ConsoleRenderer {
 
-	private static final String SUPPORTED_CHARACTERS;
-
-	static {
-		String list = "";
-		try {
-			Field field = MinecraftFont.class.getDeclaredField("fontChars");
-			field.setAccessible(true);
-			list = (String) field.get(null);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-		SUPPORTED_CHARACTERS = list;
-	}
+	private static final String SUPPORTED_CHARACTERS = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+			"[\\]^_\'abcdefghijklmnopqrstuvwxyz{|}~\u007fÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƑáíóúñÑªº¿®¬½¼¡«»";
 
 	public static String removeUnsupportedCharacters(String str) {
 		char[] arr = str.toCharArray();

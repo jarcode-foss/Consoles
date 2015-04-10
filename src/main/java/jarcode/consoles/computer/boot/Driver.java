@@ -12,17 +12,17 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSFile;
 
 // Also, there is one driver instance per file.
-public abstract class Driver<T extends FSFile> {
+public abstract class Driver {
 
-	private T device;
+	private FSFile device;
 	protected final Computer computer;
 
-	public Driver(T device, Computer computer) {
+	public Driver(FSFile device, Computer computer) {
 		this.device = device;
 		this.computer = computer;
 	}
 
-	public T getDevice() {
+	public FSFile getDevice() {
 		return device;
 	}
 

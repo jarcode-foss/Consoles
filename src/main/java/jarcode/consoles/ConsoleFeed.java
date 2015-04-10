@@ -28,7 +28,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 
 	private Thread feed;
 
-	private volatile boolean running = true;
+	// whether the IO thread is running
+	private volatile boolean running = false;
+	// whether the IO thread has ended
 	private volatile boolean ended = false;
 	private Exception exception = null;
 	private final Object LOCK = new Object();
@@ -101,6 +103,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			String result = creator.result();
 			if (result == null) {
 				setIO(creator.getInputStream(), creator.getOutputStream(), creator.getEncoder());
+				startFeed();
 			}
 			else {
 				advanceLine();
@@ -119,6 +122,13 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+		else {
+			advanceLine();
+			print("Could not forward input to terminal (creator=" + creator + ", is=" + in + ", os=" + out + ")," +
+					" running: " + running + ", ended: " + ended + ", initialized: " + initialized);
+			advanceLine();
+			print(prompt);
 		}
 		repaint();
 	}

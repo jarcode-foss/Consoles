@@ -25,7 +25,7 @@ public class CommandDevice extends FSFile {
 		// device id
 		super((byte) 0x03);
 		synchronized (LOCK) {
-			if (ConsoleHandler.isRegistered(block)) {
+			if (!ConsoleHandler.isRegistered(block)) {
 				ConsoleHandler.registerListener(block, new ConsoleListener() {
 					@Override
 					public String execute(CommandSender sender, String text) {

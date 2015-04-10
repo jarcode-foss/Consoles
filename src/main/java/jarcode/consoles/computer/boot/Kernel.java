@@ -1,12 +1,14 @@
 package jarcode.consoles.computer.boot;
 
 import com.google.common.collect.HashBiMap;
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.bin.CurrentDirectoryProgram;
 import jarcode.consoles.computer.bin.ShowDirectoryProgram;
 import jarcode.consoles.computer.filesystem.*;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Bukkit;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -48,7 +50,8 @@ public class Kernel extends FSProvidedProgram {
 		activities.put("install", new FSProvidedProgram() {
 			@Override
 			public void run(String str, Computer computer) throws Exception {
-				install(computer);
+				Consoles.getInstance().getLogger().info("Flashing new computer: " + computer.getHostname()
+						+ ", owner:" + computer.getOwner());
 				FSFolder root = computer.getRoot();
 
 				FSFolder home = new FSFolder();
@@ -108,7 +111,6 @@ public class Kernel extends FSProvidedProgram {
 		try {
 			FSProvidedProgram program = activities.get(name);
 			if (program != null) {
-				program.init(this.out, this.in, name, computer);
 				program.run(name, computer);
 			}
 		}
@@ -185,9 +187,12 @@ public class Kernel extends FSProvidedProgram {
 									| IllegalAccessException | InvocationTargetException e) {
 								Terminal terminal = computer.getCurrentTerminal();
 								if (terminal != null) {
+									terminal.advanceLine();
 									terminal.println(ChatColor.RED + "KERNEL: failed to load driver for /dev/"
 											+ name + ChatColor.WHITE + " (" + e.getClass().getSimpleName() + ")");
 									terminal.println(ChatColor.RED + "KERNEL: Uninstalling driver type.");
+									if (Consoles.DEBUG)
+										e.printStackTrace();
 									driverMappings.remove(match);
 								}
 							}
@@ -200,6 +205,7 @@ public class Kernel extends FSProvidedProgram {
 			if (!missingDevFolderError) {
 				Terminal terminal = computer.getCurrentTerminal();
 				if (terminal != null) {
+					terminal.advanceLine();
 					terminal.println(ChatColor.RED + "KERNEL: /dev folder missing when " +
 							"listening for devices to install");
 					terminal.println(ChatColor.RED + "KERNEL: Aborting device search routine.");

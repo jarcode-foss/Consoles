@@ -47,8 +47,7 @@ public class MapInjector extends WorldMap {
 		try {
 			Field field = Items.class.getDeclaredField("FILLED_MAP");
 
-			// reflect the reflect library. I know, this is ridiculous.
-			// java is such a stupid language
+			// reflect the reflect library. Yo dawg.
 			Field modifiersField = Field.class.getDeclaredField("modifiers");
 			modifiersField.setAccessible(true);
 			// remove the final flag on the security int/bytes

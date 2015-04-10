@@ -2,16 +2,25 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.*;
 import jarcode.consoles.computer.boot.Kernel;
+import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.FSBlock;
+import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.event.ButtonEvent;
+import jarcode.consoles.event.ConsoleEventListener;
 import net.md_5.bungee.api.ChatColor;
+import net.minecraft.server.v1_8_R2.ChatComponentText;
+import net.minecraft.server.v1_8_R2.TileEntityCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.CommandBlock;
+import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class Computer implements Runnable {
@@ -83,7 +92,6 @@ public class Computer implements Runnable {
 				printAfter("\n", 59 + (t * 8));
 		}
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			kernel = boot("boot/vmlinuz", Kernel.class);
 			if (!root.exists("boot/vmlinuz")) {
 				try {
 					kernel = Kernel.install(Computer.this);
@@ -94,9 +102,12 @@ public class Computer implements Runnable {
 					return;
 				}
 			}
+			else {
+				kernel = boot("boot/vmlinuz", Kernel.class);
+			}
 			kernel.routine("boot");
 			// register main task
-			taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), Computer.this);
+			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), Computer.this, 1L, 1L);
 			getCurrentTerminal().clear();
 			getCurrentTerminal().onStart();
 			console.repaint();
@@ -118,6 +129,49 @@ public class Computer implements Runnable {
 		if (console.created())
 			console.repaint();
 		return true;
+	}
+	public void requestDevice(CommandBlock block, ConsoleEventListener<ConsoleButton, ButtonEvent> listener) {
+		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();
+		ConsoleButton allow = new ConsoleButton(console, "Allow");
+		ConsoleButton deny = new ConsoleButton(console, "Deny");
+		Location loc = block.getLocation();
+		Position2D pos = dialog(String.format("Command block at (%s,%d,%d,%d) wants to connect to this console",
+				loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+				, allow, deny);
+		allow.addEventListener(event -> {
+			command.getCommandBlock().sendMessage(new ChatComponentText("Connection accepted"));
+			addDeviceFile("cmd", new CommandDevice(block));
+			console.removeComponent(pos);
+		});
+		deny.addEventListener(event -> {
+			command.getCommandBlock().sendMessage(new ChatComponentText("Computer denied connection"));
+			console.removeComponent(pos);
+		});
+		if (listener != null)
+			allow.addEventListener(listener);
+	}
+	public Position2D dialog(String text, ConsoleComponent... components) {
+		Map.Entry<Position2D, ConsoleDialog> entry = ConsoleDialog.create(console, text, components);
+		Position2D pos = entry.getKey();
+		while (console.componentAt(pos))
+			pos = new Position2D(pos.getX() + 3, pos.getY() + 3);
+		if (pos.getX() > 0 && pos.getY() > 0) {
+			console.putComponent(pos, entry.getValue());
+			console.repaint();
+			return pos;
+		}
+		else return null;
+	}
+	public void addDeviceFile(String baseName, FSFile file) {
+		try {
+			FSFolder folder = (FSFolder) getRoot().get("dev");
+			int index = 0;
+			while (folder.contents.keySet().contains(baseName + index))
+				index++;
+			folder.contents.put(baseName + index, file);
+		}
+		// ignore adding device files when the device folder doesn't exist
+		catch (FileNotFoundException | ClassCastException ignored) {}
 	}
 	// This is called destroy for a reason. Because the data is stored elsewhere (not in the flimsy console/monitor),
 	// you can destroy the computer and recreate it with the same hostname to get everything back. However, the computer

@@ -1,7 +1,7 @@
 package jarcode.consoles.computer;
 
-import net.minecraft.server.v1_8_R2.TileEntityCommand;
 import org.bukkit.Bukkit;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
@@ -27,8 +27,6 @@ public class ComputerHandler implements Listener {
 		return instance;
 	}
 
-	private HashMap<String, TileEntityCommand> linkRequests = new HashMap<>();
-
 	{
 		instance = this;
 	}
@@ -38,11 +36,24 @@ public class ComputerHandler implements Listener {
 	}
 
 	private ArrayList<Computer> computers = new ArrayList<>();
+	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
 
 	private List<Computer> getComputers(UUID uuid) {
 		return computers.stream()
 				.filter(computer -> computer.getOwner().equals(uuid))
 				.collect(Collectors.toList());
+	}
+	public boolean hostnameTaken(String hostname) {
+		return computers.stream().filter(comp -> comp.getHostname().equals(hostname))
+				.findFirst().isPresent();
+	}
+	public Computer find(String hostname) {
+		return computers.stream().filter(comp -> comp.getHostname().equals(hostname))
+				.findFirst().orElseGet(() -> null);
+	}
+	public void request(String hostname, CommandBlock block) {
+		linkRequests.put(hostname, block);
+		find(hostname).requestDevice(block, event -> linkRequests.remove(hostname));
 	}
 	public void register(Computer computer) {
 		computers.add(computer);

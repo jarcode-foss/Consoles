@@ -3,17 +3,18 @@ package jarcode.consoles.computer.boot;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.devices.CommandDevice;
+import jarcode.consoles.computer.filesystem.FSFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
 // This driver, when running, forwards command block input to the active terminal.
-public class CommandBlockDriver extends Driver<CommandDevice> {
+public class CommandBlockDriver extends Driver {
 
 	private InputStream in;
 
-	public CommandBlockDriver(CommandDevice device, Computer computer) {
+	public CommandBlockDriver(FSFile device, Computer computer) {
 		super(device, computer);
 		in = device.createInput();
 	}

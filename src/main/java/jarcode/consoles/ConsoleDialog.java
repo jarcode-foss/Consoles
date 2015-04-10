@@ -6,12 +6,15 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MinecraftFont;
 
+import java.util.AbstractMap;
+import java.util.Map;
+
 public class ConsoleDialog extends ConsoleContainer {
 
 	private static final int MARGIN = 5;
 
 	// Safe way of using dialogs
-	public static ConsoleDialog show(ConsoleRenderer renderer, String text, ConsoleComponent... children) {
+	public static Map.Entry<Position2D, ConsoleDialog> create(ConsoleRenderer renderer, String text, ConsoleComponent... children) {
 		int w = totalWidthOf(children, MARGIN) + 6;
 		int f = MinecraftFont.Font.getWidth(ChatColor.stripColor(text)) + 6;
 		if (f > w)
@@ -25,8 +28,13 @@ public class ConsoleDialog extends ConsoleContainer {
 		for (ConsoleComponent component : children) {
 			dialog.add(component);
 		}
-		renderer.putComponent(new Position2D(x, y), dialog);
-		return dialog;
+		return new AbstractMap.SimpleEntry<>(new Position2D(x, y), dialog);
+	}
+
+	public static ConsoleDialog show(ConsoleRenderer renderer, String text, ConsoleComponent... children) {
+		Map.Entry<Position2D, ConsoleDialog> entry = create(renderer, text, children);
+		renderer.putComponent(entry.getKey(), entry.getValue());
+		return entry.getValue();
 	}
 
 	private String text;
@@ -74,7 +82,7 @@ public class ConsoleDialog extends ConsoleContainer {
 		}
 		int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(text));
 		g.drawFormatted(x + (getWidth() / 2) - (w / 2), y + 8, text);
-		for (int i = x + 4; i < getWidth() - 8; i++) {
+		for (int i = x + 4; i < x + getWidth() - 8; i++) {
 			g.draw(i, y + 17, (byte) 24);
 		}
 		w = totalContainedWidth(MARGIN);

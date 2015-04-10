@@ -33,7 +33,7 @@ public class Terminal extends ConsoleFeed {
 			"\"So I found out the other day that Ruby is a bit more mature than Java. Why's that, you ask? " +
 					"Because Ruby calmly raises its exceptions. Java throws them.\"",
 			"\"What's the only thing dumber than one of my coworkers?\"",
-			"\"I know a great IPv6 joke, but I don’t think you’re ready for it.\"",
+			"\"I know a great IPv6 joke, but I don't think you're ready for it.\"",
 			"\"Q: What's the best way to accelerate a Mac? A: 9.8m/s^2\"",
 			"\"VPNs. The printers of the networking world.\"",
 			"\"Working with regular expressions is like working with the Old Testament. Lots of rules " +

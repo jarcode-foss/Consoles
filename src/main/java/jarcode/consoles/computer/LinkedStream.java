@@ -45,12 +45,16 @@ public class LinkedStream extends InputStream {
 			byte[] old = buffer.clone();
 			buffer = new byte[old.length + 1];
 			System.arraycopy(old, 0, buffer, 0, old.length);
-			buffer[b] = (byte) b;
+			buffer[old.length] = (byte) b;
 			this.notify();
 		}
 	}
 	public void registerCloseListener(Runnable runnable) {
 		onClose.add(runnable);
+	}
+	@Override
+	public synchronized int available() {
+		return buffer.length;
 	}
 	@Override
 	public void close() {
@@ -60,7 +64,7 @@ public class LinkedStream extends InputStream {
 		synchronized (this) {
 			byte[] old = buffer.clone();
 			buffer = new byte[old.length - 1];
-			System.arraycopy(old, 0, buffer, 0, old.length - 1);
+			System.arraycopy(old, 1, buffer, 0, old.length - 1);
 		}
 	}
 	public OutputStream createOutput() {

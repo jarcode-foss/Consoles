@@ -94,9 +94,16 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 						// program doesn't exist in this path entry, try another
 						catch (FileNotFoundException ignored) {}
 					}
+					else {
+						result = old + ": system path entry does not point to a file (" + path + ")";
+						return;
+					}
 				}
 				// invalid path variable
-				catch (FileNotFoundException ignored) {}
+				catch (FileNotFoundException ignored) {
+					result = old + ": invalid system path";
+					return;
+				}
 			}
 			result = old + ": program not found";
 			return;
