@@ -57,7 +57,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 			first = matcher.end();
 		}
 		if (first < list.size() - 1 && first != -1) {
-			list.add(text.substring(first, list.size()));
+			list.add(text.substring(first, text.length()));
 		}
 		else list.add("");
 		return list;
@@ -148,6 +148,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	public void clear() {
 		stack.clear();
+		stack.add("");
 	}
 	@Override
 	public ConsoleListener createListener() {

@@ -103,8 +103,8 @@ public abstract class FSBlock {
 			list.add(text.substring(first, matcher.start()));
 			first = matcher.end();
 		}
-		if (first < list.size() - 1 && first != -1)) {
-			list.add(text.substring(first, list.size()));
+		if (list.size() == 0 || (first < list.size() - 1 && first != -1)) {
+			list.add(text.substring(first, text.length()));
 		}
 		else list.add("");
 		return list.toArray(new String[list.size()]);

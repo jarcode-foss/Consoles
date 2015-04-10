@@ -21,12 +21,12 @@ public class FSFolder extends FSBlock {
 		String sub = section(path, "/")[0];
 		FSBlock block = contents.get(sub);
 		if (block == null)
-			throw new FileNotFoundException(sub + " (" + path + ")");
-		String remaining = sub.length() == path.length() ? sub : path.substring(sub.length() + 1);
-		if (remaining.length() > 0 && !(block instanceof FSFolder)) {
+			throw new FileNotFoundException("'" + sub + "' (" + path + ")");
+		String remaining = sub.length() == path.length() ? null : path.substring(sub.length() + 1);
+		if (remaining != null && !(block instanceof FSFolder)) {
 			throw new FileNotFoundException(sub + " is a file or program");
 		}
-		else if (remaining.length() > 0) {
+		else if (remaining != null) {
 			return ((FSFolder) block).get(remaining);
 		}
 		else return block;

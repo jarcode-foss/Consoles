@@ -83,26 +83,23 @@ public class ConsoleGraphics implements CanvasGraphics {
 			if (i != text.length() - 1 &&
 					c == '\u00A7' && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[i + 1]) > -1) {
 				ChatColor chatColor = ChatColor.getByChar((arr[i + 1] + "").toLowerCase().charAt(0));
-				// not all colors properly implemented, so some are just set to white (32)
-				// I need to finish sampling these later
-				// TODO: finish
 				switch (chatColor) {
 					case WHITE: color = 32; break;
 					case DARK_GRAY: color = 24; break;
 					case GRAY: color = 36; break;
 					case BLACK: color = 119; break;
 					case DARK_BLUE: color = 48; break;
-					case DARK_AQUA: color = 48; break;
-					case AQUA: color = 20; break;
-					case BLUE: color = 20; break;
+					case DARK_AQUA: color = 127; break;
+					case AQUA: color = 125; break;
+					case BLUE: color = 70; break;
 					case DARK_GREEN: color = 28; break;
-					case GREEN: color = 4; break;
-					case DARK_PURPLE: color = 32; break;
-					case LIGHT_PURPLE: color = 32; break;
-					case YELLOW: color = 32; break;
-					case RED: color = 16; break;
-					case DARK_RED: color = 16; break;
-					case GOLD: color = 32; break;
+					case GREEN: color = 6; break;
+					case DARK_PURPLE: color = 67; break;
+					case LIGHT_PURPLE: color = 66; break;
+					case YELLOW: color = 74; break;
+					case RED: color = 114; break;
+					case DARK_RED: color = 115; break;
+					case GOLD: color = 61; break;
 					case RESET: color = 32; break;
 				}
 				skipNext = true;

@@ -57,10 +57,11 @@ public class Terminal extends ConsoleFeed {
 		this(computer, true);
 	}
 	public void onStart() {
-		println(ChatColor.DARK_BLUE + "LinuxCraft kernel " + Computer.VERSION + " (stable)");
+		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (stable)");
 		advanceLine();
 		Random random = new Random();
 		println(JOKES[random.nextInt(JOKES.length)]);
+		advanceLine();
 		updatePrompt();
 		prompt();
 	}
@@ -87,6 +88,6 @@ public class Terminal extends ConsoleFeed {
 		return computer;
 	}
 	public void updatePrompt() {
-		setPrompt(String.format("root@%s:%s", computer.getHostname(), currentDirectory));
+		setPrompt(String.format("root@%s:%s$ ", computer.getHostname(), currentDirectory));
 	}
 }
