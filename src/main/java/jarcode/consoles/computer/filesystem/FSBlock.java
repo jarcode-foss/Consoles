@@ -9,18 +9,18 @@ import java.util.regex.Pattern;
 
 public abstract class FSBlock {
 
-	public String owner = "root";
+	volatile String owner = "root";
 	// own  all
 	// !rwx rwx?
 	// 0110 1000
-	public byte permissions = 0x78;
+	byte permissions = 0x78;
 
 	// this is for serialization of filesystems. There might be duplicate objects in the filesystem tree,
 	// so this is what we use to identify them when recreating the tree
-	public final UUID uuid;
+	final UUID uuid;
 
 	// instead of serializing these with classes, we assign ids in the block implementations to refer to types
-	public final byte id;
+	final byte id;
 
 	public FSBlock(byte id) {
 		this.uuid = UUID.randomUUID();
@@ -54,6 +54,9 @@ public abstract class FSBlock {
 		}
 		return true;
 	}
+	public String getOwner() {
+		return owner;
+	}
 	// mask(0x7E) is a fast way to grant all permissions
 	// mask(0x68) is the default (read, write for owner, read for user)
 	// mask(0x78) is the default for root (read, write, and execute for root, read for user)
@@ -71,9 +74,9 @@ public abstract class FSBlock {
 	// noob-friendly permission check
 	public boolean check(FSGroup group, char perm) {
 		switch (perm) {
-			case 'r': return group == FSGroup.OWNER ? check(6) : check(3);
-			case 'w': return group == FSGroup.OWNER ? check(5): check(2);
-			case 'x': return group == FSGroup.OWNER ? check(4) : check(1);
+			case 'r': return group == FSGroup.OWNER ? check(6) || check(3) : check(3);
+			case 'w': return group == FSGroup.OWNER ? check(5) || check(2) : check(2);
+			case 'x': return group == FSGroup.OWNER ? check(4) || check(1) : check(1);
 			default: return false;
 		}
 	}

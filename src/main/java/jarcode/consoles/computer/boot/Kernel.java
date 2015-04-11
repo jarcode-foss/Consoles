@@ -4,14 +4,17 @@ import com.google.common.collect.HashBiMap;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.bin.CatProgram;
 import jarcode.consoles.computer.bin.CurrentDirectoryProgram;
 import jarcode.consoles.computer.bin.ShowDirectoryProgram;
+import jarcode.consoles.computer.bin.WriteProgram;
 import jarcode.consoles.computer.filesystem.*;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.security.AccessController;
@@ -32,6 +35,8 @@ public class Kernel extends FSProvidedProgram {
 		programs.put((byte) 0x00, this);
 		programs.put((byte) 0x01, new CurrentDirectoryProgram());
 		programs.put((byte) 0x02, new ShowDirectoryProgram());
+		programs.put((byte) 0x03, new WriteProgram());
+		programs.put((byte) 0x04, new CatProgram());
 	}
 
 	{
@@ -66,7 +71,9 @@ public class Kernel extends FSProvidedProgram {
 				home.contents.put("admin", new FSFolder());
 				FSStoredFile file = new FSStoredFile();
 				try {
-					file.createOutput().write("One can only dream".getBytes(Charset.forName("UTF-8")));
+					OutputStream out = file.createOutput();
+					out.write("One can only dream".getBytes(Charset.forName("UTF-8")));
+					out.close();
 				}
 				catch (IOException e) {
 					e.printStackTrace();
@@ -75,6 +82,8 @@ public class Kernel extends FSProvidedProgram {
 				systemPath.add("bin");
 				mapProgram((byte) 0x01, root, "cd");
 				mapProgram((byte) 0x02, root, "dir", "ls");
+				mapProgram((byte) 0x03, root, "write");
+				mapProgram((byte) 0x04, root, "cat");
 			}
 			private void mapProgram(byte id, FSFolder root, String... names) {
 				try {
@@ -183,6 +192,7 @@ public class Kernel extends FSProvidedProgram {
 								Driver driver = type.getConstructor(FSFile.class, Computer.class)
 										.newInstance(file, computer);
 								registerDriver(driver);
+								computer.status(ChatColor.RED + "KERNEL: " + ChatColor.WHITE + "loaded driver for /dev/" + name);
 							}
 							catch (InstantiationException | NoSuchMethodException
 									| IllegalAccessException | InvocationTargetException e) {

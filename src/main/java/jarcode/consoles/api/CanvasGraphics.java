@@ -53,6 +53,15 @@ public interface CanvasGraphics {
 	public int containerX();
 
 	/**
+	 * Trims the text the the given length, in pixels
+	 *
+	 * @param text the text to parse
+	 * @param len the length to trim the text to
+	 * @return a new, formatted string
+	 */
+	public String trim(String text, int len);
+
+	/**
 	 * Width of the component this graphics object belongs to
 	 *
 	 * @return width, in pixels

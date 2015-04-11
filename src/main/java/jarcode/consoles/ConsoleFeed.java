@@ -47,6 +47,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	public ConsoleFeed(ConsoleRenderer renderer) {
 		super(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
 	}
+	public ConsoleFeed(int x, int y, ConsoleRenderer renderer) {
+		super(x, y, renderer);
+	}
 	public void place() {
 		getRenderer().putComponent(new Position2D(2, 2), this);
 	}

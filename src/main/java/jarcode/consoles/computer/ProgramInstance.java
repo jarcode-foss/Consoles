@@ -27,6 +27,8 @@ public class ProgramInstance implements Runnable {
 
 	private final Computer computer;
 
+	private volatile boolean terminated = false;
+
 	{
 		thread.setDaemon(true);
 		thread.setName("Program Thread");
@@ -56,6 +58,12 @@ public class ProgramInstance implements Runnable {
 	public void start() {
 		thread.start();
 	}
+	public void terminate() {
+		terminated = true;
+	}
+	public boolean isTerminated() {
+		return terminated;
+	}
 	public void waitFor() throws InterruptedException{
 		thread.join();
 	}
@@ -63,7 +71,7 @@ public class ProgramInstance implements Runnable {
 	public void run() {
 		try {
 			if (provided != null)
-				provided.init(stdout, stdin, argument, computer);
+				provided.init(stdout, stdin, argument, computer, this);
 			else if (interpreted != null)
 				interpreted.run(stdout, stdin, argument, computer);
 		}

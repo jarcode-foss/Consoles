@@ -23,11 +23,29 @@ public class CommandBlockDriver extends Driver {
 	public void tick() {
 		try {
 			Terminal terminal = computer.getCurrentTerminal();
-			if (terminal != null && in.available() > 0) {
+			if (in.available() > 0) {
 				byte[] data = new byte[in.available()];
 				if (in.read(data) != data.length)
 					throw new IOException("Invalid array length on driver tick");
-				terminal.write(new String(data, Charset.forName("UTF-8")));
+				String text = new String(data, Charset.forName("UTF-8"));
+				if (text.startsWith("^")) {
+					if (text.length() >= 2) {
+						char c = text.charAt(1);
+						if (c == 'C' || c == 'c') {
+							if (terminal != null)
+								terminal.sigTerm();
+						}
+						else {
+							int i;
+							try {
+								i = Integer.parseInt(Character.toString(c));
+								computer.switchView(i);
+							} catch (Throwable ignored) {}
+						}
+					}
+				}
+				else if (terminal != null)
+					terminal.write(text);
 			}
 		}
 		catch (IOException e) {

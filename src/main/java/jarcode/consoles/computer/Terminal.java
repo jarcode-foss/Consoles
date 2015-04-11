@@ -1,6 +1,7 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleFeed;
+import jarcode.consoles.Position2D;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import net.md_5.bungee.api.ChatColor;
 
@@ -43,18 +44,19 @@ public class Terminal extends ConsoleFeed {
 	};
 
 	public static Terminal newTerminal(Computer computer) {
-		Terminal terminal = new Terminal(computer, false);
+		Terminal terminal = new Terminal(computer, false, Computer.ROOT_COMPONENT_POSITION);
 		terminal.onStart();
 		return terminal;
 	}
+	private String user = "admin";
 	private String currentDirectory = "/home/admin";
 	private FSFolder root;
 	private Computer computer;
 
 	private final ProgramCreator creator = new ProgramCreator(this);
 
-	public Terminal(Computer computer) {
-		this(computer, true);
+	public Terminal(Computer computer, Position2D pos) {
+		this(computer, true, pos);
 	}
 	public void onStart() {
 		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
@@ -65,8 +67,9 @@ public class Terminal extends ConsoleFeed {
 		updatePrompt();
 		prompt();
 	}
-	Terminal(Computer computer, boolean setupPrompt) {
-		super(computer.getConsole());
+	Terminal(Computer computer, boolean setupPrompt, Position2D pos) {
+		super(computer.getConsole().getWidth() - (2 + pos.getX()),
+				computer.getConsole().getHeight() - (2 + pos.getY()), computer.getConsole());
 		this.root = computer.getRoot();
 		this.computer = computer;
 		setFeedCreator(creator);
@@ -75,9 +78,20 @@ public class Terminal extends ConsoleFeed {
 			prompt();
 		}
 	}
+	public String getUser() {
+		return user;
+	}
+	public void sigTerm() {
+		ProgramInstance instance = getLastProgramInstance();
+		if (instance != null) {
+			instance.terminate();
+		}
+	}
 	public ProgramInstance getLastProgramInstance() {
 		return creator.getLastInstance();
 	}
+	@Override
+	public void onRemove() {}
 	public void setCurrentDirectory(String directory) {
 		if (directory.endsWith("/"))
 			directory = directory.substring(0, directory.length() - 1);

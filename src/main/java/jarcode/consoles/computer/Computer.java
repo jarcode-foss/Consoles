@@ -27,7 +27,8 @@ public class Computer implements Runnable {
 
 	public static final String VERSION = "1.19.2";
 
-	private static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 2);
+	static final Position2D STATUS_COMPONENT_POSITION = new Position2D(2, 2);
+	static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 4 + StatusBar.HEIGHT);
 
 	private String hostname;
 
@@ -45,11 +46,13 @@ public class Computer implements Runnable {
 
 	private int taskId;
 
+	private StatusBar bar;
+
 	public Computer(String hostname, UUID owner, int width, int height) {
 		this.hostname = hostname;
 		this.owner = owner;
 		console = new ManagedConsole(width, height);
-		feeds[0] = new Terminal(this, false);
+		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
 		setScreenIndex(0);
 	}
 
@@ -73,9 +76,15 @@ public class Computer implements Runnable {
 		// so, just return null if it's an invalid boot or the expected type is wrong
 		return null;
 	}
+	public void status(String status) {
+		bar.setText(status);
+		console.repaint();
+	}
 	// Creates and installs the computer.
 	public void create(BlockFace face, Location location) {
 		console.create(face, location);
+		bar = new StatusBar(console);
+		console.putComponent(STATUS_COMPONENT_POSITION, bar);
 		getCurrentTerminal().println(ChatColor.GREEN + "Network boot: " + ChatColor.WHITE + "(" + hostname + ")");
 		getCurrentTerminal().advanceLine();
 		console.repaint();
@@ -122,8 +131,6 @@ public class Computer implements Runnable {
 	public boolean setScreenIndex(int index) {
 		if (index >= 8 || index < 0)
 			throw new ArrayIndexOutOfBoundsException();
-		if (feeds[index] == null)
-			return false;
 		console.putComponent(ROOT_COMPONENT_POSITION, feeds[index]);
 		componentIndex = index;
 		if (console.created())
@@ -229,6 +236,18 @@ public class Computer implements Runnable {
 	public Terminal getCurrentTerminal() {
 		return getCurrentComponent() instanceof Terminal ? (Terminal) getCurrentComponent() : null;
 	}
+	// used by programs
+	public boolean switchView(int view) {
+		view--;
+		if (view < 0 || view >= feeds.length)
+			return false;
+		int v = view;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			setScreenIndex(v);
+			status("switched to session: " + (v + 1));
+		});
+		return true;
+	}
 	public void showDialogWithClose(String text, ConsoleComponent... children) {
 		ConsoleButton button = new ConsoleButton(console, "Close");
 		ConsoleComponent[] arr = new ConsoleComponent[children.length + 1];
@@ -245,6 +264,9 @@ public class Computer implements Runnable {
 				return (Terminal) component;
 		}
 		return null; // this is bad. If this happens, a program has been detached from its terminal instance!
+	}
+	public FSBlock resolve(String input, Object program) {
+		return getBlock(input, getTerminal(program).getCurrentDirectory());
 	}
 	public FSBlock getBlock(String input, String currentDirectory) {
 		// start from root

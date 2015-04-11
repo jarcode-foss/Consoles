@@ -1,10 +1,7 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleFeed;
-import jarcode.consoles.computer.filesystem.FSBlock;
-import jarcode.consoles.computer.filesystem.FSFile;
-import jarcode.consoles.computer.filesystem.FSFolder;
-import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import net.md_5.bungee.api.ChatColor;
 
@@ -126,7 +123,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 			}
 		}
 		// try running the program
-		result = tryBlock(block, argument);
+		result = tryBlock(block, argument, terminal.getUser());
 	}
 
 	@Override
@@ -151,8 +148,16 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 	public ProgramInstance getLastInstance() {
 		return lastInstance;
 	}
-	String tryBlock(FSBlock target, String argument) {
+	String tryBlock(FSBlock target, String argument, String user) {
 		ProgramInstance instance;
+		if ((target instanceof FSFile || target instanceof FSProvidedProgram)) {
+			if (target.getOwner().equals(user))
+				if (!target.check(FSGroup.OWNER, 'x'))
+					return "permission denied";
+			else
+				if (!target.check(FSGroup.ALL, 'x'))
+					return "permission denied";
+		}
 		if (target instanceof FSFile) {
 			instance = new ProgramInstance(new InterpretedProgram((FSFile) target), argument, terminal.getComputer());
 		}

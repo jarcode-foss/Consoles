@@ -40,6 +40,26 @@ public class ConsoleGraphics implements CanvasGraphics {
 	}
 
 	@Override
+	public String trim(String text, int len) {
+		MapFont font = MinecraftFont.Font;
+		StringBuilder builder = new StringBuilder();
+		char[] arr = text.toCharArray();
+		int length = 0;
+		for (int i = 0; i < arr.length; i++) {
+			char c = arr[i];
+			if (c != '\u00A7'
+					&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(c) == -1
+					|| i == 0 || arr[i - 1] != '\u00A7')) {
+				length += font.getChar(c).getWidth() + (i == arr.length - 1 ? 0 : 1);
+				if (length > len) {
+					break;
+				}
+				else builder.append(c);
+			} else builder.append(c);
+		}
+		return builder.toString();
+	}
+	@Override
 	public int getWidth() {
 		return component.getWidth();
 	}

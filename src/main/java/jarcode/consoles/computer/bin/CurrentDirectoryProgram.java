@@ -4,9 +4,14 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 
 public class CurrentDirectoryProgram extends FSProvidedProgram {
+
+	public CurrentDirectoryProgram() {
+		setExecutable(FSGroup.ALL, true);
+	}
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		str = handleEncapsulation(str.trim());
@@ -19,7 +24,7 @@ public class CurrentDirectoryProgram extends FSProvidedProgram {
 			println("cd: " + str + ": No such file or directory");
 		else if (block instanceof FSFolder) {
 			if (str.startsWith("/"))
-				terminal.setCurrentDirectory("/" + str);
+				terminal.setCurrentDirectory(str);
 			else if (terminal.getCurrentDirectory().endsWith("/"))
 				terminal.setCurrentDirectory(terminal.getCurrentDirectory() + str);
 			else

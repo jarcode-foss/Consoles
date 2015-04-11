@@ -477,8 +477,11 @@ public abstract class ConsoleRenderer implements Canvas {
 	private void cacheRootBackground() {
 		for (int x = 0; x < getWidth(); x++) {
 			for (int y = 0; y < getHeight(); y++) {
-				if (x <= 1 || x >= getWidth() - 2 || y <= 1 || y >= getHeight() - 2) {
-					bg[x][y] = (byte) 16;
+				if (x <= 0 || x >= getWidth() - 1 || y <= 0 || y >= getHeight() - 1) {
+					bg[x][y] = (byte) 44;
+				}
+				else if (x <= 1 || x >= getWidth() - 2 || y <= 1 || y >= getHeight() - 2) {
+					bg[x][y] = (byte) 47;
 				}
 				else
 					bg[x][y] = (byte) 119;

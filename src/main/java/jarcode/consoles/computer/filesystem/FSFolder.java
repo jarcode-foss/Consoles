@@ -1,7 +1,7 @@
 package jarcode.consoles.computer.filesystem;
 
 import java.io.FileNotFoundException;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class FSFolder extends FSBlock {
@@ -11,11 +11,12 @@ public class FSFolder extends FSBlock {
 	// These are mappings to FSBlock objects and are allowed to contain duplicate references anywhere in the filesystem
 	// Removing from these will cause the object to 'technically' be deleted from the filesystem, having no reference
 	// from the root tree, but java still needs to clean it up.
-	public HashMap<String, FSBlock> contents = null;
+	// this is sychronized because of the possibility of changes from multiple threads at once
+	public ConcurrentHashMap<String, FSBlock> contents = null;
 
 	public FSFolder() {
 		super(ID);
-		this.contents = new HashMap<>();
+		this.contents = new ConcurrentHashMap<>();
 	}
 	public FSBlock get(String path) throws FileNotFoundException {
 		if (path.trim().equals("/") || path.trim().isEmpty())

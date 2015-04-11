@@ -4,12 +4,18 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import org.bukkit.ChatColor;
 
 import java.util.Map;
 
 public class ShowDirectoryProgram extends FSProvidedProgram {
+
+	public ShowDirectoryProgram() {
+		setExecutable(FSGroup.ALL, true);
+	}
+
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		str = handleEncapsulation(str.trim());
