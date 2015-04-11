@@ -23,11 +23,10 @@ public class ShowDirectoryProgram extends FSProvidedProgram {
 		String cd = terminal.getCurrentDirectory();
 		FSBlock block = computer.getBlock(str, cd);
 		if (!(block instanceof FSFolder)) {
-			println("Invalid current directory");
+			println(str + ": invalid path");
 			return;
 		}
 		FSFolder folder = (FSFolder) block;
-		println(ChatColor.BLUE + "contents of: " + ChatColor.WHITE + cd);
 		StringBuilder builder = new StringBuilder();
 		int index = 0;
 		for (Map.Entry<String, FSBlock> entry : folder.contents.entrySet()) {
