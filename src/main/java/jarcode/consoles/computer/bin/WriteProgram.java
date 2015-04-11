@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import com.google.common.base.Joiner;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.*;
@@ -29,13 +30,21 @@ public class WriteProgram extends FSProvidedProgram {
 			println("\t-p\tprefixes text instead of overwriting");
 			println("\t-f\tignores file locks");
 		}
+		System.out.println(Joiner.on(", ").join(args));
 		args = parseFlags(args, (flag, string) -> {
 			switch (flag) {
 				case 'a':
 					properties.put("append", true);
 					break;
+				case 'p':
+					properties.put("prefix", true);
+					break;
+				case 'f':
+					properties.put("force", true);
+					break;
 			}
 		}, c -> "apf".indexOf(c) == -1);
+		System.out.println(Joiner.on(", ").join(args));
 		if (args.length == 0) {
 			print("invalid file");
 			return;
@@ -67,14 +76,7 @@ public class WriteProgram extends FSProvidedProgram {
 		FSFile file = (FSFile) block;
 		if (file instanceof FSStoredFile) {
 			FSStoredFile store = (FSStoredFile) file;
-			if ((Boolean) properties.get("append")) {
-				InputStream is = store.createInput();
-				byte[] arr = new byte[is.available()];
-				if (is.read(arr) != arr.length) {
-					print("error: did not read all expected bytes");
-				}
-				text += new String(arr, Charset.forName("UTF-8"));
-			} else if ((Boolean) properties.get("prefix")) {
+			if ((Boolean) properties.get("prefix")) {
 				InputStream is = store.createInput();
 				byte[] arr = new byte[is.available()];
 				if (is.read(arr) != arr.length) {
@@ -82,11 +84,20 @@ public class WriteProgram extends FSProvidedProgram {
 				}
 				text = new String(arr, Charset.forName("UTF-8")) + text;
 			}
-			OutputStream out = (Boolean) properties.get("force") ? file.createOutput() : file.getOutput();
-			if (out == null) {
+			else if ((Boolean) properties.get("append")) {
+				InputStream is = store.createInput();
+				byte[] arr = new byte[is.available()];
+				if (is.read(arr) != arr.length) {
+					print("error: did not read all expected bytes");
+				}
+				text += new String(arr, Charset.forName("UTF-8"));
+			}
+			if (file.locked()) {
 				print("could not write to file: file is locked (is it open somewhere else?)");
 				return;
 			}
+			OutputStream out = (Boolean) properties.get("force") || (Boolean) properties.get("prefix")
+					? file.createOutput() : file.getOutput();
 			out.write(text.getBytes(Charset.forName("UTF-8")));
 			out.close();
 		}

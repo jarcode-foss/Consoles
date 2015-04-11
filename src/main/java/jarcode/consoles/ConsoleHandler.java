@@ -150,6 +150,9 @@ public class ConsoleHandler implements Listener {
 	{
 		paintThread.setDaemon(true);
 		paintThread.setName("Console Painting Thread");
+	}
+
+	public ConsoleHandler() {
 		((CraftServer) Bukkit.getServer()).getServer().getPropertyManager().setProperty("enable-command-block", true);
 	}
 
@@ -278,7 +281,13 @@ public class ConsoleHandler implements Listener {
 			}
 		}
 	}
-
+	@EventHandler
+	public void restoreProperties(PluginDisableEvent e) {
+		if (e.getPlugin() == Consoles.getInstance()) {
+			((CraftServer) Bukkit.getServer()).getServer()
+					.getPropertyManager().setProperty("enable-command-block", commandBlocksEnabled);
+		}
+	}
 	@EventHandler
 	public void onChunkLoad(ChunkLoadEvent e) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {

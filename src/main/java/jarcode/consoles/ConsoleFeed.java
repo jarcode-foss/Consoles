@@ -103,8 +103,8 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	}
 	// non-blocking
 	public void write(String string) {
-		print(string);
 		if (creator != null && ended) {
+			print(string);
 			creator.from(string);
 			String result = creator.result();
 			advanceLine();

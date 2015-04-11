@@ -24,7 +24,7 @@ public class Terminal extends ConsoleFeed {
 			"\"I tried to come up with an IPv4 joke, but the good ones were all already exhausted...\"",
 			"\"A programmer went out shopping and his wife said \"While you are out, get eggs\", " +
 					"he never returned!\"",
-			"\"The best thing about 404 jokes is... wait, damnit, it’s around here somewhere...\"",
+			"\"The best thing about 404 jokes is... wait, damnit, it's around here somewhere...\"",
 			"\"You have a problem, so you decide to use floating point numbers. Now you have " +
 					"2.000000000000001 problems.\"",
 			"\"You have a problem, so you decide to use multithreading. have problems. Now 2 you\"",

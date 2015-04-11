@@ -44,6 +44,7 @@ public abstract class FSProvidedProgram extends FSBlock {
 	                 Computer computer, ProgramInstance instance) throws Exception {
 		this.in = in;
 		this.out = out;
+		this.computer = computer;
 		this.instance = instance;
 		run(str, computer);
 	}
@@ -94,6 +95,8 @@ public abstract class FSProvidedProgram extends FSBlock {
 				}
 			}
 		}
+		if (arg.length() > 0)
+			args.add(arg.toString());
 		Iterator<String> it = args.iterator();
 		while (it.hasNext()) {
 			if (it.next().isEmpty())
@@ -102,7 +105,7 @@ public abstract class FSProvidedProgram extends FSBlock {
 		return args.toArray(new String[args.size()]);
 	}
 	protected String[] parseFlags(String[] args, BiConsumer<Character, String> consumer, Function<Character, Boolean> hasData) {
-		FlagMappings mappings = mapFlags(args);
+		FlagMappings mappings = mapFlags(args, hasData);
 		mappings.map.entrySet().stream().forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));
 		return mappings.parsed;
 	}

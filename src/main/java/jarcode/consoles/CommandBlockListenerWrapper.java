@@ -1,6 +1,8 @@
 package jarcode.consoles;
 
+import jarcode.consoles.api.Console;
 import net.minecraft.server.v1_8_R2.*;
+import org.bukkit.Bukkit;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -45,6 +47,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	CommandBlockListenerAbstract underlying;
 	// this is a cheat to make this act like an inner class when we get this$0 via reflection later
+	@SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
 	private final TileEntityCommand this$0;
 
 	CommandBlockListenerWrapper(CommandBlockListenerAbstract underlying, TileEntityCommand command) {
@@ -109,7 +112,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			setResult(0);
 			return;
 		}
-		if (!(ConsoleHandler.getInstance().commandBlocksEnabled || override())) {
+		if (!ConsoleHandler.getInstance().commandBlocksEnabled && !override()) {
 			setChatComponent(new ChatComponentText("You cannot use server commands"));
 			h();
 			setResult(0);
@@ -125,8 +128,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 				setChatComponent(null);
 				setResult(executeCommand(this, this.sender, getCommand()));
 			} catch (Throwable var6) {
-				CrashReport crashreport = CrashReport.a(var6, "Executing command block");
-				throw new ReportedException(crashreport);
+				var6.printStackTrace();
 			}
 		} else {
 			setResult(0);
