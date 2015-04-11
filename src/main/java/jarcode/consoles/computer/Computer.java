@@ -3,10 +3,7 @@ package jarcode.consoles.computer;
 import jarcode.consoles.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
-import jarcode.consoles.computer.filesystem.FSBlock;
-import jarcode.consoles.computer.filesystem.FSFile;
-import jarcode.consoles.computer.filesystem.FSFolder;
-import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
 import net.md_5.bungee.api.ChatColor;
@@ -18,7 +15,12 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,16 +50,20 @@ public class Computer implements Runnable {
 
 	private StatusBar bar;
 
+	public Computer(String hostname, UUID owner, ManagedConsole console) {
+		this.hostname = hostname;
+		this.owner = owner;
+		this.console = console;
+		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
+		setScreenIndex(0);
+	}
+
 	public Computer(String hostname, UUID owner, int width, int height) {
 		this.hostname = hostname;
 		this.owner = owner;
 		console = new ManagedConsole(width, height);
 		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
 		setScreenIndex(0);
-	}
-
-	public void setRoot(FSFolder root) {
-		this.root = root;
 	}
 
 	// This is used to boot a provided program, and actually obtain the instance of the program itself,
@@ -83,6 +89,23 @@ public class Computer implements Runnable {
 	public void status(String status) {
 		bar.setText(status);
 		console.repaint();
+	}
+	public void load(File file) throws IOException {
+		try {
+			// create temp kernel instance for loading fs
+			kernel = Kernel.install(Computer.this);
+			// create instance
+			SerializedFilesystem fs = new SerializedFilesystem(this);
+			// map out serialized file tree
+			fs.readFrom(new FileInputStream(file));
+			// call block serializers
+			root = (FSFolder) fs.deserialize();
+		} catch (Exception e) {
+			if (e instanceof IOException)
+				throw (IOException) e;
+			else
+				e.printStackTrace();
+		}
 	}
 	// Creates and installs the computer.
 	public void create(BlockFace face, Location location) {
@@ -125,6 +148,14 @@ public class Computer implements Runnable {
 			getCurrentTerminal().onStart();
 			console.repaint();
 		}, 80L);
+	}
+	public void save() {
+		try {
+			new ComputerData(this).save();
+		} catch (IOException e) {
+			Consoles.getInstance().getLogger().severe("Failed to save computer!");
+			e.printStackTrace();
+		}
 	}
 	private void printAfter(final String text, long delay) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {

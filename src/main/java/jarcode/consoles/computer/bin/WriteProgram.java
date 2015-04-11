@@ -83,17 +83,9 @@ public class WriteProgram extends FSProvidedProgram {
 				if (is.read(arr) != arr.length) {
 					println("error: did not read all expected bytes");
 				}
-				text = new String(arr, Charset.forName("UTF-8")) + text;
-			}
-			else if ((Boolean) properties.get("append")) {
-				InputStream is = store.createInput();
-				byte[] arr = new byte[is.available()];
-				if (is.read(arr) != arr.length) {
-					print("error: did not read all expected bytes");
-				}
 				text += new String(arr, Charset.forName("UTF-8"));
 			}
-			if (file.locked()) {
+			if ((Boolean) properties.get("force") || file.locked()) {
 				print("could not write to file: file is locked (is it open somewhere else?)");
 				return;
 			}

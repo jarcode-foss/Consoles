@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.filesystem;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 
 import java.io.*;
@@ -72,10 +73,15 @@ public class SerializedFilesystem {
 				DataOutputStream out = new DataOutputStream(buffer);
 				try {
 					for (Map.Entry<String, FSBlock> entry : type.contents.entrySet()) {
-						out.writeInt(entry.getKey().length());
-						out.write(entry.getKey().getBytes(Charset.forName("UTF-8")));
-						out.writeLong(entry.getValue().uuid.getMostSignificantBits());
-						out.writeLong(entry.getValue().uuid.getLeastSignificantBits());
+						if (map.containsKey(entry.getValue().id)) {
+							out.writeInt(entry.getKey().length());
+							out.write(entry.getKey().getBytes(Charset.forName("UTF-8")));
+							out.writeLong(entry.getValue().uuid.getMostSignificantBits());
+							out.writeLong(entry.getValue().uuid.getLeastSignificantBits());
+							if (Consoles.DEBUG) {
+								Consoles.getInstance().getLogger().info("[DEBUG] FS: block entry: " + entry.getKey());
+							}
+						}
 					}
 				}
 				// won't happen
@@ -92,7 +98,6 @@ public class SerializedFilesystem {
 				FSFolder folder = new FSFolder();
 				try {
 					while (buffer.available() > 0) {
-
 						int len = in.readInt(); // key length
 						byte[] arr = new byte[len];
 						for (int t = 0; t < len; t++) {
@@ -150,7 +155,13 @@ public class SerializedFilesystem {
 		byte[] data = new byte[header.length + content.length];
 		System.arraycopy(header, 0, data, 0, header.length);
 		System.arraycopy(content, 0, data, header.length, content.length);
+		if (Consoles.DEBUG) {
+			Consoles.getInstance().getLogger().info("[DEBUG] FS: writing block uuid: " + block.uuid + ", len: " + data.length);
+		}
 		return data;
+	}
+	public void serialize() {
+		serialize(computer.getRoot(), true);
 	}
 	public void serialize(FSBlock root) {
 		serialize(root, true);
@@ -172,21 +183,31 @@ public class SerializedFilesystem {
 		if (root instanceof FSFolder) {
 			FSFolder folder = (FSFolder) root;
 			folder.contents.values().stream()
-					.filter(block -> !serializedMappings.containsKey(block.uuid))
-					.forEach(block -> serializedMappings.put(block.uuid, toBytes(block)));
+					.filter(block -> map.containsKey(block.id)) // filter out device file types, etc
+					.filter(block -> !serializedMappings.containsKey(block.uuid)) // only store one of each file
+					.forEach(block -> {
+						serializedMappings.put(block.uuid, toBytes(block)); // map the file to its uuid
+						serialize(block, false); // serialize recursively
+					});
 		}
+	}
+	public FSBlock deserialize() throws IOException {
+		return deserialize(root);
 	}
 	// Now, this is both our method for internal, recursive de-serialization, AND for triggering the de-serialization
 	// of the entire filesystem! There's a problem here, because we have no way of getting the root folder from our
 	// serialized mappings, so we DO need to store the root UUID so we know where to start when de-serializing our
 	// tree.
-	public FSBlock deserialize(UUID uuid) {
+	public FSBlock deserialize(UUID uuid) throws IOException {
 
 		// if this file was already deserialized somewhere else, and this is a reference to the same file, use it!
 		if (mappings.containsKey(uuid))
 			return mappings.get(uuid);
 
 		byte[] bytes = serializedMappings.get(uuid);
+		if (bytes == null) {
+			throw new IOException("Missing block: " + uuid);
+		}
 		ByteArrayInputStream in = new ByteArrayInputStream(bytes);
 		DataInputStream data = new DataInputStream(in);
 		try {
@@ -201,8 +222,11 @@ public class SerializedFilesystem {
 			byte id = (byte) data.read();
 			// content
 			byte[] remaining = new byte[in.available()];
-			if (data.read(remaining) != remaining.length)
-				throw new IOException("in.available() did not properly represent remaining bytes");
+			if (remaining.length != 0 && data.read(remaining) != remaining.length)
+				throw new IOException(String.format(
+						"in.available() did not properly represent remaining bytes (id:%d,len:%d)",
+						id, remaining.length
+				));
 			BlockSerializer serializer = map.get(id);
 			FSBlock block = serializer.deserialize(remaining, uuid);
 			block.permissions = permissions;
@@ -216,32 +240,60 @@ public class SerializedFilesystem {
 	}
 	// write this entire filesystem somewhere! serialize(root) should be called first.
 	public void writeTo(OutputStream out) throws IOException {
-		GZIPOutputStream wrapped = new GZIPOutputStream(out);
-		DataOutputStream data = new DataOutputStream(wrapped);
-		data.writeLong(root.getMostSignificantBits());
-		data.writeLong(root.getLeastSignificantBits());
-		for (Map.Entry<UUID, byte[]> entry : serializedMappings.entrySet()) {
-			data.writeLong(entry.getKey().getMostSignificantBits());
-			data.writeLong(entry.getKey().getLeastSignificantBits());
-			data.writeInt(entry.getValue().length);
-			data.write(entry.getValue());
+		DataOutputStream data = null;
+		GZIPOutputStream wrapped = null;
+		try {
+			wrapped = new GZIPOutputStream(out, 512, true);
+			data = new DataOutputStream(wrapped);
+			data.writeLong(root.getMostSignificantBits());
+			data.writeLong(root.getLeastSignificantBits());
+			for (Map.Entry<UUID, byte[]> entry : serializedMappings.entrySet()) {
+				data.writeBoolean(true);
+				data.writeLong(entry.getKey().getMostSignificantBits());
+				data.writeLong(entry.getKey().getLeastSignificantBits());
+				data.writeInt(entry.getValue().length);
+				data.write(entry.getValue());
+			}
+			data.writeBoolean(false);
+		}
+		finally {
+			if (wrapped != null) {
+				wrapped.finish();
+				wrapped.flush();
+			}
+			if (data != null) {
+				data.flush();
+				data.close();
+			}
 		}
 	}
 	public void readFrom(InputStream in) throws IOException {
-		GZIPInputStream wrapped = new GZIPInputStream(in);
-		DataInputStream data = new DataInputStream(wrapped);
-		long most = data.readLong();
-		long least = data.readLong();
-		root = new UUID(most, least);
-		while (in.available() > 0) {
-			most = data.readLong();
-			least = data.readLong();
-			UUID uuid = new UUID(most, least);
-			int len = data.readInt();
-			byte[] bytes = new byte[len];
-			if (data.read(bytes) != len)
-				throw new IOException("failed to read block: invalid length");
-			serializedMappings.put(uuid, bytes);
+		DataInputStream data = null;
+		GZIPInputStream wrapped = null;
+		try {
+			wrapped = new GZIPInputStream(in, 512);
+			data = new DataInputStream(wrapped);
+			long most = data.readLong();
+			long least = data.readLong();
+			root = new UUID(most, least);
+			while (data.readBoolean()) {
+				most = data.readLong();
+				least = data.readLong();
+				UUID uuid = new UUID(most, least);
+				int len = data.readInt();
+				byte[] bytes = new byte[len];
+				if (data.read(bytes) != len)
+					throw new IOException("failed to read block: invalid length");
+				serializedMappings.put(uuid, bytes);
+				if (Consoles.DEBUG)
+					Consoles.getInstance().getLogger().info("read block: " + uuid + ", len: " + len);
+			}
+		}
+		finally {
+			if (wrapped != null)
+				wrapped.close();
+			if (data != null)
+				data.close();
 		}
 	}
 }

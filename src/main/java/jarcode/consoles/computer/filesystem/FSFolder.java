@@ -35,13 +35,14 @@ public class FSFolder extends FSBlock {
 		else return block;
 	}
 	public boolean exists(String path) {
+		if (path == null) return false;
 		String sub = section(path, "/")[0];
 		FSBlock block = contents.get(sub);
 		if (block == null)
 			return false;
-		String remaining = sub.length() == path.length() ? sub : path.substring(sub.length() + 1);
-		return !(remaining.length() > 0 && !(block instanceof FSFolder)) && (remaining.length() <= 0
-				|| ((FSFolder) block).exists(remaining));
+		String remaining = sub.length() == path.length() ? null : path.substring(sub.length() + 1);
+		return remaining == null // if null, that means this is the end of the path and this was the final node
+				|| (block instanceof FSFolder && ((FSFolder) block).exists(remaining));
 	}
 	public void mk(String path, String name, FSBlock block) throws FileNotFoundException {
 		FSBlock at = get(path);

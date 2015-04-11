@@ -46,6 +46,9 @@ public class ConsoleMeta {
 		console.create(face, location);
 		return console;
 	}
+	public ManagedConsole createConsole() {
+		return new ManagedConsole(w, h);
+	}
 
 	public byte[] toBytes() {
 		try {

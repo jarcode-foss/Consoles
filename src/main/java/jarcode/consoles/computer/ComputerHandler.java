@@ -1,5 +1,7 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.Consoles;
+import jarcode.consoles.api.Console;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
 import net.minecraft.server.v1_8_R2.NBTTagList;
@@ -17,6 +19,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -57,25 +60,40 @@ public class ComputerHandler implements Listener {
 		return instance;
 	}
 
-	{
-		instance = this;
-	}
-
 
 	ShapedRecipe computerRecipe;
 	private ArrayList<Computer> computers = new ArrayList<>();
 	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
 
 	{
+		instance = this;
 		computerRecipe = new ShapedRecipe(newComputerStack());
-		computerRecipe.shape("AAA", "ABA", "AAA");
+		computerRecipe.shape("AAA", "CBC", "AAA");
 		computerRecipe.setIngredient('A', Material.STONE);
-		computerRecipe.setIngredient('B', Material.REDSTONE);
+		computerRecipe.setIngredient('B', Material.REDSTONE_BLOCK);
+		computerRecipe.setIngredient('C', Material.DIAMOND);
 		Bukkit.getServer().addRecipe(computerRecipe);
 	}
 
 	public ComputerHandler() {
 		registerLinkCommand();
+		ComputerData.init();
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), this::saveAll, 6000, 6000);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
+				() -> computers.addAll(ComputerData.makeAll()));
+	}
+
+	public void saveAll() {
+		Consoles.getInstance().getLogger().info("Saving computers...");
+		long count = computers.stream().peek(Computer::save).count();
+		Consoles.getInstance().getLogger().info("Saved " + count + " computers");
+	}
+
+	@EventHandler
+	public void saveAll(PluginDisableEvent e) {
+		if (e.getPlugin() == Consoles.getInstance()) {
+			saveAll();
+		}
 	}
 
 	@EventHandler

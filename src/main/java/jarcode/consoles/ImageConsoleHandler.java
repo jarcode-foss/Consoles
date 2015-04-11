@@ -98,7 +98,7 @@ public class ImageConsoleHandler {
 			}
 			catch (IOException e) {
 				e.printStackTrace();
-				plugin.getLogger().warning("Could not create JSON scoreboard file");
+				plugin.getLogger().warning("Could not create JSON images file");
 			}
 		}
 		instance = this;

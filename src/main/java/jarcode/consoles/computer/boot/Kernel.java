@@ -71,7 +71,6 @@ public class Kernel extends FSProvidedProgram {
 				root.contents.put("tmp", new FSFolder());
 				root.contents.put("X11", x11);
 				home.contents.put("admin", new FSFolder());
-				dev.contents.put("null", new NullDevice());
 				FSStoredFile file = new FSStoredFile();
 				try {
 					OutputStream out = file.createOutput();
@@ -82,7 +81,6 @@ public class Kernel extends FSProvidedProgram {
 					e.printStackTrace();
 				}
 				x11.contents.put("xorg.conf", file);
-				systemPath.add("bin");
 				mapProgram((byte) 0x01, root, "cd");
 				mapProgram((byte) 0x02, root, "dir", "ls");
 				mapProgram((byte) 0x03, root, "write");
@@ -103,7 +101,10 @@ public class Kernel extends FSProvidedProgram {
 		activities.put("boot", new FSProvidedProgram() {
 			@Override
 			public void run(String str, Computer computer) throws Exception {
-
+				systemPath.add("bin");
+				FSBlock block = computer.getBlock("/dev", "/");
+				if (block instanceof FSFolder)
+					((FSFolder) block).contents.put("null", new NullDevice());
 			}
 		});
 	}
