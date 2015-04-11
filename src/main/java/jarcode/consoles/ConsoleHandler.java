@@ -462,15 +462,6 @@ public class ConsoleHandler implements Listener {
 				e.getCurrentItem().getType() == Material.EMPTY_MAP || e.getCursor().getType() == Material.EMPTY_MAP)
 			e.setCancelled(true);
 	}
-
-	@EventHandler
-	public void onEntityInteract(PlayerInteractEntityEvent e) {
-		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked())) {
-			if (Consoles.DEBUG)
-				e.getPlayer().sendMessage("map_id: " + ((ItemFrame) e.getRightClicked()).getItem().getData());
-			e.setCancelled(true);
-		}
-	}
 	@EventHandler
 	public void onEntityDamage(EntityDamageEvent e) {
 		if (e.getEntity() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getEntity()))
@@ -486,12 +477,21 @@ public class ConsoleHandler implements Listener {
 	public void onMapInit(MapInitializeEvent e) {
 	}
 	@EventHandler
+	public void onPlayerInteract(PlayerInteractEntityEvent e) {
+		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked()))
+			e.setCancelled(true);
+		clickEvent(e.getPlayer());
+	}
+	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent e) {
+		clickEvent(e.getPlayer());
+	}
+	private void clickEvent(Player player) {
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
-				int[] arr = console.intersect(e.getPlayer().getEyeLocation(), 7);
+				int[] arr = console.intersect(player.getEyeLocation(), 7);
 				if (arr != null) {
-					console.handleClick(arr[0], arr[1], e.getPlayer());
+					console.handleClick(arr[0], arr[1], player);
 				}
 			}
 		}

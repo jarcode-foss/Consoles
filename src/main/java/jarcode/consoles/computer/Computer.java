@@ -56,6 +56,10 @@ public class Computer implements Runnable {
 		setScreenIndex(0);
 	}
 
+	public void setRoot(FSFolder root) {
+		this.root = root;
+	}
+
 	// This is used to boot a provided program, and actually obtain the instance of the program itself,
 	// instead of the wrapper class. This will not work for Lua programs, and these are ran in the current thread.
 	// basically, it's our mini boot loader
