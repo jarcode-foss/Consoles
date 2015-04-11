@@ -67,9 +67,11 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		String stripped = ChatColor.stripColor(text + getLastLine());
 		if (font.getWidth(stripped) > maxWidth) {
 			String[] split = text.split(" ");
+			List<String> list = new ArrayList<>();
 			int index = 0;
 			for (String s : split) {
-				String comb = ChatColor.stripColor(Joiner.on(" ").join(split) + getLastLine());
+				list.add(s);
+				String comb = ChatColor.stripColor(Joiner.on(" ").join(list) + getLastLine());
 				if (font.getWidth(comb) <= maxWidth) {
 					index++;
 				}
@@ -81,21 +83,25 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 				if (ChatColor.stripColor(getLastLine()).isEmpty()) {
 					StringBuilder builder = new StringBuilder();
 					StringBuilder check = new StringBuilder();
-					char[] arr = stripped.toCharArray();
+					char[] arr = text.toCharArray();
 					int t;
-					for (t = 0; t < stripped.length(); t++) {
-						check.append(arr[t]);
-						String bare = check.toString();
-						if (font.getWidth(bare) > maxWidth) {
-							break;
+					for (t = 0; t < text.length(); t++) {
+						if (arr[t] != '\u00A7'
+								&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[t]) == -1
+								|| t == 0 || arr[t - 1] != '\u00A7')) {
+							check.append(arr[t]);
+							String bare = check.toString();
+							if (font.getWidth(bare) > maxWidth) {
+								break;
+							} else builder.append(arr[t]);
 						}
 						else builder.append(arr[t]);
-					}
+					};
 					// add sectioned
 					printContent(builder.toString());
 					stack.add("");
 					// add other portion
-					printContent(text.substring(t - 1, text.length()));
+					printContent(text.substring(t, text.length()));
 				}
 				// line isn't empty, try to fit into new line
 				else {
