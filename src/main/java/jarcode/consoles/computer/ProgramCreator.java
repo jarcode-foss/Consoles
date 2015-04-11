@@ -68,15 +68,11 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 		else check: if (!input.contains("/")) {
 
 			// cd
-			try {
-				block = terminal.getComputer().getRoot().get(terminal.getCurrentDirectory());
-				block = ((FSFolder) block).get(input);
-			}
-			catch (FileNotFoundException ignored) {
-				block = null;
-			}
+			block = terminal.getComputer().getBlock(input, terminal.getCurrentDirectory());
+			if (block != null)
+				break check;
 			// loop through path entries if no match in current directory
-			if (block == null) for (String path : terminal.getComputer().getSystemPath()) {
+			for (String path : terminal.getComputer().getSystemPath()) {
 				try {
 					FSBlock pathBlock = terminal.getComputer().getRoot().get(path);
 					if (pathBlock instanceof FSFolder) {

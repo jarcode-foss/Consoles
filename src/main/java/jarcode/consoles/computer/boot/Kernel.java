@@ -8,6 +8,7 @@ import jarcode.consoles.computer.bin.CatProgram;
 import jarcode.consoles.computer.bin.CurrentDirectoryProgram;
 import jarcode.consoles.computer.bin.ShowDirectoryProgram;
 import jarcode.consoles.computer.bin.WriteProgram;
+import jarcode.consoles.computer.devices.NullDevice;
 import jarcode.consoles.computer.filesystem.*;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
@@ -63,12 +64,14 @@ public class Kernel extends FSProvidedProgram {
 				FSFolder home = new FSFolder();
 				FSFolder bin = new FSFolder();
 				FSFolder x11 = new FSFolder();
+				FSFolder dev = new FSFolder();
 				root.contents.put("home", home);
 				root.contents.put("bin", bin);
-				root.contents.put("dev", new FSFolder());
+				root.contents.put("dev", dev);
 				root.contents.put("tmp", new FSFolder());
 				root.contents.put("X11", x11);
 				home.contents.put("admin", new FSFolder());
+				dev.contents.put("null", new NullDevice());
 				FSStoredFile file = new FSStoredFile();
 				try {
 					OutputStream out = file.createOutput();
