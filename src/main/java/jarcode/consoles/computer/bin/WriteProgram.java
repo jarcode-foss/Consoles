@@ -1,6 +1,5 @@
 package jarcode.consoles.computer.bin;
 
-import com.google.common.base.Joiner;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.*;
@@ -30,7 +29,6 @@ public class WriteProgram extends FSProvidedProgram {
 			println("\t-p\tprefixes text instead of overwriting");
 			println("\t-f\tignores file locks");
 		}
-		System.out.println(Joiner.on(", ").join(args));
 		args = parseFlags(args, (flag, string) -> {
 			switch (flag) {
 				case 'a':
@@ -44,7 +42,6 @@ public class WriteProgram extends FSProvidedProgram {
 					break;
 			}
 		}, c -> "apf".indexOf(c) == -1);
-		System.out.println(Joiner.on(", ").join(args));
 		if (args.length == 0) {
 			print("invalid file");
 			return;
@@ -57,7 +54,11 @@ public class WriteProgram extends FSProvidedProgram {
 		try {
 			block = resolve(args[0]);
 		} catch (Throwable e) {
-			print("could not open: " + args[0] + " (" + e.getClass() + ")");
+			print("could not open: " + args[0] + "(" + e.getClass() + ")");
+			return;
+		}
+		if (block == null) {
+			print(args[0] + ": does not exist");
 			return;
 		}
 		Terminal terminal = computer.getTerminal(this);
