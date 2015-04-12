@@ -15,15 +15,25 @@ import java.nio.charset.Charset;
 public class ViewProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
-
-		str = handleEncapsulation(str.trim());
-		if (str.isEmpty()) {
-			return;
+		String[] args = splitArguments(str);
+		if (args.length == 0 || str.isEmpty()) {
+			println("view [FILE] {INDEX}");
+		}
+		str = args[0];
+		int index = -1;
+		if (args.length >= 2) {
+			try {
+				index = Integer.parseInt(args[1]);
+			}
+			catch (Throwable e) {
+				print("view: " + str.trim() + ": invalid index");
+				return;
+			}
 		}
 		Terminal terminal = computer.getTerminal(this);
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
 		if (block == null) {
-			println("view: " + str.trim() + ": no such file");
+			print("view: " + str.trim() + ": no such file");
 			return;
 		}
 		if (!(block instanceof FSFile)) {
@@ -56,10 +66,14 @@ public class ViewProgram extends FSProvidedProgram {
 		}
 		str = new String(out.toByteArray(), charset);
 		final String finalStr = str;
+		final int finalIndex = index;
 		schedule(() -> {
 			IndexedConsoleTextArea component = new IndexedConsoleTextArea(computer.getViewWidth(),
 					computer.getViewHeight(), computer.getConsole());
-			component.setText(finalStr);
+			if (finalIndex == -1)
+				component.setText(finalStr);
+			else
+				component.setText(finalStr, finalIndex);
 			computer.setComponent(7, component);
 			computer.switchView(8);
 		});

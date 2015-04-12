@@ -21,7 +21,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	private static final int OFFSET = 20;
 	private static final int MARGIN = 4;
 
-	private MapFont font = MinecraftFont.Font;
+	private MapFont font = MonospacedMinecraftFont.FONT;
 	private MapFont numberFont = MinecraftFont.Font;
 	private int textHeight = font.getHeight() + 1;
 	private volatile Multimap<Integer, String> stack = createStack();
@@ -55,6 +55,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	public void setText(String text, int startingLine) {
 		stack.clear();
+		stack.put(startingLine, "");
 		String after = Arrays.asList(text.split("\n")).stream()
 				.skip(startingLine - 1)
 				.limit(maxStackSize)
