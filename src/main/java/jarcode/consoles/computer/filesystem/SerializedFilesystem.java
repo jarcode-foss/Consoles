@@ -282,11 +282,20 @@ public class SerializedFilesystem {
 				UUID uuid = new UUID(most, least);
 				int len = data.readInt();
 				byte[] bytes = new byte[len];
-				if (len != 0 && data.read(bytes) != len)
-					throw new IOException(String.format(
-							"failed to read block: invalid length (uuid:%s, len:%d)",
-							uuid.toString(), len
-					));
+				if (len != 0) {
+					int read;
+					int total = 0;
+					// this is to account for underlying streams that need to read large arrays in pieces.
+					while ((read = data.read(bytes, total, len - total)) != 0) {
+						total += read;
+					}
+					if (total != len) {
+						throw new IOException(String.format(
+								"failed to read block: invalid length (uuid:%s, len:%d, last:%d, total:%d)",
+								uuid.toString(), len, read, total
+						));
+					}
+				}
 				serializedMappings.put(uuid, bytes);
 				if (Consoles.DEBUG)
 					Consoles.getInstance().getLogger().info("read block: " + uuid + ", len: " + len);
