@@ -1,11 +1,17 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.Consoles;
+import org.bukkit.Bukkit;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public interface Program {
 
@@ -49,6 +55,29 @@ public interface Program {
 				it.remove();
 		}
 		return args.toArray(new String[args.size()]);
+	}
+	// huehuehuehuehuehue
+	@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "unchecked", "SpellCheckingInspection"})
+	public default <T> T schedule(Supplier<T> supplier) throws InterruptedException {
+		AtomicBoolean available = new AtomicBoolean(false);
+		final Object LOCK = new Object();
+		final Object[] result = {null};
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			result[0] = supplier.get();
+			available.set(true);
+			synchronized (LOCK) {
+				LOCK.notify();
+			}
+		});
+		while (!available.get()) {
+			synchronized (LOCK) {
+				LOCK.wait();
+			}
+		}
+		return (T) result[0];
+	}
+	public default void schedule(Runnable runnable) {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);
 	}
 	public default String[] parseFlags(String[] args, BiConsumer<Character, String> consumer, Function<Character, Boolean> hasData) {
 		FlagMappings mappings = mapFlags(args, hasData);

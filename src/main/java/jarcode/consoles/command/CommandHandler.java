@@ -1,6 +1,7 @@
 package jarcode.consoles.command;
 
 import jarcode.consoles.Consoles;
+import jarcode.consoles.computer.ComputerHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
@@ -13,6 +14,7 @@ import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.function.Consumer;
 
 // this is a really stripped-down version of a class loader I normally use in private code,
 // so if you're cringing at my wheel-reinventing, this normally used custom class loaders
@@ -98,6 +100,15 @@ public class CommandHandler implements Listener {
 	@EventHandler
 	@SuppressWarnings("unused")
 	void onPreCommand(PlayerCommandPreprocessEvent e) {
+
+		if (e.getMessage().startsWith("/.") && !e.getMessage().substring(2).trim().isEmpty()) {
+			ComputerHandler handler = ComputerHandler.getInstance();
+			if (handler != null) {
+				handler.command(e.getMessage().substring(2), e.getPlayer());
+				e.setCancelled(true);
+				return;
+			}
+		}
 
 		if (e.getMessage().startsWith("//")) {
 			return;

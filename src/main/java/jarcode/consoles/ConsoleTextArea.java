@@ -3,19 +3,21 @@ package jarcode.consoles;
 import com.google.common.base.Joiner;
 import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
+import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
-	private MinecraftFont font = MinecraftFont.Font;
+	private MapFont font = MinecraftFont.Font;
 	private int textHeight = font.getHeight() + 1;
-	private List<String> stack = new ArrayList<>();
+	private List<String> stack = new CopyOnWriteArrayList<>();
 	private int maxStackSize;
 	private int maxWidth;
 	private byte lastColor = 32;
@@ -23,10 +25,13 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	{
 		stack.add("");
 	}
-
+	public void setFont(MapFont font) {
+		this.font = font;
+	}
 	public static ConsoleTextArea createOver(ConsoleRenderer renderer) {
 		return new ConsoleTextArea(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
 	}
+
 	public void placeOver(ConsoleRenderer renderer) {
 		renderer.putComponent(new Position2D(2, 2), this);
 	}
@@ -172,6 +177,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	@Override
 	public void paint(CanvasGraphics g, String context) {
+		g.setFont(font);
 		g.drawBackground();
 		for (int t = 0; t < stack.size(); t++) {
 			lastColor = g.drawFormatted(0, (t * textHeight), lastColor, stack.get(t));

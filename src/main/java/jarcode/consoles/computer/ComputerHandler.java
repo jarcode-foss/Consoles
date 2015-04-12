@@ -1,7 +1,11 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
+import jarcode.consoles.ManagedConsole;
+import jarcode.consoles.Position2D;
 import jarcode.consoles.api.Console;
+import javafx.geometry.Pos;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
 import net.minecraft.server.v1_8_R2.NBTTagList;
@@ -89,6 +93,18 @@ public class ComputerHandler implements Listener {
 		Consoles.getInstance().getLogger().info("Saved " + count + " computers");
 	}
 
+	public void interact(Position2D pos, Player player, ManagedConsole console) {
+		computers.stream().filter(comp -> comp.getConsole() == console)
+				.forEach(comp -> comp.clickEvent(pos, player.getName()));
+	}
+	public void command(String command, Player player) {
+		List<ManagedConsole> lookingAt = Arrays.asList(
+				ConsoleHandler.getInstance().getConsolesLookingAt(player.getEyeLocation())
+		);
+		computers.stream().filter(comp -> lookingAt.contains(comp.getConsole()))
+				.forEach(comp -> comp.playerCommand(command, player.getName()));
+	}
+
 	@EventHandler
 	public void saveAll(PluginDisableEvent e) {
 		if (e.getPlugin() == Consoles.getInstance()) {
@@ -103,7 +119,8 @@ public class ComputerHandler implements Listener {
 				build(e.getPlayer(), e.getBlockPlaced().getLocation());
 			}
 			finally {
-				e.setCancelled(true);
+				Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
+						() -> e.getBlock().setType(Material.AIR));
 			}
 		}
 	}
@@ -193,6 +210,10 @@ public class ComputerHandler implements Listener {
 			}
 			NBTTagCompound comp = nms.getTag();
 			comp.set("ench", new NBTTagList());
+			// this is why I go through the effort to set custom NBT tabs
+			// this prevents players from creating a computer without crafting
+			// it, unless they are setting the NBT tags explicitly - which
+			// would mean they are probably an admin.
 			comp.setBoolean("computer", true);
 			nms.setTag(comp);
 		}
@@ -215,5 +236,6 @@ public class ComputerHandler implements Listener {
 	}
 	public void unregister(Computer computer) {
 		computers.remove(computer);
+		ComputerData.delete(computer.getHostname());
 	}
 }

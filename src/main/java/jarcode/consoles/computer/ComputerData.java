@@ -75,6 +75,16 @@ public class ComputerData {
 		return data;
 	}
 
+	public static boolean delete(String hostname) {
+		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
+		return folder.exists() && folder.delete();
+	}
+
+	public static boolean rename(String old, String hostname) {
+		File folder = new File(file.getAbsolutePath() + File.separator + old);
+		return folder.exists() && folder.renameTo(new File(file.getAbsolutePath() + File.separator + hostname));
+	}
+
 	private static void makeFiles(File... files) throws IOException {
 		for (File file : files) {
 			if (!file.exists() && !file.createNewFile())

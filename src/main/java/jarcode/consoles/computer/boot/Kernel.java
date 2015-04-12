@@ -4,21 +4,18 @@ import com.google.common.collect.HashBiMap;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
-import jarcode.consoles.computer.bin.CatProgram;
-import jarcode.consoles.computer.bin.CurrentDirectoryProgram;
-import jarcode.consoles.computer.bin.ShowDirectoryProgram;
-import jarcode.consoles.computer.bin.WriteProgram;
+import jarcode.consoles.computer.bin.*;
 import jarcode.consoles.computer.devices.NullDevice;
+import jarcode.consoles.computer.devices.PlayerCommandDevice;
+import jarcode.consoles.computer.devices.PlayerInteractDevice;
 import jarcode.consoles.computer.filesystem.*;
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
-import java.security.AccessController;
 import java.util.*;
 
 // fake operating system kernel, but contains important activities and driver management.
@@ -33,15 +30,20 @@ public class Kernel extends FSProvidedProgram {
 	private boolean missingDevFolderError = false;
 
 	{
-		programs.put((byte) 0x00, this);
-		programs.put((byte) 0x01, new CurrentDirectoryProgram());
-		programs.put((byte) 0x02, new ShowDirectoryProgram());
-		programs.put((byte) 0x03, new WriteProgram());
-		programs.put((byte) 0x04, new CatProgram());
+		program(0x00, this);
+		program(0x01, new CurrentDirectoryProgram());
+		program(0x02, new ShowDirectoryProgram());
+		program(0x03, new WriteProgram());
+		program(0x04, new CatProgram());
+		program(0x05, new DeleteProgram());
+		program(0x06, new HostnameProgram());
+		program(0x07, new ClearProgram());
+		program(0x08, new FlashProgram());
 	}
 
 	{
 		driverMappings.put("cmd", CommandBlockDriver.class);
+		driverMappings.put("pcmd", PlayerCommandDriver.class);
 	}
 
 	public static Kernel install(Computer computer) throws Exception {
@@ -81,21 +83,7 @@ public class Kernel extends FSProvidedProgram {
 					e.printStackTrace();
 				}
 				x11.contents.put("xorg.conf", file);
-				mapProgram((byte) 0x01, root, "cd");
-				mapProgram((byte) 0x02, root, "dir", "ls");
-				mapProgram((byte) 0x03, root, "write");
-				mapProgram((byte) 0x04, root, "cat");
-			}
-			private void mapProgram(byte id, FSFolder root, String... names) {
-				try {
-					FSFolder bin = (FSFolder) root.get("bin");
-					for (String name : names) {
-						bin.contents.put(name, getProgram(id));
-					}
-				}
-				catch (FileNotFoundException e) {
-					e.printStackTrace();
-				}
+				flashPrograms();
 			}
 		});
 		activities.put("boot", new FSProvidedProgram() {
@@ -103,10 +91,40 @@ public class Kernel extends FSProvidedProgram {
 			public void run(String str, Computer computer) throws Exception {
 				systemPath.add("bin");
 				FSBlock block = computer.getBlock("/dev", "/");
-				if (block instanceof FSFolder)
+				if (block instanceof FSFolder) {
 					((FSFolder) block).contents.put("null", new NullDevice());
+					((FSFolder) block).contents.put("pcmd0", new PlayerCommandDevice(computer));
+					((FSFolder) block).contents.put("pint0", new PlayerInteractDevice(computer));
+				}
 			}
 		});
+	}
+	public void flashPrograms() {
+		FSFolder root = computer.getRoot();
+		mapProgram(0x01, root, "cd");
+		mapProgram(0x02, root, "dir", "ls");
+		mapProgram(0x03, root, "write");
+		mapProgram(0x04, root, "cat");
+		mapProgram(0x05, root, "delete");
+		mapProgram(0x06, root, "hostname");
+		mapProgram(0x07, root, "clear");
+		mapProgram(0x08, root, "flash");
+	}
+	private void mapProgram(int id, FSFolder root, String... names) {
+		try {
+			if (!root.exists("bin"))
+				root.contents.put("bin", new FSFolder());
+			FSFolder bin = (FSFolder) root.get("bin");
+			for (String name : names) {
+				bin.contents.put(name, getProgram((byte) id));
+			}
+		}
+		catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	private void program(int id, FSProvidedProgram providedProgram) {
+		programs.put((byte) id, providedProgram);
 	}
 	public List<String> getSystemPath() {
 		return systemPath;
@@ -136,26 +154,21 @@ public class Kernel extends FSProvidedProgram {
 		drivers.add(driver);
 	}
 	public int stopDriversForDevice(String path) {
-		try {
-			FSBlock block = computer.getRoot().get(path);
-			if (block instanceof FSFile) {
-				Iterator<Driver> it = drivers.iterator();
-				int count = 0;
-				while (it.hasNext()) {
-					Driver driver = it.next();
-					if (driver.getDevice() == block) {
-						driver.stop();
-						it.remove();
-						count++;
-					}
+		FSBlock block = computer.resolve(path, "/");
+		if (block instanceof FSFile) {
+			Iterator<Driver> it = drivers.iterator();
+			int count = 0;
+			while (it.hasNext()) {
+				Driver driver = it.next();
+				if (driver.getDevice() == block) {
+					driver.stop();
+					it.remove();
+					count++;
 				}
-				return count;
 			}
-			else return -1;
+			return count;
 		}
-		catch (FileNotFoundException e) {
-			return -1;
-		}
+		else return -1;
 	}
 	// drivers!
 	public void tick() {

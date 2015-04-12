@@ -22,4 +22,14 @@ public class ManagedComputer extends Computer {
 		super.destroy();
 		ComputerHandler.getInstance().unregister(this);
 	}
+
+	@Override
+	public boolean hostname(String hostname) {
+		if (ComputerHandler.getInstance().hostnameTaken(hostname))
+			return false;
+		String old = getHostname();
+		super.hostname(hostname);
+		ComputerData.rename(old, hostname);
+		return true;
+	}
 }

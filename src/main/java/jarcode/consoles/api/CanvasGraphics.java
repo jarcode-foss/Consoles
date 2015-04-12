@@ -1,6 +1,7 @@
 package jarcode.consoles.api;
 
 import jarcode.consoles.Position2D;
+import org.bukkit.map.MapFont;
 
 /**
  * This class is used as a mutable graphics instance that is
@@ -18,6 +19,13 @@ public interface CanvasGraphics {
 	 * @return the last color in the formatted text
 	 */
 	public byte drawFormatted(int x, int y, byte inherit, String text);
+
+	/**
+	 * Sets the font to use when measuring and painting strings.
+	 *
+	 * @param font the font to use
+	 */
+	public void setFont(MapFont font);
 
 	/**
 	 * Draws formatted text using vanilla formatting codes

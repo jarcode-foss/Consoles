@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.devices;
 
+import jarcode.consoles.Position2D;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.LinkedStream;
 import jarcode.consoles.computer.filesystem.FSFile;
@@ -12,24 +13,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class PlayerCommandDevice extends FSFile {
+public class PlayerInteractDevice extends FSFile {
 
 	private final Object LOCK = new Object();
 	private List<OutputStream> outputs = new ArrayList<>();
-	private BiConsumer<String, String> consumer;
+	private BiConsumer<String, Position2D> consumer;
 	private Computer computer;
 
-	public PlayerCommandDevice(Computer computer) {
+	public PlayerInteractDevice(Computer computer) {
 		// device id
 		super((byte) 0x03);
 		this.computer = computer;
 		synchronized (LOCK) {
-			consumer = (player, command) -> {
+			consumer = (player, pos) -> {
 				synchronized (LOCK) {
 					for (OutputStream out : outputs) {
 						try {
 							DataOutputStream data = new DataOutputStream(out);
-							data.writeUTF(command);
+							data.writeShort(pos.getX());
+							data.writeShort(pos.getY());
 							data.writeUTF(player);
 						}
 						// shouldn't happen
@@ -39,7 +41,7 @@ public class PlayerCommandDevice extends FSFile {
 					}
 				}
 			};
-			computer.registerCommandListener(consumer);
+			computer.registerClickListener(consumer);
 		}
 	}
 
@@ -86,7 +88,7 @@ public class PlayerCommandDevice extends FSFile {
 	@Override
 	public void release() {
 		synchronized (LOCK) {
-			computer.unregisterCommandListener(consumer);
+			computer.unregisterClickListener(consumer);
 		}
 	}
 

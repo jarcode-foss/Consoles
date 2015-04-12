@@ -15,6 +15,8 @@ public class ConsoleGraphics implements CanvasGraphics {
 
 	private boolean relative = true;
 
+	private MapFont font = MinecraftFont.Font;
+
 	ConsoleGraphics(ConsoleRenderer renderer, ConsoleComponent component, Position2D pos) {
 		this.renderer = renderer;
 		this.component = component;
@@ -41,7 +43,6 @@ public class ConsoleGraphics implements CanvasGraphics {
 
 	@Override
 	public String trim(String text, int len) {
-		MapFont font = MinecraftFont.Font;
 		StringBuilder builder = new StringBuilder();
 		char[] arr = text.toCharArray();
 		int length = 0;
@@ -93,7 +94,6 @@ public class ConsoleGraphics implements CanvasGraphics {
 	}
 	@SuppressWarnings("ConstantConditions")
 	public final byte drawFormatted(int x, int y, byte inherit, String text) {
-		MapFont font = MinecraftFont.Font;
 		int at = 0;
 		int i = 0;
 		char[] arr = text.toCharArray();
@@ -146,8 +146,13 @@ public class ConsoleGraphics implements CanvasGraphics {
 		}
 		return color;
 	}
+
+	@Override
+	public void setFont(MapFont font) {
+		this.font = font;
+	}
+
 	public final void draw(int x, int y, byte color, String text) {
-		MapFont font = MinecraftFont.Font;
 		int at = 0;
 		for (char c : text.toCharArray()) {
 			MapFont.CharacterSprite sprite = font.getChar(c);

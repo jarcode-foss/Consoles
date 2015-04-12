@@ -61,7 +61,7 @@ public class ConsoleDialog extends ConsoleContainer {
 		for (ConsoleComponent comp : contained) {
 			if (comp == component)
 				return new Position2D(at + (getWidth() / 2) - (w / 2), getHeight() - (maxContainedHeight() + 3));
-			at += component.getWidth() + MARGIN;
+			at += comp.getWidth() + MARGIN;
 		}
 		return null;
 	}

@@ -98,6 +98,8 @@ public class ConsoleMapRenderer {
 		// send an update if an update was fired, or if the context map id hasn't been seen to this player before
 		short lastId = getLastId(context);
 		if ((update != null && update.wasFired()) || lastId != clientId) {
+			if (lastId == -1)
+				return true;
 			byte[] data = pixelBuffer.getBuffer(context, x, y);
 			// if the id of the map for this player changed, send them an update packet
 			if (lastId != clientId) {
@@ -115,7 +117,7 @@ public class ConsoleMapRenderer {
 	private short getLastId(String context) {
 		if (newContexts.containsKey(context))
 			return newContexts.get(context);
-		else return -1;
+		else return -2;
 	}
 	// old code used to manually update the metadata of an item frame
 	@Deprecated

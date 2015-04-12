@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,11 +22,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-public class Computer implements Runnable {
+public abstract class Computer implements Runnable {
 
 	public static final String VERSION = "1.19.2";
 
@@ -50,6 +55,9 @@ public class Computer implements Runnable {
 
 	private StatusBar bar;
 
+	private List<BiConsumer<String, String>> listeners = new CopyOnWriteArrayList<>();
+	private List<BiConsumer<String, Position2D>> interactListeners = new CopyOnWriteArrayList<>();
+
 	public Computer(String hostname, UUID owner, ManagedConsole console) {
 		this.hostname = hostname;
 		this.owner = owner;
@@ -64,6 +72,16 @@ public class Computer implements Runnable {
 		console = new ManagedConsole(width, height);
 		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
 		setScreenIndex(0);
+	}
+
+	public boolean hostname(String hostname) {
+		this.hostname = hostname;
+		for (ConsoleComponent component : feeds) {
+			if (component instanceof Terminal) {
+				((Terminal) component).updatePrompt();
+			}
+		}
+		return true;
 	}
 
 	// This is used to boot a provided program, and actually obtain the instance of the program itself,
@@ -85,6 +103,24 @@ public class Computer implements Runnable {
 		catch (FileNotFoundException ignored) {}
 		// so, just return null if it's an invalid boot or the expected type is wrong
 		return null;
+	}
+	public void unregisterClickListener(BiConsumer<String, Position2D> consumer) {
+		interactListeners.remove(consumer);
+	}
+	public void registerClickListener(BiConsumer<String, Position2D> consumer) {
+		interactListeners.add(consumer);
+	}
+	public void unregisterCommandListener(BiConsumer<String, String> consumer) {
+		listeners.remove(consumer);
+	}
+	public void registerCommandListener(BiConsumer<String, String> consumer) {
+		listeners.add(consumer);
+	}
+	public void clickEvent(Position2D pos, String player) {
+		interactListeners.stream().forEach(consumer -> consumer.accept(player, pos.copy()));
+	}
+	public void playerCommand(String command, String player) {
+		listeners.stream().forEach(consumer -> consumer.accept(player, command));
 	}
 	public void status(String status) {
 		bar.setText(status);

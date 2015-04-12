@@ -2,6 +2,7 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleComponent;
 import jarcode.consoles.ConsoleRenderer;
+import jarcode.consoles.MonospacedMinecraftFont;
 import jarcode.consoles.api.CanvasGraphics;
 
 public class StatusBar extends ConsoleComponent {

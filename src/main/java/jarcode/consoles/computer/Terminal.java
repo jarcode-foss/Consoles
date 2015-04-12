@@ -1,6 +1,7 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleFeed;
+import jarcode.consoles.MonospacedMinecraftFont;
 import jarcode.consoles.Position2D;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import net.md_5.bungee.api.ChatColor;

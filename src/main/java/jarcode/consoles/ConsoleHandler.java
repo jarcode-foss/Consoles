@@ -5,6 +5,7 @@ import com.google.common.collect.HashBiMap;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.PacketUtils;
 import jarcode.consoles.util.Region;
@@ -162,6 +163,8 @@ public class ConsoleHandler implements Listener {
 
 	public short translateIndex(String context, short global) {
 		synchronized (ALLOCATION_LOCK) {
+			if (!getIndexTable(context).containsKey(global))
+				return -1;
 			if (local)
 				return getIndexTable(context).get(global);
 			else return grabIndex(context, global);
@@ -406,7 +409,9 @@ public class ConsoleHandler implements Listener {
 			// player context map id
 			short translated = translateIndex(context, global);
 			// set data of item stack
-			stack.setData(translated);
+			if (translated != -1)
+				stack.setData(translated);
+			else return false;
 		}
 		// block other map metadata
 		else if (map.containsKey(8) && ((WatchableObject) map.get(8)).b() instanceof ItemStack) {
@@ -486,12 +491,20 @@ public class ConsoleHandler implements Listener {
 	public void onPlayerInteract(PlayerInteractEvent e) {
 		clickEvent(e.getPlayer());
 	}
+	public ManagedConsole[] getConsolesLookingAt(Location eye) {
+		return consoles.stream().filter(console -> console.intersect(eye, 7) != null)
+				.toArray(ManagedConsole[]::new);
+	}
 	private void clickEvent(Player player) {
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
 				int[] arr = console.intersect(player.getEyeLocation(), 7);
 				if (arr != null) {
 					console.handleClick(arr[0], arr[1], player);
+					ComputerHandler handler = ComputerHandler.getInstance();
+					if (handler != null) {
+						handler.interact(new Position2D(arr[0], arr[1]), player, console);
+					}
 				}
 			}
 		}
