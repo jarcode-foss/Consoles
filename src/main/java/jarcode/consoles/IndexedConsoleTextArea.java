@@ -1,44 +1,70 @@
 package jarcode.consoles;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
+public class IndexedConsoleTextArea extends ConsoleComponent implements WritableComponent {
+
+	private static final int OFFSET = 20;
+	private static final int MARGIN = 4;
 
 	private MapFont font = MinecraftFont.Font;
+	private MapFont numberFont = MinecraftFont.Font;
 	private int textHeight = font.getHeight() + 1;
-	private List<String> stack = new CopyOnWriteArrayList<>();
+	private volatile Multimap<Integer, String> stack = createStack();
 	private int maxStackSize;
 	private int maxWidth;
 	private byte lastColor = 32;
 
+	private static Multimap<Integer, String> createStack() {
+		return Multimaps.synchronizedMultimap(LinkedHashMultimap.create());
+	}
+
 	{
-		stack.add("");
+		stack.put(1, "");
 	}
 	public void setFont(MapFont font) {
 		this.font = font;
 	}
-	public static ConsoleTextArea createOver(ConsoleRenderer renderer) {
-		return new ConsoleTextArea(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
+	public void setNumberFont(MapFont font) {
+		this.numberFont = font;
+	}
+	public static IndexedConsoleTextArea createOver(ConsoleRenderer renderer) {
+		return new IndexedConsoleTextArea(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
 	}
 
 	public void placeOver(ConsoleRenderer renderer) {
 		renderer.putComponent(new Position2D(2, 2), this);
 	}
-	public ConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
+	public void setText(String text) {
+		stack.clear();
+		print(text);
+	}
+	public void setText(String text, int startingLine) {
+		stack.clear();
+		String after = Arrays.asList(text.split("\n")).stream()
+				.skip(startingLine - 1)
+				.limit(maxStackSize)
+				.collect(Collectors.joining("\n"));
+		print(after);
+	}
+	public IndexedConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
 		super(w, h, renderer);
 		maxStackSize = h / textHeight;
-		maxWidth = w;
+		maxWidth = w - OFFSET;
 	}
 	public void print(String text) {
 		text = text.replace("\t", "    ");
@@ -49,6 +75,38 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		if (!text.startsWith("\u00A7"))
 			text = ChatColor.RESET + text;
 		printContent(text);
+	}
+	// needlessly complex
+	private void removeFirst() {
+		stack = Multimaps.synchronizedMultimap(Multimaps.forMap(
+				stack.entries().stream()
+				.skip(1)
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o, LinkedHashMap::new))
+		));
+	}
+	private void advance() {
+		int line = highestLine();
+		stack.put(line, "");
+	}
+	private void nextLine() {
+		int line = highestLine();
+		stack.put(line + 1, "");
+	}
+	private int highestLine() {
+		return stack.keySet().stream().max((o1, o2) -> o1 - o2).orElseGet(() -> 1);
+	}
+	private void appendToCurrentStack(String str) {
+		int line = highestLine();
+		ArrayList<String> list =
+				stack.get(line).stream().collect(Collectors.toCollection(ArrayList::new));
+		if (list.size() > 0) {
+			list.set(list.size() - 1, list.get(list.size() - 1) + str);
+			stack.removeAll(line);
+			stack.putAll(line, list);
+		}
+		else {
+			stack.put(line, str);
+		}
 	}
 	// used to split on newlines and handle accordingly
 	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex) {
@@ -101,16 +159,16 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 							} else builder.append(arr[t]);
 						}
 						else builder.append(arr[t]);
-					};
+					}
 					// add sectioned
 					printContent(builder.toString());
-					stack.add("");
+					advance();
 					// add other portion
 					printContent(text.substring(t, text.length()));
 				}
 				// line isn't empty, try to fit into new line
 				else {
-					stack.add("");
+					advance();
 					printContent(text);
 				}
 			}
@@ -123,7 +181,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 				}
 				//fit text
 				String str = builder.toString();
-				stack.set(currentLine(), getLastLine() + str);
+				appendToCurrentStack(str);
 
 				builder = new StringBuilder();
 				for (int t = index; t < split.length; t++) {
@@ -137,29 +195,34 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		}
 		// fit
 		else {
-			stack.set(currentLine(), getLastLine() + text);
+			appendToCurrentStack(text);
 		}
 		while (stack.size() > maxStackSize) {
-			stack.remove(0);
+			removeFirst();
 		}
 	}
 	public void println(String text) {
 		print(text);
-		stack.add("");
+		nextLine();
 		if (stack.size() > maxStackSize) {
-			stack.remove(0);
+			removeFirst();
 		}
 	}
 	public void advanceLine() {
-		stack.add("");
+		nextLine();
 		if (stack.size() > maxStackSize) {
-			stack.remove(0);
+			removeFirst();
 		}
 	}
 	public void clear() {
 		stack.clear();
-		stack.add("");
 	}
+
+	@Override
+	public void handleClick(int x, int y, Player player) {
+
+	}
+
 	@Override
 	public ConsoleListener createListener() {
 		return (sender, text) -> {
@@ -172,14 +235,24 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		return stack.size() == 0 ? 0 : stack.size() - 1;
 	}
 	protected String getLastLine() {
-		return stack.size() == 0 ? "" : stack.get(currentLine());
+		return stack.values().stream().reduce((p, curr) -> curr).orElseGet(() -> "");
 	}
 	@Override
 	public void paint(CanvasGraphics g, String context) {
 		g.setFont(font);
 		g.drawBackground();
-		for (int t = 0; t < stack.size(); t++) {
-			lastColor = g.drawFormatted(0, (t * textHeight), lastColor, stack.get(t));
+		int i = 0;
+		int k = -1;
+		for (Map.Entry<Integer, String> entry : stack.entries()) {
+			if (k != entry.getKey()) {
+				g.setFont(numberFont);
+				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
+				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN), (i * textHeight), lastColor, str);
+				g.setFont(font);
+				k = entry.getKey();
+			}
+			lastColor = g.drawFormatted(OFFSET, (i * textHeight), lastColor, entry.getValue());
+			i++;
 		}
 	}
 }

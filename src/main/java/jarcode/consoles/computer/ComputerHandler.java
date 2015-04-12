@@ -64,6 +64,40 @@ public class ComputerHandler implements Listener {
 		return instance;
 	}
 
+	public static ItemStack newComputerStack() {
+		return newComputerStack(true);
+	}
+
+	@SuppressWarnings("RedundantCast")
+	private static ItemStack newComputerStack(boolean glow) {
+		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
+		meta.setDisplayName(ChatColor.GREEN + "Computer");
+		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + "Place to build"));
+		ItemStack stack = null;
+		try {
+			stack = (ItemStack) ITEM_STACK_CREATE.newInstance(Material.STAINED_GLASS, 1, (short) 15, meta);
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		if (glow) {
+			net.minecraft.server.v1_8_R2.ItemStack nms;
+			try {
+				nms = (net.minecraft.server.v1_8_R2.ItemStack) ITEM_STACK_HANDLE.get((CraftItemStack) stack);
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+			NBTTagCompound comp = nms.getTag();
+			comp.set("ench", new NBTTagList());
+			// this is why I go through the effort to set custom NBT tabs
+			// this prevents players from creating a computer without crafting
+			// it, unless they are setting the NBT tags explicitly - which
+			// would mean they are probably an admin.
+			comp.setBoolean("computer", true);
+			nms.setTag(comp);
+		}
+		return stack;
+	}
+
 
 	ShapedRecipe computerRecipe;
 	private ArrayList<Computer> computers = new ArrayList<>();
@@ -144,7 +178,7 @@ public class ComputerHandler implements Listener {
 		computer.create(face, location);
 	}
 	private String findHostname(Player player) {
-		String name = player.getName() + "-";
+		String name = player.getName().toLowerCase() + "-";
 		int[] index = {0};
 		while (computers.stream().filter(comp -> comp.getHostname().equals(name + index[0])).findFirst().isPresent()) {
 			index[0]++;
@@ -187,40 +221,8 @@ public class ComputerHandler implements Listener {
 		return tag != null && meta.getDisplayName() != null && meta.getDisplayName().equals(ChatColor.GREEN + "Computer")
 				&& stack.getType() == Material.STAINED_GLASS && tag.hasKey("computer");
 	}
-	private ItemStack newComputerStack() {
-		return newComputerStack(true);
-	}
-	@SuppressWarnings("RedundantCast")
-	private ItemStack newComputerStack(boolean glow) {
-		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
-		meta.setDisplayName(ChatColor.GREEN + "Computer");
-		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + "Place to build"));
-		ItemStack stack = null;
-		try {
-			stack = (ItemStack) ITEM_STACK_CREATE.newInstance(Material.STAINED_GLASS, 1, (short) 15, meta);
-		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		if (glow) {
-			net.minecraft.server.v1_8_R2.ItemStack nms;
-			try {
-				nms = (net.minecraft.server.v1_8_R2.ItemStack) ITEM_STACK_HANDLE.get((CraftItemStack) stack);
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
-			}
-			NBTTagCompound comp = nms.getTag();
-			comp.set("ench", new NBTTagList());
-			// this is why I go through the effort to set custom NBT tabs
-			// this prevents players from creating a computer without crafting
-			// it, unless they are setting the NBT tags explicitly - which
-			// would mean they are probably an admin.
-			comp.setBoolean("computer", true);
-			nms.setTag(comp);
-		}
-		return stack;
-	}
 	public boolean hostnameTaken(String hostname) {
-		return computers.stream().filter(comp -> comp.getHostname().equals(hostname))
+		return computers.stream().filter(comp -> comp.getHostname().equals(hostname.toLowerCase()))
 				.findFirst().isPresent();
 	}
 	public Computer find(String hostname) {

@@ -35,7 +35,7 @@ public abstract class Computer implements Runnable {
 	public static final String VERSION = "1.19.2";
 
 	static final Position2D STATUS_COMPONENT_POSITION = new Position2D(2, 2);
-	static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 4 + StatusBar.HEIGHT);
+	public static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 4 + StatusBar.HEIGHT);
 
 	private String hostname;
 
@@ -62,7 +62,7 @@ public abstract class Computer implements Runnable {
 		this.hostname = hostname;
 		this.owner = owner;
 		this.console = console;
-		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
+		feeds[0] = new Terminal(this, false);
 		setScreenIndex(0);
 	}
 
@@ -70,7 +70,7 @@ public abstract class Computer implements Runnable {
 		this.hostname = hostname;
 		this.owner = owner;
 		console = new ManagedConsole(width, height);
-		feeds[0] = new Terminal(this, false, ROOT_COMPONENT_POSITION);
+		feeds[0] = new Terminal(this, false);
 		setScreenIndex(0);
 	}
 
@@ -125,6 +125,12 @@ public abstract class Computer implements Runnable {
 	public void status(String status) {
 		bar.setText(status);
 		console.repaint();
+	}
+	public int getViewWidth() {
+		return getConsole().getWidth() - (2 + ROOT_COMPONENT_POSITION.getX());
+	}
+	public int getViewHeight() {
+		return getConsole().getHeight() - (2 + ROOT_COMPONENT_POSITION.getY());
 	}
 	public void load(File file) throws IOException {
 		try {
@@ -251,14 +257,12 @@ public abstract class Computer implements Runnable {
 		// ignore adding device files when the device folder doesn't exist
 		catch (FileNotFoundException | ClassCastException ignored) {}
 	}
-	// This is called destroy for a reason. Because the data is stored elsewhere (not in the flimsy console/monitor),
-	// you can destroy the computer and recreate it with the same hostname to get everything back. However, the computer
-	// does actually stop running, it's just not gone.
 
 	// ALL cleanup should be done in here
 	public void destroy() {
 		console.remove();
 		Bukkit.getScheduler().cancelTask(taskId);
+		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),  ComputerHandler.newComputerStack());
 	}
 	public Kernel getKernel() {
 		return kernel;

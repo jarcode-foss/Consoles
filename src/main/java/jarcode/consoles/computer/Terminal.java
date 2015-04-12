@@ -45,7 +45,7 @@ public class Terminal extends ConsoleFeed {
 	};
 
 	public static Terminal newTerminal(Computer computer) {
-		Terminal terminal = new Terminal(computer, false, Computer.ROOT_COMPONENT_POSITION);
+		Terminal terminal = new Terminal(computer, false);
 		terminal.onStart();
 		return terminal;
 	}
@@ -56,9 +56,6 @@ public class Terminal extends ConsoleFeed {
 
 	private final ProgramCreator creator = new ProgramCreator(this);
 
-	public Terminal(Computer computer, Position2D pos) {
-		this(computer, true, pos);
-	}
 	public void onStart() {
 		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
 		advanceLine();
@@ -68,9 +65,8 @@ public class Terminal extends ConsoleFeed {
 		updatePrompt();
 		prompt();
 	}
-	Terminal(Computer computer, boolean setupPrompt, Position2D pos) {
-		super(computer.getConsole().getWidth() - (2 + pos.getX()),
-				computer.getConsole().getHeight() - (2 + pos.getY()), computer.getConsole());
+	Terminal(Computer computer, boolean setupPrompt) {
+		super(computer.getViewWidth(), computer.getViewHeight(), computer.getConsole());
 		this.root = computer.getRoot();
 		this.computer = computer;
 		setFeedCreator(creator);

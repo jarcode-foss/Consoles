@@ -1,22 +1,31 @@
-package jarcode.consoles;
+package jarcode.consoles.computer;
 
 import com.google.common.base.Joiner;
+import jarcode.consoles.*;
 import jarcode.consoles.api.CanvasGraphics;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
+public class EditorComponent extends ConsoleComponent implements WritableComponent {
 
-	private MapFont font = MinecraftFont.Font;
+	private static final int OFFSET = 20;
+
+	private MonospacedMinecraftFont font = MonospacedMinecraftFont.FONT;
+	private MapFont numberFont = MinecraftFont.Font;
 	private int textHeight = font.getHeight() + 1;
+	private String text = "A bunch of default text that you should get used to seeing on a regular basis.\nThis is a new top\nThis is another new top.\nWow, I can create an infinite amount of new lines! I wonder what happens if I just keep writing... does it bug out? Maybe... just maybe, but I'm running out of things to write.";
+	private int top = 1;
+	private int column = 1;
 	private List<String> stack = new CopyOnWriteArrayList<>();
 	private int maxStackSize;
 	private int maxWidth;
@@ -25,30 +34,40 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	{
 		stack.add("");
 	}
-	public void setFont(MapFont font) {
-		this.font = font;
+	public void setLineNumberFont(MapFont font) {
+		this.numberFont = font;
 	}
-	public static ConsoleTextArea createOver(ConsoleRenderer renderer) {
-		return new ConsoleTextArea(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
+	public static EditorComponent createOver(ConsoleRenderer renderer) {
+		return new EditorComponent(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
 	}
 
 	public void placeOver(ConsoleRenderer renderer) {
 		renderer.putComponent(new Position2D(2, 2), this);
 	}
-	public ConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
+	public EditorComponent(int w, int h, ConsoleRenderer renderer) {
 		super(w, h, renderer);
 		maxStackSize = h / textHeight;
-		maxWidth = w;
+		maxWidth = w - OFFSET;
 	}
-	public void print(String text) {
+	public void setTop(int top) {
+		this.top = top;
+	}
+	private void appendToStack(String text) {
 		text = text.replace("\t", "    ");
 		if (text.contains("\n")) {
-			section(text, this::print, this::advanceLine, "\n");
+			section(text, this::appendToStack, this::advanceLine, "\n");
 			return;
 		}
 		if (!text.startsWith("\u00A7"))
 			text = ChatColor.RESET + text;
 		printContent(text);
+	}
+	public void renderView() {
+		stack.clear();
+		stack.add("");
+		String[] split = text.split("\n");
+		String after = Arrays.asList(split).stream().skip(top - 1).limit(maxStackSize).collect(Collectors.joining("\n"));
+		appendToStack(after);
 	}
 	// used to split on newlines and handle accordingly
 	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex) {
@@ -144,7 +163,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		}
 	}
 	public void println(String text) {
-		print(text);
+		appendToStack(text);
 		stack.add("");
 		if (stack.size() > maxStackSize) {
 			stack.remove(0);
@@ -179,7 +198,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		g.setFont(font);
 		g.drawBackground();
 		for (int t = 0; t < stack.size(); t++) {
-			lastColor = g.drawFormatted(0, (t * textHeight), lastColor, stack.get(t));
+			lastColor = g.drawFormatted(OFFSET, (t * textHeight), lastColor, stack.get(t));
 		}
 	}
 }

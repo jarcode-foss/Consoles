@@ -39,6 +39,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x06, new HostnameProgram());
 		program(0x07, new ClearProgram());
 		program(0x08, new FlashProgram());
+		program(0x09, new ViewProgram());
 	}
 
 	{
@@ -109,6 +110,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x06, root, "hostname");
 		mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
+		mapProgram(0x09, root, "view");
 	}
 	private void mapProgram(int id, FSFolder root, String... names) {
 		try {
