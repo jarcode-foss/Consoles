@@ -1,204 +1,332 @@
 package jarcode.consoles.computer;
 
-import com.google.common.base.Joiner;
 import jarcode.consoles.*;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.computer.filesystem.FSFile;
 import org.bukkit.ChatColor;
-import org.bukkit.map.MapFont;
-import org.bukkit.map.MinecraftFont;
+import org.bukkit.entity.Player;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class EditorComponent extends ConsoleComponent implements WritableComponent {
+public class EditorComponent extends IndexedConsoleTextArea implements InputComponent {
 
-	private static final int OFFSET = 20;
-
-	private MonospacedMinecraftFont font = MonospacedMinecraftFont.FONT;
-	private MapFont numberFont = MinecraftFont.Font;
-	private int textHeight = font.getHeight() + 1;
-	private String text = "A bunch of default text that you should get used to seeing on a regular basis.\nThis is a new top\nThis is another new top.\nWow, I can create an infinite amount of new lines! I wonder what happens if I just keep writing... does it bug out? Maybe... just maybe, but I'm running out of things to write.";
+	private String content;
 	private int top = 1;
-	private int column = 1;
-	private List<String> stack = new CopyOnWriteArrayList<>();
-	private int maxStackSize;
-	private int maxWidth;
-	private byte lastColor = 32;
+	private byte cursorColorPrimary = (byte) 118;
+	private byte cursorColorSecondary = (byte) 32;
 
-	{
-		stack.add("");
-	}
-	public void setLineNumberFont(MapFont font) {
-		this.numberFont = font;
-	}
-	public static EditorComponent createOver(ConsoleRenderer renderer) {
-		return new EditorComponent(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
+	private volatile int row = 1;
+	private volatile int character = 1;
+
+	private Computer computer;
+	private FSFile file;
+	private int tty;
+
+	public EditorComponent(int w, int h, Computer computer, FSFile file, int tty) {
+		super(w, h, computer.getConsole());
+		this.computer = computer;
+		this.tty = tty;
+		this.file = file;
 	}
 
-	public void placeOver(ConsoleRenderer renderer) {
-		renderer.putComponent(new Position2D(2, 2), this);
+	// unsafe
+	@Override
+	public void println(String text) {
+		super.println(text);
 	}
-	public EditorComponent(int w, int h, ConsoleRenderer renderer) {
-		super(w, h, renderer);
-		maxStackSize = h / textHeight;
-		maxWidth = w - OFFSET;
+
+	// unsafe
+	@Override
+	public void print(String text) {
+		super.print(text);
 	}
-	public void setTop(int top) {
+	public void setCursor(int row, int character) {
+		this.row = row < 1 ? this.row : row;
+		this.character = character < 1 ? this.character : character;
+	}
+	public void setView(int top) {
 		this.top = top;
+		if (row < top)
+			row = top;
 	}
-	private void appendToStack(String text) {
-		text = text.replace("\t", "    ");
-		if (text.contains("\n")) {
-			section(text, this::appendToStack, this::advanceLine, "\n");
+	// deletes characters at the cursor
+	public void delete(int amt) {
+		int[] i = {0, 0};
+		List<String> list = new ArrayList<>();
+		section(content, list::add, () -> {}, "\n", false);
+		content = list.stream()
+				.skip(top - 1)
+				.limit(maxStackSize)
+				.map(in -> {
+					if (i[0] != row - 1) {
+						i[0]++;
+						return in;
+					} else {
+						if (character - 1 > in.length())
+							return in;
+						if (in.isEmpty()) {
+							i[0]++;
+							i[1]--;
+							return null;
+						}
+						if (amt >= in.length()) {
+							i[0]++;
+							return "";
+						}
+						String first = in.substring(0, character - (1 + amt));
+						String after = in.substring(character - 1);
+						i[0]++;
+						return first + after;
+					}
+				})
+				.filter(str -> str != null)
+				.collect(Collectors.joining("\n"));
+		row += i[1];
+		character -= amt;
+		if (character <= 0)
+			character = 1;
+		setText(content, top);
+	}
+	// inserts text at the cursor
+	public void insert(String str) {
+		if (content.isEmpty()) {
+			content = str;
+			setText(content, top);
 			return;
 		}
-		if (!text.startsWith("\u00A7"))
-			text = ChatColor.RESET + text;
-		printContent(text);
-	}
-	public void renderView() {
-		stack.clear();
-		stack.add("");
-		String[] split = text.split("\n");
-		String after = Arrays.asList(split).stream().skip(top - 1).limit(maxStackSize).collect(Collectors.joining("\n"));
-		appendToStack(after);
-	}
-	// used to split on newlines and handle accordingly
-	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex) {
-		int count = 0;
-		Matcher matcher = Pattern.compile(regex).matcher(text);
-		int first = 0;
-		while (matcher.find()) {
-			String before = text.substring(first, matcher.start());
-			count++;
-			if (!before.isEmpty())
-				handleText.accept(before);
-			onSplit.run();
-			first = matcher.end();
-		}
-		if (count == 0 || (first < text.length() && first != -1)) {
-			handleText.accept(text.substring(first, text.length()));
-		}
-	}
-	private void printContent(String text) {
-		text = ManagedConsole.removeUnsupportedCharacters(text);
-		String stripped = ChatColor.stripColor(text + getLastLine());
-		if (font.getWidth(stripped) > maxWidth) {
-			String[] split = text.split(" ");
-			List<String> list = new ArrayList<>();
-			int index = 0;
-			for (String s : split) {
-				list.add(s);
-				String comb = ChatColor.stripColor(Joiner.on(" ").join(list) + getLastLine());
-				if (font.getWidth(comb) <= maxWidth) {
-					index++;
-				}
-				else break;
-			}
-			// can't fit
-			if (index == 0) {
-				// line is empty, can't fit
-				if (ChatColor.stripColor(getLastLine()).isEmpty()) {
-					StringBuilder builder = new StringBuilder();
-					StringBuilder check = new StringBuilder();
-					char[] arr = text.toCharArray();
-					int t;
-					for (t = 0; t < text.length(); t++) {
-						if (arr[t] != '\u00A7'
-								&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[t]) == -1
-								|| t == 0 || arr[t - 1] != '\u00A7')) {
-							check.append(arr[t]);
-							String bare = check.toString();
-							if (font.getWidth(bare) > maxWidth) {
-								break;
-							} else builder.append(arr[t]);
+		int[] i = {0};
+		List<String> list = new ArrayList<>();
+		section(content, list::add, () -> {}, "\n", false);
+		content = list.stream()
+				.skip(top - 1)
+				.limit(maxStackSize)
+				.map(in -> {
+					if (i[0] != row - 1) {
+						i[0]++;
+						return in;
+					} else {
+						if (character - 1 > in.length()) {
+							i[0]++;
+							return in;
 						}
-						else builder.append(arr[t]);
-					};
-					// add sectioned
-					printContent(builder.toString());
-					stack.add("");
-					// add other portion
-					printContent(text.substring(t, text.length()));
-				}
-				// line isn't empty, try to fit into new line
-				else {
-					stack.add("");
-					printContent(text);
-				}
-			}
-			// partial fit
-			else {
-				StringBuilder builder = new StringBuilder();
-				for (int t = 0; t < index; t++) {
-					builder.append(split[t]);
-					builder.append(" ");
-				}
-				//fit text
-				String str = builder.toString();
-				stack.set(currentLine(), getLastLine() + str);
-
-				builder = new StringBuilder();
-				for (int t = index; t < split.length; t++) {
-					builder.append(split[t]);
-					if (t != split.length - 1)
-						builder.append(" ");
-				}
-				//remaining
-				printContent(builder.toString());
-			}
+						if (character - 1 == in.length()) {
+							i[0]++;
+							return in + str;
+						}
+						String first = in.substring(0, character - 1);
+						String after = in.substring(character - 1);
+						i[0]++;
+						return first + str + after;
+					}
+				})
+				.collect(Collectors.joining("\n"));
+		if (!"\n".equals(str)) {
+			character += str.length();
 		}
-		// fit
 		else {
-			stack.set(currentLine(), getLastLine() + text);
+			character = 1;
+			row++;
 		}
-		while (stack.size() > maxStackSize) {
-			stack.remove(0);
-		}
+		setText(content, top);
 	}
-	public void println(String text) {
-		appendToStack(text);
-		stack.add("");
-		if (stack.size() > maxStackSize) {
-			stack.remove(0);
-		}
+	public void setContent(String content) {
+		this.content = content;
+		setText(content, top);
 	}
-	public void advanceLine() {
-		stack.add("");
-		if (stack.size() > maxStackSize) {
-			stack.remove(0);
-		}
-	}
-	public void clear() {
-		stack.clear();
-		stack.add("");
-	}
+
+	// unsafe
 	@Override
-	public ConsoleListener createListener() {
-		return (sender, text) -> {
-			println(ChatColor.translateAlternateColorCodes('&', text));
+	public void setText(String text, int startingLine) {
+		super.setText(text, startingLine);
+	}
+
+	// unsafe
+	@Override
+	public void setText(String text) {
+		super.setText(text);
+	}
+
+	// set cursor
+	@Override
+	public void handleClick(int x, int y, Player player) {
+		int i = 0;
+		int k = -1;
+		int c = 0;
+		boolean over = false;
+		for (Map.Entry<Integer, String> entry : stack.entries()) {
+			// reset char index on new row
+			if (k != entry.getKey()) {
+				if (over) {
+					row = entry.getKey() - 1;
+					character = c + 1;
+					repaint();
+					return;
+				}
+				c = 0;
+				k = entry.getKey();
+			}
+			String stripped = ChatColor.stripColor(entry.getValue());
+			int size = stripped.length();
+			// cursor is in this stack row
+			if (x >= OFFSET && y >= i * textHeight && y < (i + 1) * textHeight) {
+				char[] arr = stripped.toCharArray();
+				int w = OFFSET;
+				boolean o = false;
+				for (int t = 0; t < arr.length; t++) {
+					int cw = font.getChar(arr[t]).getWidth();
+					// match!
+					if (x >= w && x < w + cw) {
+						row = entry.getKey();
+						character = c + t + 1;
+						repaint();
+						return;
+					}
+					w += cw + 1;
+					if (x >= w && t == arr.length - 1) {
+						o = true;
+					}
+				}
+				if (arr.length == 0)
+					o = true;
+				over = o;
+			}
+			c += size;
+			i++;
+		}
+		if (over) {
+			row = highestLine();
+			character = c + 1;
 			repaint();
-			return "Sent to console";
-		};
+		}
 	}
-	protected int currentLine() {
-		return stack.size() == 0 ? 0 : stack.size() - 1;
-	}
-	protected String getLastLine() {
-		return stack.size() == 0 ? "" : stack.get(currentLine());
-	}
+
+	// we override painting because we need to modify it for the cursor
+	// everything is prepared for us in a synchronized stack, so we don't need
+	// to split lines or do anything else fancy here.
 	@Override
 	public void paint(CanvasGraphics g, String context) {
 		g.setFont(font);
 		g.drawBackground();
-		for (int t = 0; t < stack.size(); t++) {
-			lastColor = g.drawFormatted(OFFSET, (t * textHeight), lastColor, stack.get(t));
+		int i = 0;
+		int k = -1;
+		int c = 0;
+		int over = -1;
+		// iterate through the stack
+		for (Map.Entry<Integer, String> entry : stack.entries()) {
+			// if the line number changed, display it
+			if (k != entry.getKey()) {
+				g.setFont(numberFont);
+				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
+				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN), (i * textHeight), lastColor, str);
+				g.setFont(font);
+				k = entry.getKey();
+				if (over >= 0) {
+					for (int t = 0; t < textHeight; t++) {
+						g.draw(OFFSET + over + 2, (i - 1) * textHeight + t, cursorColorSecondary);
+						g.draw(OFFSET + over + 3, (i - 1) * textHeight + t, cursorColorSecondary);
+					}
+					over = -1;
+				}
+			}
+			// if our cursor is on this row, we need to modify our rendering to display it
+			if (entry.getKey() == row) {
+				String stripped = ChatColor.stripColor(entry.getValue());
+				int size = stripped.length();
+				// render cursor
+				if (c <= character - 1 && size + c > character - 1) {
+					final int fi = c;
+					final int fin = i;
+					lastColor = ((ConsoleGraphics) g).drawFormatted(OFFSET,
+							(i * textHeight), lastColor, entry.getValue(),
+							(index, ch, sprite, px, py) -> {
+								if (index + fi == character - 1) {
+									for (int t = -1; t < sprite.getWidth(); t++) {
+										for (int j = (fin == 0 ? 0 : -1); j <= sprite.getHeight(); j++) {
+											byte s = g.sample(px + t, py + j);
+											g.draw(px + t, py + j, s == (byte) 32 ? cursorColorPrimary : cursorColorSecondary);
+										}
+									}
+								}
+							});
+					i++;
+					c += size;
+					continue;
+				}
+				over = character - 1 >= size + c ? font.getWidth(stripped) : -1;
+				c += size;
+			}
+			lastColor = g.drawFormatted(OFFSET, (i * textHeight), lastColor, entry.getValue());
+			i++;
 		}
+		if (over >= 0) {
+			for (int t = 0; t < textHeight; t++) {
+				g.draw(OFFSET + over + 2, (i - 1) * textHeight + t, cursorColorSecondary);
+				g.draw(OFFSET + over + 3, (i - 1) * textHeight + t, cursorColorSecondary);
+			}
+		}
+	}
+
+	@Override
+	public void handleInput(String input, String player) {
+		if (input.startsWith("-") && input.length() >= 2) {
+			String sub = input.substring(1).trim();
+			try {
+				int amt = Integer.parseInt(sub);
+				delete(amt);
+				repaint();
+				return;
+			}
+			catch (Throwable ignored) {}
+			if (sub.equals("n")) {
+				insert("\n");
+				repaint();
+				return;
+			}
+			if (sub.equals("q")) {
+				try (OutputStream out = file.createOutput()) {
+					out.write(content.getBytes(Charset.forName("UTF-8")));
+				} catch (IOException ignored) {}
+				quit();
+			}
+			if (sub.equals("Q")) {
+				quit();
+			}
+		}
+		// bad stuff happens when we use color codes, the
+		// editor still works, but we need to resolve the
+		// 'real' index of the cursor so it doesn't delete
+		// at the wrong character index. We need to edit
+		// code in this editor anyway, so there's no use
+		// in supporting color.
+		input = input.replace((char) 167, '&');
+		insert(input);
+		repaint();
+	}
+
+	public void quit() {
+		computer.switchView(1);
+		computer.setComponent(tty, null);
+	}
+
+	public byte getCursorColorPrimary() {
+		return cursorColorPrimary;
+	}
+
+	public void setCursorColorPrimary(byte cursorColorPrimary) {
+		this.cursorColorPrimary = cursorColorPrimary;
+	}
+
+	public byte getCursorColorSecondary() {
+		return cursorColorSecondary;
+	}
+
+	public void setCursorColorSecondary(byte cursorColorSecondary) {
+		this.cursorColorSecondary = cursorColorSecondary;
 	}
 }

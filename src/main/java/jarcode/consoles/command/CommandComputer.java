@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 public class CommandComputer extends CommandBase {
 	public CommandComputer() {
 		super("computer", "comp");
-		setNode("computer.use");
+		setNode("computer.manage");
 	}
 
 	@Override

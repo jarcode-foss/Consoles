@@ -1,5 +1,7 @@
 package jarcode.consoles.computer.boot;
 
+import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.InputComponent;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSFile;
@@ -22,12 +24,13 @@ public class PlayerCommandDriver extends Driver {
 	@Override
 	public void tick() {
 		try {
-			Terminal terminal = computer.getCurrentTerminal();
+			ConsoleComponent component = computer.getCurrentComponent();
 			if (in.available() > 0) {
 				DataInputStream data = new DataInputStream(in);
 				String text = data.readUTF();
-				data.readUTF(); // ignore name
+				String player = data.readUTF(); // ignore name
 				if (text.startsWith("^")) {
+					Terminal terminal = component instanceof Terminal ? (Terminal) component : null;
 					if (text.length() >= 2) {
 						char c = text.charAt(1);
 						if (c == 'C' || c == 'c') {
@@ -43,8 +46,8 @@ public class PlayerCommandDriver extends Driver {
 						}
 					}
 				}
-				else if (terminal != null)
-					terminal.write(text);
+				else if (component instanceof InputComponent)
+					((InputComponent) component).handleInput(text, player);
 			}
 		}
 		catch (IOException e) {

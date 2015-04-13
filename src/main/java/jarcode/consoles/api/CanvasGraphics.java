@@ -107,6 +107,14 @@ public interface CanvasGraphics {
 	 */
 	public CanvasGraphics subInstance(CanvasComponent component, int x, int y);
 
+	/**
+	 * Samples the color at the given location
+	 *
+	 * @param x x position
+	 * @param y y position
+	 * @return the byte representation of the color at the coordinate
+	 */
+	public byte sample(int x, int y);
 
 	/**
 	 * Returns a new instance of this object with the given relative position.

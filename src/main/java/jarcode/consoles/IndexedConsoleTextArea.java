@@ -18,16 +18,16 @@ import java.util.stream.Collectors;
 
 public class IndexedConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
-	private static final int OFFSET = 20;
-	private static final int MARGIN = 4;
+	protected static final int OFFSET = 20;
+	protected static final int MARGIN = 4;
 
-	private MapFont font = MonospacedMinecraftFont.FONT;
-	private MapFont numberFont = MinecraftFont.Font;
-	private int textHeight = font.getHeight() + 1;
-	private volatile Multimap<Integer, String> stack = createStack();
-	private int maxStackSize;
+	protected MapFont font = MonospacedMinecraftFont.FONT;
+	protected MapFont numberFont = MinecraftFont.Font;
+	protected int textHeight = font.getHeight() + 1;
+	protected volatile Multimap<Integer, String> stack = createStack();
+	protected int maxStackSize;
 	private int maxWidth;
-	private byte lastColor = 32;
+	protected byte lastColor = 32;
 
 	private static Multimap<Integer, String> createStack() {
 		return Multimaps.synchronizedMultimap(LinkedHashMultimap.create());
@@ -56,7 +56,9 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	public void setText(String text, int startingLine) {
 		stack.clear();
 		stack.put(startingLine, "");
-		String after = Arrays.asList(text.split("\n")).stream()
+		List<String> list = new ArrayList<>();
+		section(text, list::add, () -> {}, "\n", false);
+		String after = list.stream()
 				.skip(startingLine - 1)
 				.limit(maxStackSize)
 				.collect(Collectors.joining("\n"));
@@ -70,7 +72,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	public void print(String text) {
 		text = text.replace("\t", "    ");
 		if (text.contains("\n")) {
-			section(text, this::print, this::advanceLine, "\n");
+			section(text, this::print, this::advanceLine, "\n", true);
 			return;
 		}
 		if (!text.startsWith("\u00A7"))
@@ -93,7 +95,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 		int line = highestLine();
 		stack.put(line + 1, "");
 	}
-	private int highestLine() {
+	protected int highestLine() {
 		return stack.keySet().stream().max((o1, o2) -> o1 - o2).orElseGet(() -> 1);
 	}
 	private void appendToCurrentStack(String str) {
@@ -110,21 +112,17 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 		}
 	}
 	// used to split on newlines and handle accordingly
-	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex) {
-		int count = 0;
+	protected void section(String text, Consumer<String> handleText, Runnable onSplit, String regex, boolean ignoreEmpty) {
 		Matcher matcher = Pattern.compile(regex).matcher(text);
 		int first = 0;
 		while (matcher.find()) {
 			String before = text.substring(first, matcher.start());
-			count++;
-			if (!before.isEmpty())
+			if (!before.isEmpty() || !ignoreEmpty)
 				handleText.accept(before);
 			onSplit.run();
 			first = matcher.end();
 		}
-		if (count == 0 || (first < text.length() && first != -1)) {
-			handleText.accept(text.substring(first, text.length()));
-		}
+		handleText.accept(text.substring(first, text.length()));
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);
@@ -234,6 +232,15 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	protected int currentLine() {
 		return stack.size() == 0 ? 0 : stack.size() - 1;
+	}
+	protected int getHighestReadableLine() {
+		Map.Entry<Integer, String> entry =  stack.entries().stream()
+				.filter(v -> !v.getValue().isEmpty())
+				.max((o1, o2) -> o1.getKey() - o2.getKey()).get();
+		return entry == null ? 1 : entry.getKey();
+	}
+	protected String getLastReadableLine() {
+		return stack.values().stream().filter(str -> !str.isEmpty()).reduce((p, curr) -> curr).orElseGet(() -> "");
 	}
 	protected String getLastLine() {
 		return stack.values().stream().reduce((p, curr) -> curr).orElseGet(() -> "");

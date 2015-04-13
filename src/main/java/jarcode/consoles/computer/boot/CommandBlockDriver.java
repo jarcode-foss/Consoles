@@ -1,5 +1,7 @@
 package jarcode.consoles.computer.boot;
 
+import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.InputComponent;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.devices.CommandDevice;
@@ -22,18 +24,20 @@ public class CommandBlockDriver extends Driver {
 	@Override
 	public void tick() {
 		try {
-			Terminal terminal = computer.getCurrentTerminal();
+			ConsoleComponent component = computer.getCurrentComponent();
 			if (in.available() > 0) {
 				byte[] data = new byte[in.available()];
 				if (in.read(data) != data.length)
 					throw new IOException("Invalid array length on driver tick");
 				String text = new String(data, Charset.forName("UTF-8"));
+
 				if (text.startsWith("^")) {
+					Terminal terminal = component instanceof Terminal ? (Terminal) component : null;
 					if (text.length() >= 2) {
 						char c = text.charAt(1);
 						if (c == 'C' || c == 'c') {
 							if (terminal != null)
-								terminal.sigTerm();
+							terminal.sigTerm();
 						}
 						else {
 							int i;
@@ -44,8 +48,8 @@ public class CommandBlockDriver extends Driver {
 						}
 					}
 				}
-				else if (terminal != null)
-					terminal.write(text);
+				else if (component instanceof InputComponent)
+					((InputComponent) component).handleInput(text, null);
 			}
 		}
 		catch (IOException e) {

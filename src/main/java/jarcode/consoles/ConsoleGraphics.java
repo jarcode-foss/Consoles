@@ -25,6 +25,15 @@ public class ConsoleGraphics implements CanvasGraphics {
 	public ConsoleGraphics subInstance(CanvasComponent component, int x, int y) {
 		return subInstance(component, new Position2D(x, y));
 	}
+
+	@Override
+	public byte sample(int x, int y) {
+		if (!relative)
+			return renderer.getPixelBuffer().get(x, y, renderer.getPaintContext());
+		else
+			return renderer.getPixelBuffer().get(x + pos.getX(), y + pos.getY(), renderer.getPaintContext());
+	}
+
 	public ConsoleGraphics subInstance(CanvasComponent comp, Position2D pos) {
 		return new ConsoleGraphics(renderer, comp instanceof WrappedComponent ?
 				((WrappedComponent) comp).underlying() : (ConsoleComponent) comp, pos);
@@ -92,10 +101,14 @@ public class ConsoleGraphics implements CanvasGraphics {
 	public final byte drawFormatted(int x, int y, String text) {
 		return drawFormatted(x, y, (byte) 32, text);
 	}
-	@SuppressWarnings("ConstantConditions")
 	public final byte drawFormatted(int x, int y, byte inherit, String text) {
+		return drawFormatted(x, y, inherit, text, null);
+	}
+	@SuppressWarnings("ConstantConditions")
+	public final byte drawFormatted(int x, int y, byte inherit, String text, CharacterModifier modifier) {
 		int at = 0;
 		int i = 0;
+		int charIndex = 0;
 		char[] arr = text.toCharArray();
 		byte color = inherit;
 		boolean skipNext = false;
@@ -140,7 +153,10 @@ public class ConsoleGraphics implements CanvasGraphics {
 						}
 					}
 				}
+				if (modifier != null)
+					modifier.paint(charIndex, c, sprite, at + x, y);
 				at += sprite.getWidth() + 1;
+				charIndex++;
 			}
 			i++;
 		}
@@ -185,5 +201,10 @@ public class ConsoleGraphics implements CanvasGraphics {
 			renderer.drawBackground(x, y, w, h);
 		else
 			renderer.drawBackground(x + pos.getX(), y + pos.getY(), w, h);
+	}
+
+	@FunctionalInterface
+	public static interface CharacterModifier {
+		public void paint(int index, char c, MapFont.CharacterSprite sprite, int px, int py);
 	}
 }

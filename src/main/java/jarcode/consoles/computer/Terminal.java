@@ -1,14 +1,13 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleFeed;
-import jarcode.consoles.MonospacedMinecraftFont;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.InputComponent;
 import jarcode.consoles.computer.filesystem.FSFolder;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
 
 import java.util.Random;
 
-public class Terminal extends ConsoleFeed {
+public class Terminal extends ConsoleFeed implements InputComponent {
 
 	private static final String[] JOKES = {
 			"\"Some software money can't buy. For everything else, there's Microsoft.\"",
@@ -60,7 +59,7 @@ public class Terminal extends ConsoleFeed {
 		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
 		advanceLine();
 		Random random = new Random();
-		println(JOKES[random.nextInt(JOKES.length)]);
+		println(ChatColor.GRAY + JOKES[random.nextInt(JOKES.length)]);
 		advanceLine();
 		updatePrompt();
 		prompt();
@@ -103,5 +102,10 @@ public class Terminal extends ConsoleFeed {
 	}
 	public void updatePrompt() {
 		setPrompt(String.format("admin@%s:%s$ ", computer.getHostname(), currentDirectory));
+	}
+
+	@Override
+	public void handleInput(String input, String player) {
+		write(input);
 	}
 }

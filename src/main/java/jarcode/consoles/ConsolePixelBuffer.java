@@ -54,6 +54,14 @@ public class ConsolePixelBuffer {
 		}
 		switches.put(str, updated);
 	}
+	public byte get(int x, int y, String context) {
+		byte[][][] buffer = buffers.get(context);
+		if (buffer == null)
+			return 0;
+		if (x / SIZE >= 0 && x / SIZE < this.w && y / SIZE >= 0 && y / SIZE < this.h)
+			return buffer[x / SIZE][y / SIZE][x % SIZE + ((y % SIZE) * SIZE)];
+		else return 0;
+	}
 	public void set(int x, int y, byte b, String context) {
 		if (!buffers.containsKey(context))
 			buffers.put(context, newBuffer());
