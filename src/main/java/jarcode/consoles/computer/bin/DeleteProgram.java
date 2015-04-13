@@ -13,7 +13,10 @@ public class DeleteProgram extends FSProvidedProgram {
 			ConsoleButton deny = new ConsoleButton(computer.getConsole(), "Deny");
 			Position2D pos = computer.dialog("Are you sure you want to delete this computer?", delete, deny);
 			delete.addEventListener(event -> computer.destroy());
-			delete.addEventListener(event -> computer.getConsole().removeComponent(pos));
+			deny.addEventListener(event -> {
+				computer.getConsole().removeComponent(pos);
+				computer.getConsole().repaint();
+			});
 		});
 	}
 }

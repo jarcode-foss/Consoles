@@ -55,14 +55,15 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		if (row < top)
 			row = top;
 	}
+	public void rebuild() {
+		setContent(content);
+	}
 	// deletes characters at the cursor
 	public void delete(int amt) {
 		int[] i = {0, 0};
 		List<String> list = new ArrayList<>();
 		section(content, list::add, () -> {}, "\n", false);
 		content = list.stream()
-				.skip(top - 1)
-				.limit(maxStackSize)
 				.map(in -> {
 					if (i[0] != row - 1) {
 						i[0]++;
@@ -104,8 +105,6 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		List<String> list = new ArrayList<>();
 		section(content, list::add, () -> {}, "\n", false);
 		content = list.stream()
-				.skip(top - 1)
-				.limit(maxStackSize)
 				.map(in -> {
 					if (i[0] != row - 1) {
 						i[0]++;
@@ -283,19 +282,32 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 				return;
 			}
 			catch (Throwable ignored) {}
-			if (sub.equals("n")) {
-				insert("\n");
-				repaint();
-				return;
-			}
-			if (sub.equals("q")) {
-				try (OutputStream out = file.createOutput()) {
-					out.write(content.getBytes(Charset.forName("UTF-8")));
-				} catch (IOException ignored) {}
-				quit();
-			}
-			if (sub.equals("Q")) {
-				quit();
+			switch (sub) {
+				case "n":
+					insert("\n");
+					repaint();
+					return;
+				case "q":
+					try (OutputStream out = file.createOutput()) {
+						out.write(content.getBytes(Charset.forName("UTF-8")));
+					} catch (IOException ignored) {}
+					quit();
+					return;
+				case "Q":
+					quit();
+					return;
+				case "u":
+					top -= 2;
+					if (top < 1)
+						top = 1;
+					rebuild();
+					repaint();
+					return;
+				case "d":
+					top += 2;
+					rebuild();
+					repaint();
+					return;
 			}
 		}
 		// bad stuff happens when we use color codes, the

@@ -8,6 +8,7 @@ import jarcode.consoles.computer.filesystem.SerializedFilesystem;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.gson.LocalPositionTypeAdapter;
 import jarcode.consoles.util.gson.LocationTypeAdapter;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
 
@@ -77,7 +78,15 @@ public class ComputerData {
 
 	public static boolean delete(String hostname) {
 		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
-		return folder.exists() && folder.delete();
+		if (!folder.exists())
+			return false;
+		try {
+			FileUtils.deleteDirectory(folder);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
 	}
 
 	public static boolean rename(String old, String hostname) {

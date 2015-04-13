@@ -262,6 +262,7 @@ public abstract class Computer implements Runnable {
 	public void destroy() {
 		console.remove();
 		Bukkit.getScheduler().cancelTask(taskId);
+		ComputerHandler.getInstance().unregister(this);
 		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),  ComputerHandler.newComputerStack());
 	}
 	public Kernel getKernel() {

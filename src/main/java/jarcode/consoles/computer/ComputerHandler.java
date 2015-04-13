@@ -162,7 +162,6 @@ public class ComputerHandler implements Listener {
 	@EventHandler
 	public void onCraft(CraftItemEvent e) {
 		if (isNamedComputer(e.getCurrentItem())) {
-			System.out.println("crafted");
 			e.setCurrentItem(newComputerStack());
 		}
 	}
@@ -238,6 +237,7 @@ public class ComputerHandler implements Listener {
 	}
 	public void unregister(Computer computer) {
 		computers.remove(computer);
-		ComputerData.delete(computer.getHostname());
+		if (!ComputerData.delete(computer.getHostname()))
+			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getConsole());
 	}
 }

@@ -62,6 +62,10 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 				.skip(startingLine - 1)
 				.limit(maxStackSize)
 				.collect(Collectors.joining("\n"));
+		if (startingLine != 1 && after.isEmpty()) {
+			stack.clear();
+			return;
+		}
 		print(after);
 	}
 	public IndexedConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
