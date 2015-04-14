@@ -73,7 +73,7 @@ public class ProgramInstance implements Runnable {
 			if (provided != null)
 				provided.init(stdout, stdin, argument, computer, this);
 			else if (interpreted != null)
-				interpreted.run(stdout, stdin, argument, computer);
+				interpreted.run(stdout, stdin, argument, computer, this);
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
