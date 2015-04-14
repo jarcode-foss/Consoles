@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import com.google.common.base.Joiner;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
@@ -8,26 +9,39 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.filesystem.FSStoredFile;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
-public class TouchProgram extends FSProvidedProgram {
+public class RemoveProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+
 		String[] args = splitArguments(str);
-		if (args.length == 0 || str.isEmpty()) {
-			print("touch [FILE]");
+		HashMap<String, Object> properties = new HashMap<>();
+		properties.put("recursive", false);
+		if (args.length == 0 || str.trim().isEmpty()) {
+			println("Usage: rm [OPTION]... [FILE/FOLDER] ");
+			println("Flags:");
+			print("\t-r\tremoves files recursively");
 			return;
 		}
+		args = parseFlags(args, (flag, string) -> {
+			switch (flag) {
+				case 'r':
+					properties.put("recursive", true);
+					break;
+			}
+		}, c -> "r".indexOf(c) == -1);
 		str = args[0];
 		Terminal terminal = computer.getTerminal(this);
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
-		if (block != null) {
-			print("touch: " + str.trim() + ": file or folder exists");
+		if (block == null) {
+			print("rm: " + str.trim() + ": file does not exist");
 			return;
 		}
 		block = resolve("");
 		if (!(block instanceof FSFolder)) {
-			print("touch: " + str.trim() + ": invalid current directory");
+			print("rm: " + str.trim() + ": invalid current directory");
 			return;
 		}
 		String[] arr = FSBlock.section(str, "/");
@@ -39,18 +53,24 @@ public class TouchProgram extends FSProvidedProgram {
 				.reduce((o1, o2) -> o2)
 				.get();
 		if (!FSBlock.allowedBlockName(n)) {
-			print("touch: " + n.trim() + ": bad block name");
+			print("rm: " + n.trim() + ": bad block name");
 			return;
 		}
 		FSBlock folder = computer.getBlock(f, terminal.getCurrentDirectory());
 		if (folder == null) {
-			print("touch: " + f.trim() + ": does not exist");
+			print("rm: " + f.trim() + ": does not exist");
 			return;
 		}
 		if (!(folder instanceof FSFolder)) {
-			print("touch: " + f.trim() + ": not a folder");
+			print("rm: " + f.trim() + ": not a folder");
 			return;
 		}
-		((FSFolder) folder).contents.put(n, new FSStoredFile());
+		FSFolder b = ((FSFolder) folder);
+		FSBlock a = b.contents.get(n);
+		if (!((Boolean) properties.get("recursive")) && a instanceof FSFolder && ((FSFolder) a).contents.size() > 0) {
+			print("rm: " + str.trim() + ": folder is not empty");
+			return;
+		}
+		b.contents.remove(n);
 	}
 }

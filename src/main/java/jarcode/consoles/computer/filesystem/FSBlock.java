@@ -98,7 +98,7 @@ public abstract class FSBlock {
 		if (group == FSGroup.ALL)
 			if (x) permissions |= 0x02; else permissions &= ~0x02;
 	}
-	protected String[] section(String text, String regex) {
+	public static String[] section(String text, String regex) {
 		List<String> list = new ArrayList<>();
 		Matcher matcher = Pattern.compile(regex).matcher(text);
 		int first = 0;

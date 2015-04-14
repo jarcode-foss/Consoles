@@ -54,7 +54,7 @@ public class PacketUtils {
 	                                                            Predicate<T> listener) {
 		PlayerConnection connection = ((CraftPlayer) player).getHandle().playerConnection;
 		PacketListener old = connection.networkManager.getPacketListener();
-		if (!(old instanceof PacketListenerPlayIn && old instanceof PacketListenerPlayOut)) return false;
+		if (!(old instanceof PacketListenerPlayIn)) return false;
 		connection.networkManager.a(new CustomPacketListener<>(type, listener, old));
 		return true;
 	}

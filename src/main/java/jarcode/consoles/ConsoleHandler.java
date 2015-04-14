@@ -24,6 +24,7 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
@@ -479,7 +480,15 @@ public class ConsoleHandler implements Listener {
 		}
 	}
 	@EventHandler
-	public void onMapInit(MapInitializeEvent e) {
+	public void blockBreaking(BlockBreakEvent e) {
+		if (hittingConsole(e.getPlayer()))
+			e.setCancelled(true);
+	}
+	@EventHandler
+	public void onPlayerInteractBlock(PlayerInteractAtEntityEvent e) {
+		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked()))
+			e.setCancelled(true);
+		clickEvent(e.getPlayer());
 	}
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEntityEvent e) {
@@ -495,6 +504,16 @@ public class ConsoleHandler implements Listener {
 		return consoles.stream().filter(console -> console.intersect(eye, 7) != null)
 				.toArray(ManagedConsole[]::new);
 	}
+	private boolean hittingConsole(Player player) {
+		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
+			if (console.created()) {
+				int[] arr = console.intersect(player.getEyeLocation(), 7);
+				if (arr != null)
+					return true;
+			}
+		}
+		return false;
+	}
 	private void clickEvent(Player player) {
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
@@ -503,6 +522,7 @@ public class ConsoleHandler implements Listener {
 					console.handleClick(arr[0], arr[1], player);
 					ComputerHandler handler = ComputerHandler.getInstance();
 					if (handler != null) {
+						System.out.println("Passing to handler");
 						handler.interact(new Position2D(arr[0], arr[1]), player, console);
 					}
 				}

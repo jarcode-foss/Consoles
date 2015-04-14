@@ -41,6 +41,10 @@ public class Kernel extends FSProvidedProgram {
 		program(0x08, new FlashProgram());
 		program(0x09, new ViewProgram());
 		program(0x0A, new EditProgram());
+		program(0x0B, new TouchProgram());
+		program(0x0C, new RemoveProgram());
+		program(0x0D, new HelpProgram());
+		program(0x0E, new MakeDirectoryProgram());
 	}
 
 	{
@@ -113,6 +117,10 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x08, root, "flash");
 		mapProgram(0x09, root, "view");
 		mapProgram(0x0A, root, "edit");
+		mapProgram(0x0B, root, "touch");
+		mapProgram(0x0C, root, "rm");
+		mapProgram(0x0D, root, "help");
+		mapProgram(0x0E, root, "mkdir");
 	}
 	private void mapProgram(int id, FSFolder root, String... names) {
 		try {
