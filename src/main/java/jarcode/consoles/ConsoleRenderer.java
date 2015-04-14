@@ -217,13 +217,13 @@ public abstract class ConsoleRenderer implements Canvas {
 		if (arr[0] < 0 || arr[0] >= getWidth() || arr[1] < 0 || arr[1] >= getHeight())
 			return null;
 		// players shouldn't be able to interact in the opposite direction, or behind the console, so let's fix that.
-		if (d == EnumDirection.NORTH && (zp < 0 || eye.getZ() > pos.getZ()))
+		if (d == EnumDirection.NORTH && (zp < 0 || eye.getZ() > c))
 			return null;
-		if (d == EnumDirection.SOUTH && (zp > 0 || eye.getZ() < pos.getZ()))
+		if (d == EnumDirection.SOUTH && (zp > 0 || eye.getZ() < c))
 			return null;
-		if (d == EnumDirection.EAST && (xp > 0 || eye.getX() < pos.getX()))
+		if (d == EnumDirection.EAST && (xp > 0 || eye.getX() < c))
 			return null;
-		if (d == EnumDirection.WEST && (xp < 0 || eye.getX() > pos.getX()))
+		if (d == EnumDirection.WEST && (xp < 0 || eye.getX() > c))
 			return null;
 		// too far away!
 		if (intersect.distance(eye) > distance)
