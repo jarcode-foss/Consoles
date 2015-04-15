@@ -122,7 +122,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		else if (initialized && running && !ended) {
 			try {
 				synchronized (LOCK) {
-					byte[] arr = encoder.encode(string);
+					byte[] arr = encoder.encode(string + "\n");
 					outgoing.write(arr);
 				}
 			} catch (IOException e) {
