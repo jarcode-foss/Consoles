@@ -1,21 +1,25 @@
 package jarcode.consoles.computer.interpreter;
+import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
 import net.jodah.typetools.TypeResolver;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.*;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * This is meant to make method lambdas (using :: operator) usable
  * for function mapping. It looks hacky, but it's incredibly useful.
+ *
+ * It only supports basic/primitive types, I will add lua tables -> java maps later.
  */
 public class Lua {
 
 	public static Map<String, LibFunction> staticFunctions = new ConcurrentHashMap<>();
+	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
 
 	public static <R, T1, T2, T3, T4> void map(FourArgFunc<R, T1, T2, T3, T4> func, String luaName) {
 		staticFunctions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func));
@@ -49,6 +53,39 @@ public class Lua {
 		staticFunctions.put(luaName, link(new Class[0], func));
 	}
 
+
+	public static <R, T1, T2, T3, T4> void put(FourArgFunc<R, T1, T2, T3, T4> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func));
+	}
+	public static <R, T1, T2, T3> void put(ThreeArgFunc<R, T1, T2, T3> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgFunc.class, true), func));
+	}
+	public static <R, T1, T2> void put(TwoArgFunc<R, T1, T2> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgFunc.class, true), func));
+	}
+	public static <R, T1> void put(OneArgFunc<R, T1> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgFunc.class, true), func));
+	}
+
+	public static <T1, T2, T3, T4> void put(FourArgVoidFunc<T1, T2, T3, T4> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgVoidFunc.class, false), func));
+	}
+	public static <T1, T2, T3> void put(ThreeArgVoidFunc<T1, T2, T3> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func));
+	}
+	public static <T1, T2> void put(TwoArgVoidFunc<T1, T2> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func));
+	}
+	public static <T1> void put(OneArgVoidFunc<T1> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgVoidFunc.class, false), func));
+	}
+	public static <R> void put(NoArgFunc<R> func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(new Class[0], func));
+	}
+	public static void put(NoArgVoidFunc func, String luaName, FuncPool pool) {
+		pool.functions.put(luaName, link(new Class[0], func));
+	}
+
 	public static <R, T1, T2, T3, T4> LibFunction link(FourArgFunc<R, T1, T2, T3, T4> func) {
 		return link(resolveArgTypes(func, FourArgFunc.class, true), func);
 	}
@@ -79,6 +116,9 @@ public class Lua {
 	public static <R> LibFunction link(NoArgFunc<R> func) {
 		return link(new Class[0], func);
 	}
+	public static Computer context() {
+		return pools.get(Thread.currentThread()).getComputer();
+	}
 	public static Class[] resolveArgTypes(Object func, Class<?> type, boolean shift) {
 		Class<?>[] arr = TypeResolver.resolveRawArguments(type, func.getClass());
 		if (!shift) return arr;
@@ -90,75 +130,60 @@ public class Lua {
 
 		if (types.length == 1)
 			return new OneArgFunction() {
-				{
-					System.out.println("1arg");
-				}
 
 				@Override
 				public LuaValue call(LuaValue v1) {
-					return translateLua(Lua.call(func, v1));
+					return translateLua(Lua.call(func, types, v1));
 				}
 			};
 		else if (types.length == 2)
 			return new TwoArgFunction() {
-				{
-					System.out.println("2arg");
-				}
 
 				@Override
 				public LuaValue call(LuaValue v1, LuaValue v2) {
-					return translateLua(Lua.call(func, v1, v2));
+					return translateLua(Lua.call(func, types, v1, v2));
 				}
 			};
 		else if (types.length == 3)
 			return new ThreeArgFunction() {
-				{
-					System.out.println("3arg");
-				}
 
 				@Override
 				public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3) {
-					return translateLua(Lua.call(func, v1, v2, v3));
+					return translateLua(Lua.call(func, types, v1, v2, v3));
 				}
 			};
 		else if (types.length == 0)
 			return new ZeroArgFunction() {
-				{
-					System.out.println("0arg");
-				}
 				@Override
 				public LuaValue call() {
-					return translateLua(Lua.call(func));
+					return translateLua(Lua.call(func, types));
 				}
 			};
 
 		return new LibFunction() {
-			{
-				System.out.println("called");
-			}
 			@Override
 			public LuaValue call() {
-				return translateLua(Lua.call(func));
+				return translateLua(Lua.call(func, types));
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1) {
-				return translateLua(Lua.call(func, v1));
+				return translateLua(Lua.call(func, types, v1));
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2) {
-				return translateLua(Lua.call(func, v1, v2));
+				return translateLua(Lua.call(func, types, v1, v2));
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3) {
-				return translateLua(Lua.call(func, v1, v2, v3));
+				return translateLua(Lua.call(func, types, v1, v2, v3));
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3, LuaValue v4) {
-				return translateLua(Lua.call(func, v1, v2, v3, v4));
+				return translateLua(Lua.call(func, types, v1, v2, v3, v4));
 			}
 
 			@Override
@@ -167,7 +192,7 @@ public class Lua {
 				for (int t = 0; t < types.length; t++) {
 					total[t] = translate(types[t], value.arg(t), t);
 				}
-				return translateLua(Lua.call(func, total));
+				return translateLua(Lua.call(func, types, total));
 			}
 		};
 	}
@@ -209,19 +234,19 @@ public class Lua {
 			return value.checkboolean(i);
 		}
 		else if (type == int.class || type == Integer.class) {
-			return value.checknumber(i).checkint();
+			return value.checkint(i);
 		}
 		else if (type == byte.class || type == Byte.class) {
-			return (byte) value.checknumber(i).checkint();
+			return (byte) value.checkint(i);
 		}
 		else if (type == short.class || type == Short.class) {
-			return (short) value.checknumber(i).checkint();
+			return (short) value.checkint(i);
 		}
 		else if (type == long.class || type == Long.class) {
-			return value.checknumber(i).checklong();
+			return value.checklong(i);
 		}
 		else if (type == double.class || type == Double.class) {
-			return value.checknumber(i).checkdouble();
+			return value.checkdouble(i);
 		}
 		else if (type == float.class || type == Float.class) {
 			return (float) value.checknumber(i).checkdouble();
@@ -235,7 +260,10 @@ public class Lua {
 		else throw new RuntimeException("Unsupported argument: " + type);
 	}
 	@SuppressWarnings("unchecked")
-	private static Object call(Object func, Object... args) {
+	private static Object call(Object func, Class[] types, Object... args) {
+		for (int t = 0; t < args.length; t++) {
+			args[t] = translate(types[t], (LuaValue) args[t], t + 1);
+		}
 		if (func instanceof OneArgFunc) {
 			return ((OneArgFunc) func).call(args[0]);
 		}

@@ -4,6 +4,7 @@ import jarcode.consoles.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
 import net.md_5.bungee.api.ChatColor;
@@ -31,6 +32,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public abstract class Computer implements Runnable {
+	static {
+		Lua.map(Computer::lua_session, "switchSession");
+		Lua.map(Computer::lua_dialog, "dialog");
+	}
 
 	public static final String VERSION = "1.19.2";
 
@@ -199,6 +204,13 @@ public abstract class Computer implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
+	// LUA
+
+	static {
+		Lua.map(Computer::lua_session, "switchSession");
+		Lua.map(Computer::lua_dialog, "dialog");
+	}
 	private void printAfter(final String text, long delay) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			getCurrentTerminal().print(text);
@@ -213,6 +225,10 @@ public abstract class Computer implements Runnable {
 		if (console.created())
 			console.repaint();
 		return true;
+	}
+	private static void lua_session(Integer id) {
+		Computer computer = Lua.context();
+		computer.switchView(id);
 	}
 	public void requestDevice(CommandBlock block, ConsoleEventListener<ConsoleButton, ButtonEvent> listener) {
 		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();
@@ -297,6 +313,10 @@ public abstract class Computer implements Runnable {
 	}
 	public ConsoleComponent getCurrentComponent() {
 		return feeds[componentIndex];
+	}
+	public static void lua_dialog(String text) {
+		Computer computer = Lua.context();
+		computer.showDialog(text);
 	}
 	public ConsoleDialog showDialog(String text, ConsoleComponent... children) {
 		ConsoleDialog dialog = ConsoleDialog.show(console, text, children);

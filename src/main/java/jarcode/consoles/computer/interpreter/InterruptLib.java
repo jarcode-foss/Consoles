@@ -13,4 +13,7 @@ public class InterruptLib extends DebugLib {
 		}
 		super.onInstruction(i, varargs, i1);
 	}
+	public void terminate() {
+		terminated = true;
+	}
 }

@@ -71,6 +71,11 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					} else {
 						if (character - 1 > in.length())
 							return in;
+						if (character == 1) {
+							i[0]++;
+							i[1]--;
+							return null;
+						}
 						if (in.isEmpty()) {
 							i[0]++;
 							i[1]--;
