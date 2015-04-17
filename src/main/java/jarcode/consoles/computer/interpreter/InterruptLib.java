@@ -3,17 +3,21 @@ package jarcode.consoles.computer.interpreter;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.DebugLib;
 
+import java.util.function.BooleanSupplier;
+
 public class InterruptLib extends DebugLib {
-	private volatile boolean terminated = false;
+
+	private BooleanSupplier supplier;
+
+	public InterruptLib(BooleanSupplier supplier) {
+		this.supplier = supplier;
+	}
 
 	@Override
 	public void onInstruction(int i, Varargs varargs, int i1) {
-		if (terminated) {
+		if (supplier.getAsBoolean()) {
 			throw new ProgramInterruptException("Program terminated");
 		}
 		super.onInstruction(i, varargs, i1);
-	}
-	public void terminate() {
-		terminated = true;
 	}
 }

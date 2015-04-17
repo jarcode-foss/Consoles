@@ -1,9 +1,8 @@
 package jarcode.consoles.computer.interpreter;
 
-public class ProgramInterruptException extends LuaScriptException {
-	public ProgramInterruptException(String reason, Throwable cause) {
-		super(reason, cause);
-	}
+import org.luaj.vm2.LuaError;
+
+public class ProgramInterruptException extends LuaError {
 	public ProgramInterruptException(String reason) {
 		super(reason);
 	}

@@ -2,33 +2,45 @@ package jarcode.consoles.computer.bin;
 
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
-import jarcode.consoles.computer.filesystem.FSBlock;
-import jarcode.consoles.computer.filesystem.FSFolder;
-import jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import jarcode.consoles.computer.filesystem.FSStoredFile;
+import jarcode.consoles.computer.filesystem.*;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class TouchProgram extends FSProvidedProgram {
+
+	private boolean print = true;
+
+	public TouchProgram() {}
+	public TouchProgram(boolean print) {
+		this.print = print;
+	}
+
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+		Terminal terminal = computer.getTerminal(this);
+		touch(str, computer, terminal);
+	}
+
+	public FSFile touch(String str, Computer computer, Terminal terminal) {
 		String[] args = splitArguments(str);
 		if (args.length == 0 || str.isEmpty()) {
-			print("touch [FILE]");
-			return;
+			if (print)
+				print("touch [FILE]");
+			return null;
 		}
 		str = args[0];
-		Terminal terminal = computer.getTerminal(this);
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
 		if (block != null) {
-			print("touch: " + str.trim() + ": file or folder exists");
-			return;
+			if (print)
+				print("touch: " + str.trim() + ": file or folder exists");
+			return null;
 		}
 		block = resolve("");
 		if (!(block instanceof FSFolder)) {
-			print("touch: " + str.trim() + ": invalid current directory");
-			return;
+			if (print)
+				print("touch: " + str.trim() + ": invalid current directory");
+			return null;
 		}
 		String[] arr = FSBlock.section(str, "/");
 		String f = Arrays.asList(arr).stream()
@@ -39,18 +51,23 @@ public class TouchProgram extends FSProvidedProgram {
 				.reduce((o1, o2) -> o2)
 				.get();
 		if (!FSBlock.allowedBlockName(n)) {
-			print("touch: " + n.trim() + ": bad block name");
-			return;
+			if (print)
+				print("touch: " + n.trim() + ": bad block name");
+			return null;
 		}
 		FSBlock folder = computer.getBlock(f, terminal.getCurrentDirectory());
 		if (folder == null) {
-			print("touch: " + f.trim() + ": does not exist");
-			return;
+			if (print)
+				print("touch: " + f.trim() + ": does not exist");
+			return null;
 		}
 		if (!(folder instanceof FSFolder)) {
-			print("touch: " + f.trim() + ": not a folder");
-			return;
+			if (print)
+				print("touch: " + f.trim() + ": not a folder");
+			return null;
 		}
-		((FSFolder) folder).contents.put(n, new FSStoredFile());
+		FSStoredFile file = new FSStoredFile();
+		((FSFolder) folder).contents.put(n, file);
+		return file;
 	}
 }

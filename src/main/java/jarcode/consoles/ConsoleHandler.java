@@ -504,7 +504,7 @@ public class ConsoleHandler implements Listener {
 		return consoles.stream().filter(console -> console.intersect(eye, 7) != null)
 				.toArray(ManagedConsole[]::new);
 	}
-	private boolean hittingConsole(Player player) {
+	public boolean hittingConsole(Player player) {
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
 				int[] arr = console.intersect(player.getEyeLocation(), 7);

@@ -141,6 +141,8 @@ public class ConsoleGraphics implements CanvasGraphics {
 				skipNext = false;
 			}
 			else {
+				if (c == '\u00A7')
+					c = '&';
 				MapFont.CharacterSprite sprite = font.getChar(c);
 				for (int k = 0; k < sprite.getWidth(); k++) {
 					for (int j = 0; j < sprite.getHeight(); j++) {

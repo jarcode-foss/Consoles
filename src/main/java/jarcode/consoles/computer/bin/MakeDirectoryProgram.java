@@ -11,24 +11,39 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class MakeDirectoryProgram extends FSProvidedProgram {
+
+	private boolean print = true;
+
+	public MakeDirectoryProgram() {}
+
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+		Terminal terminal = computer.getTerminal(this);
+		mkdir(str, computer, terminal);
+	}
+
+	public MakeDirectoryProgram(boolean print) {
+		this.print = print;
+	}
+
+	public FSFolder mkdir(String str, Computer computer, Terminal terminal) {
 		String[] args = splitArguments(str);
 		if (args.length == 0 || str.isEmpty()) {
 			print("mkdir [FOLDER]");
-			return;
+			return null;
 		}
 		str = args[0];
-		Terminal terminal = computer.getTerminal(this);
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
 		if (block != null) {
-			print("mkdir: " + str.trim() + ": file or folder exists");
-			return;
+			if (print)
+				print("mkdir: " + str.trim() + ": file or folder exists");
+			return null;
 		}
 		block = resolve("");
 		if (!(block instanceof FSFolder)) {
-			print("mkdir: " + str.trim() + ": invalid current directory");
-			return;
+			if (print)
+				print("mkdir: " + str.trim() + ": invalid current directory");
+			return null;
 		}
 		String[] arr = FSBlock.section(str, "/");
 		String f = Arrays.asList(arr).stream()
@@ -39,18 +54,23 @@ public class MakeDirectoryProgram extends FSProvidedProgram {
 				.reduce((o1, o2) -> o2)
 				.get();
 		if (!FSBlock.allowedBlockName(n)) {
-			print("mkdir: " + n.trim() + ": bad block name");
-			return;
+			if (print)
+				print("mkdir: " + n.trim() + ": bad block name");
+			return null;
 		}
 		FSBlock folder = computer.getBlock(f, terminal.getCurrentDirectory());
 		if (folder == null) {
-			print("mkdir: " + f.trim() + ": does not exist");
-			return;
+			if (print)
+				print("mkdir: " + f.trim() + ": does not exist");
+			return null;
 		}
 		if (!(folder instanceof FSFolder)) {
-			print("mkdir: " + f.trim() + ": not a folder");
-			return;
+			if (print)
+				print("mkdir: " + f.trim() + ": not a folder");
+			return null;
 		}
-		((FSFolder) folder).contents.put(n, new FSFolder());
+		FSFolder fo = new FSFolder();
+		((FSFolder) folder).contents.put(n, fo);
+		return fo;
 	}
 }

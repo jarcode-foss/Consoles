@@ -5,8 +5,13 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Program;
 import jarcode.consoles.computer.ProgramInstance;
 import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.bin.MakeDirectoryProgram;
+import jarcode.consoles.computer.bin.TouchProgram;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
+import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.interpreter.types.LuaFile;
+import jarcode.consoles.computer.interpreter.types.LuaFolder;
 import org.bukkit.ChatColor;
 import org.luaj.vm2.*;
 import org.luaj.vm2.compiler.LuaC;
@@ -17,6 +22,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class InterpretedProgram implements Program {
@@ -38,6 +44,13 @@ public class InterpretedProgram implements Program {
 		Lua.put(this::lua_args, "args", pool);
 		Lua.put(this::lua_clear, "clear", pool);
 		Lua.put(this::lua_print, "printc", pool);
+		Lua.put(this::lua_read, "read", pool);
+		Lua.put(this::lua_resolveFile, "resolveFile", pool);
+		Lua.put(this::lua_resolveFolder, "resolveFolder", pool);
+		Lua.put(this::lua_touch, "touch", pool);
+		Lua.put(this::lua_mkdir, "mkdir", pool);
+		Lua.put(this::lua_reflect, "reflect", pool);
+		Lua.put(this::lua_write, "write", pool);
 	}
 	public void run(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) throws Exception {
 		try {
@@ -76,7 +89,7 @@ public class InterpretedProgram implements Program {
 			globals.load(new StringLib());
 			globals.load(new JseMathLib());
 			globals.load(new GameIoLib(instance));
-			globals.load(new InterruptLib());
+			globals.load(new InterruptLib(this::terminated));
 			globals.load(new MathLib());
 			LoadState.install(globals);
 			LuaC.install(globals);
@@ -89,19 +102,17 @@ public class InterpretedProgram implements Program {
 				globals.set(entry.getKey(), entry.getValue());
 			}
 			globals.STDOUT = new PrintStream(out);
+			// we handle errors with exceptions
 			globals.STDERR = new PrintStream(out) {
 				@Override
-				public void println(String x) {
-					super.println(ChatColor.RED.toString() + x);
-				}
+				public void println(String x) {}
 
 				@Override
-				public void println(Object x) {
-					super.println(ChatColor.RED.toString() + x.toString());
-				}
+				public void println(Object x) {}
 			};
 			globals.STDIN = in;
 			LuaValue chunk;
+			LuaValue exit = null;
 			try {
 				chunk = globals.load(raw);
 			} catch (LuaError err) {
@@ -116,14 +127,30 @@ public class InterpretedProgram implements Program {
 			}
 			try {
 				chunk.call();
-			} catch (LuaError err) {
-				if (Consoles.DEBUG)
-					err.printStackTrace();
-				println("RUNTIME ERROR:");
-				String msg = Arrays.asList(err.getMessage().split("\n")).stream()
-						.map(this::err)
-						.collect(Collectors.joining("\n"));
-				print(msg);
+				LuaValue value = globals.get("main");
+				exit = globals.get("exit");
+				if (value.isfunction()) {
+					value.call(args);
+				}
+			}
+			catch (ProgramInterruptException ex) {
+				print("\nProgram terminated");
+			}
+			catch (LuaError err) {
+				handleLuaError(err);
+			}
+			finally {
+				if (exit != null && exit.isfunction() && !terminated()) {
+					try {
+						exit.call();
+					}
+					catch (ProgramInterruptException ex) {
+						print("\nExit routine terminated");
+					}
+					catch (LuaError err) {
+						handleLuaError(err);
+					}
+				}
 			}
 		}
 		finally {
@@ -131,15 +158,64 @@ public class InterpretedProgram implements Program {
 				pool.cleanup();
 		}
 	}
+	private void handleLuaError(LuaError err) {
+		if (Consoles.DEBUG)
+			err.printStackTrace();
+		println("RUNTIME ERROR:");
+		String msg = Arrays.asList(err.getMessage().split("\n")).stream()
+				.map(this::err)
+				.collect(Collectors.joining("\n"));
+		print(msg);
+	}
 	protected String warning(String str) {
 		return "\t" + ChatColor.YELLOW + str;
 	}
 	protected String err(String str) {
 		return "\t" + ChatColor.RED + str;
 	}
+	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+	protected String lua_read() {
+		final String[] result = {null};
+		AtomicBoolean locked = new AtomicBoolean(true);
+		computer.getCurrentTerminal().setHandlerInterrupt((str) -> {
+			result[0] = str;
+			locked.set(false);
+		});
+		try {
+			while (locked.get() && !terminated()) {
+				Thread.sleep(10);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return result[0];
+	}
+	protected void lua_write(String text) {
+		print(text);
+	}
 	protected String lua_args() {
 		System.out.print("called");
 		return args;
+	}
+	private LuaFolder lua_resolveFolder(String path) {
+		FSBlock block = resolve(path);
+		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
+				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+	}
+	private LuaFile lua_resolveFile(String path) {
+		FSBlock block = resolve(path);
+		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
+				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+	}
+	private FSFile lua_touch(String path) {
+		return new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
+	}
+	public String[] lua_reflect() {
+		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
+	}
+	@SuppressWarnings("SpellCheckingInspection")
+	private FSFolder lua_mkdir(String path) {
+		return new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
 	}
 	protected void lua_print(String formatted) {
 		formatted = ChatColor.translateAlternateColorCodes('&', formatted);

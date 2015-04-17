@@ -1,5 +1,6 @@
 package jarcode.consoles.command;
 
+import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.ComputerHandler;
 import org.bukkit.ChatColor;
@@ -101,10 +102,10 @@ public class CommandHandler implements Listener {
 	@SuppressWarnings("unused")
 	void onPreCommand(PlayerCommandPreprocessEvent e) {
 
-		if (e.getMessage().startsWith("/.") && !e.getMessage().substring(2).trim().isEmpty()) {
+		if (e.getMessage().startsWith("/") && !e.getMessage().substring(1).trim().isEmpty()) {
 			ComputerHandler handler = ComputerHandler.getInstance();
-			if (handler != null) {
-				handler.command(e.getMessage().substring(2), e.getPlayer());
+			if (handler != null && ConsoleHandler.getInstance().hittingConsole(e.getPlayer())) {
+				handler.command(e.getMessage().substring(1), e.getPlayer());
 				e.setCancelled(true);
 				return;
 			}

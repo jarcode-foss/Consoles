@@ -8,28 +8,21 @@ import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_8_R2.ChatComponentText;
-import net.minecraft.server.v1_8_R2.TileEntityCommand;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import net.minecraft.server.v1_8_R2.*;
+import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
-import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.ref.PhantomReference;
-import java.lang.ref.ReferenceQueue;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public abstract class Computer implements Runnable {
 	static {
@@ -162,18 +155,26 @@ public abstract class Computer implements Runnable {
 		getCurrentTerminal().println(ChatColor.GREEN + "Network boot: " + ChatColor.WHITE + "(" + hostname + ")");
 		getCurrentTerminal().advanceLine();
 		console.repaint();
-		printAfter("Loading vmlinuz", 20);
-		for (int t = 0; t < 3; t++) {
-			printAfter(".", 28 + (t * 8));
-			if (t == 2)
-				printAfter("\n", 29 + (t * 8));
+		String[] text = {
+				"Loading vmlinuz", null, ".", null, ".", null, ".", null, ".", null, ".\tdone\n",
+				"Loading initrd.gz", null, ".", null, ".", null, ".", null, ".", null, "\tdone\n\n",
+				"Initializing filesystem", ".", ".", ".", "\tdone\n",
+				"Scanning devices", ".", ".", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0",
+				"Blacklisting kernel modules", ".", ".", "\tdone\n",
+				"Starting services", null, ".", null, ".", null, ".", null, "\tdone\n",
+				"Loading drivers", "\n\t[+] 'plcommand-1.34-245'", "\n\t[+] 'plaction-1.06-083'",
+				"\n\t[+] 'command-1.34-174'", "\n\t[+] 'ttyinput-1.94-042'", "\n\t[+] 'luabindings-2.3-009'"
+		};
+		int i = 20;
+		for (String str : text) {
+			if (str != null) {
+				printAfter(str, i);
+			}
+			i += 4;
 		}
-		printAfter("Loading initrd.gz", 50);
-		for (int t = 0; t < 3; t++) {
-			printAfter(".", 58 + (t * 8));
-			if (t == 2)
-				printAfter("\n", 59 + (t * 8));
-		}
+		bootTask(i + 10);
+	}
+	private void bootTask(long time) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			if (!root.exists("boot/vmlinuz")) {
 				try {
@@ -194,7 +195,7 @@ public abstract class Computer implements Runnable {
 			getCurrentTerminal().clear();
 			getCurrentTerminal().onStart();
 			console.repaint();
-		}, 80L);
+		}, time);
 	}
 	public void save() {
 		try {

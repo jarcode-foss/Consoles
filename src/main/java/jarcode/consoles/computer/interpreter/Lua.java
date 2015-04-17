@@ -1,11 +1,16 @@
 package jarcode.consoles.computer.interpreter;
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
 import net.jodah.typetools.TypeResolver;
+import org.luaj.vm2.LuaFunction;
+import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.*;
+import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -190,7 +195,7 @@ public class Lua {
 			public LuaValue invoke(Varargs value) {
 				Object[] total = new Object[types.length];
 				for (int t = 0; t < types.length; t++) {
-					total[t] = translate(types[t], value.arg(t), t);
+					total[t] = translate(types[t], value.arg(t));
 				}
 				return translateLua(Lua.call(func, types, total));
 			}
@@ -198,7 +203,7 @@ public class Lua {
 	}
 	private static LuaValue translateLua(Object java) {
 		if (java == null) {
-			return LuaValue.valueOf(true);
+			return LuaValue.NIL;
 		}
 		else if (java instanceof Boolean) {
 			return LuaValue.valueOf((Boolean) java);
@@ -227,42 +232,80 @@ public class Lua {
 		else if (java instanceof String) {
 			return LuaValue.valueOf((String) java);
 		}
-		else throw new RuntimeException("Unsupported argument: " + java.getClass() + ", value: " + java);
+		// recursive
+		else if (java.getClass().isArray()) {
+			Object[] arr = new Object[Array.getLength(java)];
+			for (int t = 0; t < arr.length; t++)
+				arr[t] = Array.get(java, t);
+			return LuaValue.listOf(Arrays.asList(arr).stream()
+					.map(Lua::translateLua)
+					.toArray(LuaValue[]::new));
+		}
+		else {
+			if (Consoles.DEBUG)
+				Consoles.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
+			return CoerceJavaToLua.coerce(java);
+		}
 	}
-	private static Object translate(Class<?> type, LuaValue value, int i) {
-		if (type == boolean.class || type == Boolean.class) {
-			return value.checkboolean(i);
+	private static Object translate(Class<?> type, LuaValue value) {
+		if (type != null && FunctionBind.class.isAssignableFrom(type)) {
+			if (!value.isfunction()) throw new RuntimeException("expected function");
+			return (FunctionBind) (args) -> {
+				LuaValue[] arr = Arrays.asList(args).stream()
+						.map(Lua::translateLua)
+						.toArray(LuaValue[]::new);
+				switch (arr.length) {
+					case 0: value.call(); break;
+					case 1: value.call(arr[0]); break;
+					case 2: value.call(arr[0], arr[1]); break;
+					case 3: value.call(arr[0], arr[1], arr[2]); break;
+				}
+			};
+		}
+		else if (type != null && LuaValue.class.isAssignableFrom(type)) {
+			return value;
+		}
+		else if (type == Runnable.class) {
+			if (!value.isfunction()) throw new RuntimeException("expected function");
+			return (Runnable) ((LuaFunction) value)::call;
+		}
+		else if (type == boolean.class || type == Boolean.class) {
+			return value.checkboolean();
 		}
 		else if (type == int.class || type == Integer.class) {
-			return value.checkint(i);
+			return value.checkint();
 		}
 		else if (type == byte.class || type == Byte.class) {
-			return (byte) value.checkint(i);
+			return (byte) value.checkint();
 		}
 		else if (type == short.class || type == Short.class) {
-			return (short) value.checkint(i);
+			return (short) value.checkint();
 		}
 		else if (type == long.class || type == Long.class) {
-			return value.checklong(i);
+			return value.checklong();
 		}
 		else if (type == double.class || type == Double.class) {
-			return value.checkdouble(i);
+			return value.checkdouble();
 		}
 		else if (type == float.class || type == Float.class) {
-			return (float) value.checknumber(i).checkdouble();
+			return (float) value.checknumber().checkdouble();
 		}
 		else if (type == char.class || type == Character.class) {
 			return value.checkjstring().charAt(0);
 		}
-		else if (type == String.class) {
+		else if (type == String.class || value.getClass().isAssignableFrom(LuaString.class)) {
 			return value.checkjstring();
 		}
-		else throw new RuntimeException("Unsupported argument: " + type);
+		else if (value.equals(LuaValue.NIL)) {
+			return null;
+		}
+		else throw new RuntimeException("Unsupported argument: " + type
+					+ ", lua: " + value.getClass().getSimpleName() + ", data: " + value.toString());
 	}
 	@SuppressWarnings("unchecked")
 	private static Object call(Object func, Class[] types, Object... args) {
 		for (int t = 0; t < args.length; t++) {
-			args[t] = translate(types[t], (LuaValue) args[t], t + 1);
+			args[t] = translate(types[t], (LuaValue) args[t]);
 		}
 		if (func instanceof OneArgFunc) {
 			return ((OneArgFunc) func).call(args[0]);

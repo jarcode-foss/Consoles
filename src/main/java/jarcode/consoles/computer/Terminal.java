@@ -6,6 +6,7 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 import org.bukkit.ChatColor;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 public class Terminal extends ConsoleFeed implements InputComponent {
 
@@ -53,6 +54,8 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 	private FSFolder root;
 	private Computer computer;
 
+	private volatile Consumer<String> handlerInterrupt = null;
+
 	private final ProgramCreator creator = new ProgramCreator(this);
 
 	public void onStart() {
@@ -94,6 +97,9 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		currentDirectory = directory;
 		updatePrompt();
 	}
+	public void setHandlerInterrupt(Consumer<String> consumer) {
+		this.handlerInterrupt = consumer;
+	}
 	public String getCurrentDirectory() {
 		return currentDirectory;
 	}
@@ -106,6 +112,11 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 
 	@Override
 	public void handleInput(String input, String player) {
+		if (handlerInterrupt != null) {
+			handlerInterrupt.accept(input);
+			handlerInterrupt = null;
+			return;
+		}
 		write(input);
 	}
 }
