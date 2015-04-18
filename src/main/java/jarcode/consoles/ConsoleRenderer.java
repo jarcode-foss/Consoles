@@ -286,6 +286,9 @@ public abstract class ConsoleRenderer implements Canvas {
 		drawConsoleBackground = draw;
 		cacheBackground();
 	}
+	public BlockFace getDirection() {
+		return face;
+	}
 	public Location getLocation() {
 		return pos;
 	}

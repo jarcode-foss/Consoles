@@ -13,6 +13,7 @@ import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,6 +29,7 @@ public abstract class Computer implements Runnable {
 	static {
 		Lua.map(Computer::lua_session, "switchSession");
 		Lua.map(Computer::lua_dialog, "dialog");
+		Lua.map(Computer::lua_messageOwner, "tellOwner");
 	}
 
 	public static final String VERSION = "1.19.2";
@@ -154,12 +156,13 @@ public abstract class Computer implements Runnable {
 		console.putComponent(STATUS_COMPONENT_POSITION, bar);
 		getCurrentTerminal().println(ChatColor.GREEN + "Network boot: " + ChatColor.WHITE + "(" + hostname + ")");
 		getCurrentTerminal().advanceLine();
+		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
 		String[] text = {
 				"Loading vmlinuz", null, ".", null, ".", null, ".", null, ".", null, ".\tdone\n",
 				"Loading initrd.gz", null, ".", null, ".", null, ".", null, ".", null, "\tdone\n\n",
 				"Initializing filesystem", ".", ".", ".", "\tdone\n",
-				"Scanning devices", ".", ".", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0",
+				"Scanning devices", ".", ".", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0\n",
 				"Blacklisting kernel modules", ".", ".", "\tdone\n",
 				"Starting services", null, ".", null, ".", null, ".", null, "\tdone\n",
 				"Loading drivers", "\n\t[+] 'plcommand-1.34-245'", "\n\t[+] 'plaction-1.06-083'",
@@ -318,6 +321,14 @@ public abstract class Computer implements Runnable {
 	public static void lua_dialog(String text) {
 		Computer computer = Lua.context();
 		computer.showDialog(text);
+	}
+	public static void lua_messageOwner(String text) {
+		Computer computer = Lua.context();
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			UUID uuid = computer.getOwner();
+			Player player = Bukkit.getPlayer(uuid);
+			player.sendMessage(text);
+		});
 	}
 	public ConsoleDialog showDialog(String text, ConsoleComponent... children) {
 		ConsoleDialog dialog = ConsoleDialog.show(console, text, children);

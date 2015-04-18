@@ -21,7 +21,7 @@ public class SyncTaskScheduler implements Runnable {
 			instance = new SyncTaskScheduler();
 			return instance;
 		}
-		else throw new RuntimeException("An getInstance of SyncTaskScheduler has already been created!");
+		return instance;
 	}
 
 	public static SyncTaskScheduler instance() {

@@ -418,12 +418,9 @@ public class ConsoleHandler implements Listener {
 		else if (map.containsKey(8) && ((WatchableObject) map.get(8)).b() instanceof ItemStack) {
 			ItemStack stack = (ItemStack) ((WatchableObject) map.get(8)).b();
 			if (stack.getItem() == Items.FILLED_MAP || stack.getItem() == Items.MAP) {
+				System.out.println("Blocked non-console item frame metadata packet");
 				return false;
 			}
-			System.out.println("Blocked non-console item frame metadata packet");
-		} else if (map.containsKey(8) && ((WatchableObject) map.get(8)).b() == null) {
-			System.out.println("Attempted to send metadata packet with null item stack!");
-			return false;
 		}
 		return true;
 	}
@@ -464,8 +461,10 @@ public class ConsoleHandler implements Listener {
 	// block maps
 	@EventHandler
 	public void onItemCreative(InventoryCreativeEvent e) {
-		if (e.getCurrentItem().getType() == Material.MAP || e.getCursor().getType() == Material.MAP ||
-				e.getCurrentItem().getType() == Material.EMPTY_MAP || e.getCursor().getType() == Material.EMPTY_MAP)
+		if (e.getCurrentItem() != null
+				&& (e.getCurrentItem().getType() == Material.MAP || e.getCurrentItem().getType() == Material.EMPTY_MAP)
+				|| (e.getCursor() != null && (e.getCursor().getType() == Material.MAP
+				|| e.getCursor().getType() == Material.EMPTY_MAP)))
 			e.setCancelled(true);
 	}
 	@EventHandler

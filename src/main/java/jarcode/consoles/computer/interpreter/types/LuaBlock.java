@@ -38,4 +38,7 @@ public abstract class LuaBlock {
 		}
 		else return false;
 	}
+	public String getPath() {
+		return path;
+	}
 }

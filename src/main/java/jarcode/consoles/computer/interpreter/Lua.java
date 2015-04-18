@@ -248,7 +248,8 @@ public class Lua {
 		}
 	}
 	private static Object translate(Class<?> type, LuaValue value) {
-		if (type != null && FunctionBind.class.isAssignableFrom(type)) {
+		if (type != null && FunctionBind.class.isAssignableFrom(type)
+				|| (value.isfunction() && (TypeResolver.Unknown.class == type || type == null))) {
 			if (!value.isfunction()) throw new RuntimeException("expected function");
 			return (FunctionBind) (args) -> {
 				LuaValue[] arr = Arrays.asList(args).stream()
@@ -265,14 +266,17 @@ public class Lua {
 		else if (type != null && LuaValue.class.isAssignableFrom(type)) {
 			return value;
 		}
+		// some of these are unsupported on non Oracle/Open JSE VMs
 		else if (type == Runnable.class) {
 			if (!value.isfunction()) throw new RuntimeException("expected function");
 			return (Runnable) ((LuaFunction) value)::call;
 		}
-		else if (type == boolean.class || type == Boolean.class) {
+		else if (type == boolean.class || type == Boolean.class
+				|| value.isboolean()) {
 			return value.checkboolean();
 		}
-		else if (type == int.class || type == Integer.class) {
+		else if (type == int.class || type == Integer.class
+				|| (value.isint() && (TypeResolver.Unknown.class == type || type == null))) {
 			return value.checkint();
 		}
 		else if (type == byte.class || type == Byte.class) {

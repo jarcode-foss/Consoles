@@ -1,5 +1,6 @@
 package jarcode.consoles.command;
 
+import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.ManagedComputer;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.block.BlockFace;
@@ -22,6 +23,9 @@ public class CommandComputer extends CommandBase {
 
 		if (args.length == 0) {
 			printHelp(sender);
+		}
+		else if (args[0].equalsIgnoreCase("remove") && args.length >= 2) {
+			ComputerHandler.getInstance().find(args[1]).destroy();
 		}
 		else if (args[0].equalsIgnoreCase("create") && args.length >= 3) {
 			BlockFace face;

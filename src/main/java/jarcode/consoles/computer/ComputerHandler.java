@@ -5,6 +5,7 @@ import jarcode.consoles.Consoles;
 import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.Position2D;
 import jarcode.consoles.api.Console;
+import jarcode.consoles.computer.interpreter.Lua;
 import javafx.geometry.Pos;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
@@ -12,15 +13,21 @@ import net.minecraft.server.v1_8_R2.NBTTagList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R2.block.CraftBlockState;
 import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
 import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.server.PluginDisableEvent;
@@ -32,6 +39,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 public class ComputerHandler implements Listener {
@@ -40,6 +49,11 @@ public class ComputerHandler implements Listener {
 
 	private static final Field ITEM_STACK_HANDLE;
 	private static final Constructor ITEM_STACK_CREATE;
+
+	static {
+		Lua.map(ComputerHandler::lua_redstone, "redstone");
+		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
+	}
 
 	static {
 		try {
@@ -102,6 +116,7 @@ public class ComputerHandler implements Listener {
 	ShapedRecipe computerRecipe;
 	private ArrayList<Computer> computers = new ArrayList<>();
 	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
+	private HashMap<Location, Computer> trackedBlocks = new LinkedHashMap<>();
 
 	{
 		instance = this;
@@ -119,6 +134,128 @@ public class ComputerHandler implements Listener {
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), this::saveAll, 6000, 6000);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
 				() -> computers.addAll(ComputerData.makeAll()));
+	}
+
+	public void updateBlocks(Computer computer) {
+		ManagedConsole console = computer.getConsole();
+		BlockFace f = console.getDirection();
+		Location at = console.getLocation();
+		Location[] hm = {
+				new Location(at.getWorld(), 1, 0, 0), // N
+				new Location(at.getWorld(), 0, 0, 1), // E
+				new Location(at.getWorld(), 1, 0, 0), // S
+				new Location(at.getWorld(), 0, 0, 1), // W
+		};
+		Location[] pm = {
+				new Location(at.getWorld(), 0, 0, 1), // N
+				new Location(at.getWorld(), -1, 0, 0), // E
+				new Location(at.getWorld(), 0, 0, -1), // S
+				new Location(at.getWorld(), 1, 0, 0), // W
+		};
+		int i = -1;
+		switch (f) {
+			case NORTH: i = 0; break;
+			case EAST: i = 1; break;
+			case SOUTH: i = 2; break;
+			case WEST: i = 3; break;
+		}
+		if (i == -1) return;
+		Location p = at.clone().add(pm[i]);
+		Location o;
+		for (int h = 0; h < 2; h++) {
+			p.setY(p.getBlockY() + h);
+			o = p.clone();
+			for (int t = 0; t < 3; t++) {
+				if (o.getBlock().getType() == Material.REDSTONE_BLOCK && !trackedBlocks.containsKey(o)) {
+					trackedBlocks.put(o.clone(), computer);
+				}
+				o.add(hm[i]);
+			}
+		}
+	}
+
+	@SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
+	public static boolean lua_redstone(Integer index, Boolean on) {
+		Computer computer = Lua.context();
+		BooleanSupplier func = () -> {
+			Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
+			if (blocks != null && index < blocks.length && index >= 0) {
+				Block block = blocks[index].getBlock();
+				if (block == null) return false;
+				block.setType(on ? Material.REDSTONE_BLOCK : Material.STAINED_GLASS);
+				if (!on)
+					block.setData((byte) 14);
+				BlockState state = block.getState();
+				state.update(true, true);
+				return true;
+			} else return false;
+		};
+		Object lock = new Object();
+		AtomicBoolean done = new AtomicBoolean(false);
+		AtomicBoolean result = new AtomicBoolean(false);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			synchronized (lock) {
+				result.set(func.getAsBoolean());
+				done.set(true);
+				lock.notify();
+			}
+		});
+		try {
+			while (!done.get()) {
+				synchronized (lock) {
+					lock.wait();
+				}
+			}
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return result.get();
+	}
+
+	public static int lua_redstoneLength() {
+		Computer computer = Lua.context();
+		Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
+		return blocks == null ? 0 : blocks.length;
+	}
+
+	public Location[] trackedFor(Computer computer) {
+		return trackedBlocks.entrySet().stream()
+				.filter(entry -> entry.getValue() == computer)
+				.map(Map.Entry::getKey)
+				.toArray(Location[]::new);
+	}
+
+	@EventHandler
+	public void trackBlockPlace(BlockPlaceEvent e) {
+		computers.stream()
+				.filter(c -> c.getConsole().getLocation().distanceSquared(e.getPlayer().getLocation()) < 64)
+				.forEach(this::updateBlocks);
+	}
+
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent e) {
+		if (trackedBlocks.containsKey(e.getBlock().getLocation())) {
+			if (e.getBlock().getType() != Material.REDSTONE_BLOCK) {
+				e.setCancelled(true);
+				e.getPlayer().sendMessage(ChatColor.YELLOW + "Change to redstone before removing");
+			}
+			else {
+				trackedBlocks.remove(e.getBlock().getLocation());
+			}
+		}
+	}
+	@EventHandler
+	public void onBlockPistonExtend(BlockPistonExtendEvent e) {
+		if (trackedBlocks.containsKey(e.getBlock().getLocation())) {
+			e.setCancelled(true);
+		}
+	}
+	@EventHandler
+	public void onBlockPistonRetract(BlockPistonRetractEvent e) {
+		if (trackedBlocks.containsKey(e.getBlock().getLocation())) {
+			e.setCancelled(true);
+		}
 	}
 
 	public void saveAll() {
@@ -165,7 +302,9 @@ public class ComputerHandler implements Listener {
 			e.setCurrentItem(newComputerStack());
 		}
 	}
-
+	private List<Computer> getComputers() {
+		return Collections.unmodifiableList(computers);
+	}
 	private List<Computer> getComputers(UUID uuid) {
 		return computers.stream()
 				.filter(computer -> computer.getOwner().equals(uuid))
@@ -235,8 +374,26 @@ public class ComputerHandler implements Listener {
 	public void register(Computer computer) {
 		computers.add(computer);
 	}
+	@EventHandler
+	public void onPluginDisable(PluginDisableEvent e) {
+		trackedBlocks.keySet().stream().map(Location::getBlock).forEach(b -> {
+			if (b != null && b.getType() != Material.REDSTONE_BLOCK)
+				b.setType(Material.REDSTONE_BLOCK);
+		});
+	}
 	public void unregister(Computer computer) {
 		computers.remove(computer);
+		Iterator<Map.Entry<Location, Computer>> it = trackedBlocks.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<Location, Computer> entry = it.next();
+			if (entry.getValue() == computer) {
+				it.remove();
+				Block block = entry.getKey().getBlock();
+				if (block != null) {
+					block.setType(Material.REDSTONE_BLOCK);
+				}
+			}
+		}
 		if (!ComputerData.delete(computer.getHostname()))
 			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getConsole());
 	}

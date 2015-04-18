@@ -39,7 +39,7 @@ public class MakeDirectoryProgram extends FSProvidedProgram {
 				print("mkdir: " + str.trim() + ": file or folder exists");
 			return null;
 		}
-		block = resolve("");
+		block = computer.getBlock("", terminal.getCurrentDirectory());
 		if (!(block instanceof FSFolder)) {
 			if (print)
 				print("mkdir: " + str.trim() + ": invalid current directory");

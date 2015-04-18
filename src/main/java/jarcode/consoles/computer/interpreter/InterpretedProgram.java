@@ -51,6 +51,7 @@ public class InterpretedProgram implements Program {
 		Lua.put(this::lua_mkdir, "mkdir", pool);
 		Lua.put(this::lua_reflect, "reflect", pool);
 		Lua.put(this::lua_write, "write", pool);
+		Lua.put(this::lua_sleep, "sleep", pool);
 	}
 	public void run(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) throws Exception {
 		try {
@@ -156,6 +157,8 @@ public class InterpretedProgram implements Program {
 		finally {
 			if (pool != null)
 				pool.cleanup();
+			Terminal terminal = computer.getTerminal(this);
+			terminal.setHandlerInterrupt(null);
 		}
 	}
 	private void handleLuaError(LuaError err) {
@@ -212,6 +215,17 @@ public class InterpretedProgram implements Program {
 	}
 	public String[] lua_reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
+	}
+	public void lua_sleep(Integer ms) {
+		try {
+			long target = System.currentTimeMillis() + ms;
+			while (System.currentTimeMillis() < target && !terminated()) {
+				Thread.sleep(8);
+			}
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private FSFolder lua_mkdir(String path) {

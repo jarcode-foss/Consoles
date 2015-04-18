@@ -85,11 +85,20 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	// needlessly complex
 	private void removeFirst() {
-		stack = Multimaps.synchronizedMultimap(Multimaps.forMap(
-				stack.entries().stream()
+		Multimap<Integer, String> cached = LinkedHashMultimap.create();
+		stack.entries().stream()
 				.skip(1)
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o, LinkedHashMap::new))
-		));
+				.forEach(e -> cached.put(e.getKey(), e.getValue()));
+		stack.clear();
+		stack = Multimaps.synchronizedMultimap(cached);
+	}
+	private void removeLast() {
+		Multimap<Integer, String> cached = LinkedHashMultimap.create();
+		stack.entries().stream()
+				.limit(stack.size() - 1 > 0 ? stack.size() - 1 : 0)
+				.forEach(e -> cached.put(e.getKey(), e.getValue()));
+		stack.clear();
+		stack = Multimaps.synchronizedMultimap(cached);
 	}
 	private void advance() {
 		int line = highestLine();
@@ -109,7 +118,8 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 		if (list.size() > 0) {
 			list.set(list.size() - 1, list.get(list.size() - 1) + str);
 			stack.removeAll(line);
-			stack.putAll(line, list);
+			for (String s : list)
+				stack.put(line, s);
 		}
 		else {
 			stack.put(line, str);
@@ -201,20 +211,20 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			appendToCurrentStack(text);
 		}
 		while (stack.size() > maxStackSize) {
-			removeFirst();
+			removeLast();
 		}
 	}
 	public void println(String text) {
 		print(text);
 		nextLine();
 		if (stack.size() > maxStackSize) {
-			removeFirst();
+			removeLast();
 		}
 	}
 	public void advanceLine() {
 		nextLine();
 		if (stack.size() > maxStackSize) {
-			removeFirst();
+			removeLast();
 		}
 	}
 	public void clear() {
