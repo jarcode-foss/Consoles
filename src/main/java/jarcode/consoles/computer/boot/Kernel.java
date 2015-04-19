@@ -46,6 +46,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x0C, new RemoveProgram());
 		program(0x0D, new HelpProgram());
 		program(0x0E, new MakeDirectoryProgram());
+		program(0x0F, new OwnerProgram());
 	}
 
 	{
@@ -114,6 +115,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x0C, root, "rm");
 		mapProgram(0x0D, root, "help");
 		mapProgram(0x0E, root, "mkdir");
+		mapProgram(0x0F, root, "owner");
 
 		try {
 			if (!root.exists("bin"))

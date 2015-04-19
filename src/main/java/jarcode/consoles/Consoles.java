@@ -19,6 +19,7 @@ public class Consoles extends JavaPlugin {
 	public static boolean frameRenderingEnabled = true;
 	public static boolean componentRenderingEnabled = false;
 	public static boolean allowCrafting = true;
+	public static int maxComputers = 3;
 
 	static {
 		MapInjector.injectTypes();
@@ -47,6 +48,7 @@ public class Consoles extends JavaPlugin {
 		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);
 		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", true);
 		allowCrafting = getConfig().getBoolean("allow-computer-crafting", true);
+		maxComputers = getConfig().getInt("computer-limit", 3);
 		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
 			try {

@@ -331,6 +331,11 @@ public class ComputerHandler implements Listener {
 				.collect(Collectors.toList());
 	}
 	private void build(Player player, Location location) {
+		if (getComputers(player.getUniqueId()).size() >= Consoles.maxComputers
+				&& !player.hasPermission("computer.limit.ignore")) {
+			player.sendMessage(ChatColor.RED + "You can't have more than " + Consoles.maxComputers + " computers!");
+			return;
+		}
 		BlockFace face = direction(player);
 		ManagedComputer computer = new ManagedComputer(findHostname(player), player.getUniqueId());
 		computer.create(face, location);

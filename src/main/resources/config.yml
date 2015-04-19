@@ -9,11 +9,15 @@
 bungee-forward: false
 
 # ------------------
-# Computer Functions
+#     Computers
 # ------------------
 
 # Enable the crafting of computers
 allow-comptuer-crafting: true
+
+# Computer crafting limit for normal players
+# The permissions computer.limit.ignore will override this
+computer-limit: 3
 
 # ------------------
 # Computer Functions

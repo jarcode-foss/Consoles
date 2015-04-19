@@ -1,17 +1,23 @@
 package jarcode.consoles.event;
 
 import jarcode.consoles.ConsoleButton;
+import org.bukkit.entity.Player;
 
 public class ButtonEvent extends ConsoleEvent<ConsoleButton> {
 	private boolean on;
-	public ButtonEvent(ConsoleButton context, boolean on) {
+	private Player player;
+	public ButtonEvent(ConsoleButton context, boolean on, Player player) {
 		super(context);
 		this.on = on;
+		this.player = player;
 	}
 	public boolean wasToggledOn() {
 		return on;
 	}
 	public boolean wasToggledOff() {
 		return !on;
+	}
+	public Player getPlayer() {
+		return player;
 	}
 }

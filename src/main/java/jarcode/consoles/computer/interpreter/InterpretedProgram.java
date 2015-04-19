@@ -102,7 +102,6 @@ public class InterpretedProgram implements Program {
 			String raw = new String(buf.toByteArray(), charset);
 			globals = new Globals();
 			globals.load(new JseBaseLib());
-			globals.load(new PackageLib());
 			globals.load(new Bit32Lib());
 			globals.load(new TableLib());
 			globals.load(new StringLib());

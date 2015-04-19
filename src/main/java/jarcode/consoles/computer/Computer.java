@@ -5,7 +5,6 @@ import jarcode.consoles.api.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
-import jarcode.consoles.computer.interpreter.FunctionBind;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
@@ -250,6 +249,12 @@ public abstract class Computer implements Runnable {
 	private static void lua_session(Integer id) {
 		Computer computer = Lua.context();
 		computer.switchView(id);
+		try {
+			Thread.sleep(50);
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	public void requestDevice(CommandBlock block, ConsoleEventListener<ConsoleButton, ButtonEvent> listener) {
 		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();

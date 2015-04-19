@@ -83,7 +83,7 @@ public class ConsoleButton extends ConsoleComponent
 				}, 8);
 			for (ConsoleEventListener<ConsoleButton, ButtonEvent> listener : list) {
 				try {
-					listener.actionPerformed(new ButtonEvent(this, toggle));
+					listener.actionPerformed(new ButtonEvent(this, toggle, player));
 				} catch (Throwable e) {
 					Consoles.getInstance().getLogger().severe("Console button listener threw an exception:");
 					e.printStackTrace();
