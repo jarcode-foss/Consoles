@@ -22,6 +22,20 @@ public class Console {
 	protected ManagedConsole underlying = null;
 
 	/**
+	 * Wraps an internal console
+	 *
+	 * @param console the {@link jarcode.consoles.ManagedConsole} to wrap
+	 * @return the wrapped console
+	 */
+	public static Console wrap(ManagedConsole console) {
+		Console ret = new Console(console.getDirection(), console.getLocation(),
+				console.getFrameWidth(), console.getFrameHeight());
+		ret.created = true;
+		ret.underlying = console;
+		return ret;
+	}
+
+	/**
 	 * Prepares a console to be created
 	 *
 	 * @param face the direction this canvas will face
@@ -100,21 +114,5 @@ public class Console {
 	 */
 	public CanvasComponentBuilder newComponent(int width, int height) {
 		return getCanvas().newComponent(width, height);
-	}
-	{
-		byte[] colors = new byte[4];
-		CanvasComponent comp = newComponent(5, 6).listen((x, y, player) ->
-						Bukkit.getLogger().info(String.format("%s interacted with a console at (%d, %d)", player, x, y))
-		).construct(component -> {
-			Random random = new Random();
-			for (int index = 0; index < 4; index++)
-				colors[index] = (byte) (random.nextInt(139) + 4);
-		}).painter((g, context) -> {
-			for (int x = 0; x < g.getWidth(); x++) {
-				for (int y = 0; y < g.getHeight(); y++) {
-					g.draw(x, y, colors[x % 4]);
-				}
-			}
-		}).create();
 	}
 }

@@ -16,6 +16,9 @@ public class Consoles extends JavaPlugin {
 
 	private static Consoles instance;
 
+	public static boolean frameRenderingEnabled = true;
+	public static boolean componentRenderingEnabled = false;
+
 	static {
 		MapInjector.injectTypes();
 		MapInjector.clearNBTMapFiles();
@@ -40,6 +43,8 @@ public class Consoles extends JavaPlugin {
 		);
 		saveDefaultConfig();
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
+		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);
+		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", true);
 		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
 			try {

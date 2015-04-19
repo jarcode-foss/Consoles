@@ -122,7 +122,10 @@ public class Lua {
 		return link(new Class[0], func);
 	}
 	public static Computer context() {
-		return pools.get(Thread.currentThread()).getComputer();
+		Computer computer = pools.get(Thread.currentThread()).getComputer();
+		if (computer == null)
+			throw new IllegalAccessError("Tried to access lua bindings outside of program thread");
+		else return computer;
 	}
 	public static Class[] resolveArgTypes(Object func, Class<?> type, boolean shift) {
 		Class<?>[] arr = TypeResolver.resolveRawArguments(type, func.getClass());

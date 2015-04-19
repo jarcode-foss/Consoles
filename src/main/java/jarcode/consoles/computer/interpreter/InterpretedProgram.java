@@ -10,8 +10,7 @@ import jarcode.consoles.computer.bin.TouchProgram;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
-import jarcode.consoles.computer.interpreter.types.LuaFile;
-import jarcode.consoles.computer.interpreter.types.LuaFolder;
+import jarcode.consoles.computer.interpreter.types.*;
 import org.bukkit.ChatColor;
 import org.luaj.vm2.*;
 import org.luaj.vm2.compiler.LuaC;
@@ -20,8 +19,7 @@ import org.luaj.vm2.lib.jse.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -36,11 +34,15 @@ public class InterpretedProgram implements Program {
 	private FuncPool pool;
 	private String args;
 
+	private List<Integer> allocatedSessions = new ArrayList<>();
+	public Map<Integer, LuaFrame> framePool = new HashMap<>();
+
 	public InterpretedProgram(FSFile file) {
 		this.file = file;
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private void map() {
+
 		Lua.put(this::lua_args, "args", pool);
 		Lua.put(this::lua_clear, "clear", pool);
 		Lua.put(this::lua_print, "printc", pool);
@@ -52,7 +54,17 @@ public class InterpretedProgram implements Program {
 		Lua.put(this::lua_reflect, "reflect", pool);
 		Lua.put(this::lua_write, "write", pool);
 		Lua.put(this::lua_sleep, "sleep", pool);
+
+		if (Consoles.componentRenderingEnabled) {
+			Lua.put(this::lua_registerPainter, "paint", pool);
+		}
+
+		if (Consoles.frameRenderingEnabled) {
+			Lua.put(this::lua_screenBuffer, "screenBuffer", pool);
+			Lua.put(this::lua_screenFrame, "screenFrame", pool);
+		}
 	}
+
 	public void run(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) throws Exception {
 		try {
 			this.in = in;
@@ -157,9 +169,16 @@ public class InterpretedProgram implements Program {
 		finally {
 			if (pool != null)
 				pool.cleanup();
+			framePool.clear();
 			Terminal terminal = computer.getTerminal(this);
 			terminal.setHandlerInterrupt(null);
+			for (int i : allocatedSessions) {
+				computer.setComponent(i, null);
+			}
 		}
+	}
+	public Computer getComputer() {
+		return computer;
 	}
 	private void handleLuaError(LuaError err) {
 		if (Consoles.DEBUG)
@@ -180,7 +199,7 @@ public class InterpretedProgram implements Program {
 	protected String lua_read() {
 		final String[] result = {null};
 		AtomicBoolean locked = new AtomicBoolean(true);
-		computer.getCurrentTerminal().setHandlerInterrupt((str) -> {
+		computer.getTerminal(this).setHandlerInterrupt((str) -> {
 			result[0] = str;
 			locked.set(false);
 		});
@@ -193,8 +212,22 @@ public class InterpretedProgram implements Program {
 		}
 		return result[0];
 	}
-	protected void lua_write(String text) {
+	private LuaBuffer lua_screenBuffer(Integer index) {
+		index--;
+		if (!computer.screenAvailable(index)) return null;
+		BufferedFrameComponent component = new BufferedFrameComponent(computer);
+		return new LuaBuffer(this, index, component);
+	}
+	private void lua_write(String text) {
 		print(text);
+	}
+	private LuaPainter lua_registerPainter(Integer index, FunctionBind painter, FunctionBind listener, Integer bg) {
+		index--;
+		if (!computer.screenAvailable(index)) return null;
+		computer.registerPainter(index, (g, context) -> painter.call(g, context),
+				(x, y, context) -> listener.call(x, y, context), bg);
+		allocatedSessions.add(index);
+		return new LuaPainter(index, computer);
 	}
 	protected String lua_args() {
 		System.out.print("called");
@@ -209,6 +242,18 @@ public class InterpretedProgram implements Program {
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+	}
+	private LuaFrame lua_screenFrame() {
+		int id = findFrameId();
+		LuaFrame frame = new LuaFrame(id, computer);
+		framePool.put(id, frame);
+		return frame;
+	}
+	private int findFrameId() {
+		int i = 0;
+		while(framePool.containsKey(i))
+			i++;
+		return i;
 	}
 	private FSFile lua_touch(String path) {
 		return new TouchProgram(false).touch(path, computer, computer.getTerminal(this));

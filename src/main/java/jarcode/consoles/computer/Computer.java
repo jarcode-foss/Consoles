@@ -1,9 +1,11 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.*;
+import jarcode.consoles.api.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.interpreter.FunctionBind;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
@@ -165,8 +167,8 @@ public abstract class Computer implements Runnable {
 				"Scanning devices", ".", ".", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0\n",
 				"Blacklisting kernel modules", ".", ".", "\tdone\n",
 				"Starting services", null, ".", null, ".", null, ".", null, "\tdone\n",
-				"Loading drivers", "\n\t[+] 'plcommand-1.34-245'", "\n\t[+] 'plaction-1.06-083'",
-				"\n\t[+] 'command-1.34-174'", "\n\t[+] 'ttyinput-1.94-042'", "\n\t[+] 'luabindings-2.3-009'"
+				"Loading drivers", "\n\t[+] plcommand-1.34-245", "\n\t[+] plaction-1.06-083",
+				"\n\t[+] command-1.34-174", "\n\t[+] ttyinput-1.94-042", "\n\t[+] luabindings-2.3-009"
 		};
 		int i = 20;
 		for (String str : text) {
@@ -221,6 +223,9 @@ public abstract class Computer implements Runnable {
 			console.repaint();
 		}, delay);
 	}
+	public boolean screenAvailable(int index) {
+		return !(index >= 8 || index < 0) && feeds[index] == null;
+	}
 	public boolean setScreenIndex(int index) {
 		if (index >= 8 || index < 0)
 			throw new ArrayIndexOutOfBoundsException();
@@ -229,6 +234,18 @@ public abstract class Computer implements Runnable {
 		if (console.created())
 			console.repaint();
 		return true;
+	}
+	public void registerPainter(Integer index, CanvasPainter painter, CanvasInteractListener listener, Integer bg) {
+		if (index >= 8 || index < 0)
+			throw new ArrayIndexOutOfBoundsException();
+		Console api = Console.wrap(console);
+		CanvasComponent comp = api.newComponent(getViewWidth(), getViewHeight())
+				.painter(painter)
+				.listen(listener)
+				.enabledHandler(() -> true, (b) -> {})
+				.background((byte) (int) bg)
+				.create();
+		setComponent(index, (ConsoleComponent) comp);
 	}
 	private static void lua_session(Integer id) {
 		Computer computer = Lua.context();
@@ -314,6 +331,9 @@ public abstract class Computer implements Runnable {
 			if (console.created())
 				console.repaint();
 		}
+	}
+	public int getComponentIndex() {
+		return componentIndex;
 	}
 	public ConsoleComponent getCurrentComponent() {
 		return feeds[componentIndex];
