@@ -1,5 +1,6 @@
 -- Written by Jarcode
 
+-- converts strings into integral states
 local function state(name)
     if (name == "COVERED") then return 1 elseif
     (name == "SHOWING") then return 2 elseif
@@ -7,6 +8,7 @@ local function state(name)
         return -1 end
 end
 
+-- our object information
 Block = {
     x = -1,
     y = -1,
@@ -24,10 +26,10 @@ function Block.new(x, y, blockFunction)
     self.x = x;
     self.y = y;
     self.blockFunction = blockFunction
-    self.game = game;
     return self;
 end
 
+-- counts the adjacent squares for bombs
 function Block:countAdj()
     local adj = self:adjacent()
     local c = 0;
@@ -44,6 +46,7 @@ function Block:countAdj()
     return c;
 end
 
+-- recursive method to reveal tiles
 function Block:reveal()
     local adj = self:adjacent()
     for i = 1,#adj do
@@ -64,6 +67,7 @@ function Block:isBomb()
     return self.bomb;
 end
 
+-- method called when clicked
 function Block:onClick()
     if (self.state ~= state("COVERED")) then return false end
     if (self.bomb) then return true else
@@ -73,6 +77,7 @@ function Block:onClick()
     end
 end
 
+-- finds all adjacent tiles
 function Block:adjacent()
 
     local mods = {}

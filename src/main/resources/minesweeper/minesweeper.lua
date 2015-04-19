@@ -184,11 +184,13 @@ INST.buffer = buffer;
 function main(args)
     -- trim string
     args = string.gsub(args, "%s$", "")
+    -- convert string to number
     local num = tonumber(args)
+    -- change number of bombs if converted
     if (num ~= null) then
         BOMBS = num
     end
-
+    -- start the game!
     start();
 end
 
