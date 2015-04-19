@@ -1,4 +1,11 @@
--- Written by Levi Webb
+-- Written by Jarcode
+
+local function state(name)
+    if (name == "COVERED") then return 1 elseif
+    (name == "SHOWING") then return 2 elseif
+    (name == "REVEALED") then return 3 else
+        return -1 end
+end
 
 Block = {
     x = -1,
@@ -16,25 +23,13 @@ function Block.new(x, y, blockFunction)
     local self = setmetatable({}, Block);
     self.x = x;
     self.y = y;
-    self.blockFunction = blockFunction;
+    self.blockFunction = blockFunction
+    self.game = game;
     return self;
 end
 
-local function adj(block)
-    return {
-        block.blockFunction(block.x + 1, block.y),
-        block.blockFunction(block.x - 1, block.y),
-        block.blockFunction(block.x, block.y + 1),
-        block.blockFunction(block.x, block.y - 1),
-        block.blockFunction(block.x + 1, block.y + 1),
-        block.blockFunction(block.x - 1, block.y - 1),
-        block.blockFunction(block.x - 1, block.y + 1),
-        block.blockFunction(block.x + 1, block.y - 1),
-    }
-end
-
 function Block:countAdj()
-    local adj = adj(self)
+    local adj = self:adjacent()
     local c = 0;
     for i = 1,#adj do
         if (adj[i]:isBomb()) then
@@ -42,7 +37,7 @@ function Block:countAdj()
         end
     end
 
-    if self:isBomb then
+    if self.bomb then
         c = c + 1
     end
 
@@ -50,15 +45,19 @@ function Block:countAdj()
 end
 
 function Block:reveal()
-    local adj = adj(self)
+    local adj = self:adjacent()
     for i = 1,#adj do
-        if (adj[i]:countAdj() == 0) then
+        if (adj[i]:countAdj() == 0 and adj[i]:getState() == state("COVERED")) then
             adj[i]:setState(state("REVEALED"))
             adj[i]:reveal()
-        else
+        elseif adj[i]:isBomb() == false then
             adj[i]:setState(state("SHOWING"))
         end
     end
+end
+
+function Block:setBomb(bomb)
+    self.bomb = bomb
 end
 
 function Block:isBomb()
@@ -66,10 +65,40 @@ function Block:isBomb()
 end
 
 function Block:onClick()
+    if (self.state ~= state("COVERED")) then return false end
     if (self.bomb) then return true else
-        self.reveal()
+        self:setState(state("REVEALED"))
+        self:reveal()
         return false
     end
+end
+
+function Block:adjacent()
+
+    local mods = {}
+    mods[1] = {self.x + 1, self.y}
+    mods[2] = {self.x - 1, self.y}
+    mods[3] = {self.x, self.y + 1}
+    mods[4] = {self.x, self.y - 1}
+    mods[5] = {self.x + 1, self.y + 1}
+    mods[6] = {self.x - 1, self.y - 1}
+    mods[7] = {self.x - 1, self.y + 1}
+    mods[8] = {self.x + 1, self.y - 1}
+
+    local blocks = {}
+
+    local at = 1;
+
+    for i = 1,#mods do
+        local x = mods[i][1]
+        local y = mods[i][2]
+        if (x >= 1 and x <= GAME_WIDTH and y >= 1 and y <= GAME_HEIGHT) then
+            blocks[at] = self.blockFunction(x, y)
+            at = at + 1
+        end
+    end
+
+    return blocks;
 end
 
 function Block:setState(state)
@@ -88,13 +117,7 @@ function Block:getY()
     return self.y;
 end
 
-local function state(name)
-    if (name == "COVERED") then return 1 elseif
-    (name == "SHOWING") then return 2 elseif
-    (name == "REVEALED") then return 3 else
-    return -1 end
-end
-
-INST.Block = Block;
+INST.Block = Block
+INST.state = state
 
 return INST

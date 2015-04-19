@@ -1,30 +1,72 @@
--- Written by Levi Webb
+-- Written by Jarcode
 
-local blocks = require("block")
+local BLOCK = require("minesweeper_block")
 
-local GAME_WIDTH = 8;
-local GAME_HEIGHT = 8;
-local BLOCK_WIDTH = 32;
-local BLOCK_HEIGHT = 32;
+GAME_WIDTH = 14;
+GAME_HEIGHT = 8;
+local BOMBS = 18;
+
+local BLOCK_WIDTH = 22;
+local BLOCK_HEIGHT = 22;
 local H_MARGIN = 2;
 local V_MARGIN = 2;
 
-local blockFunction = function(x, y)
-    return blocks[x][y]
-end
+local blocks = {};
 
-for i = 1,GAME_WIDTH do
-    blocks[i] = {}
-    for k = 1,GAME_HEIGHT do
-        blocks[i][k] = blocks.Block.new(i, k, blockFunction)
-    end
-end
-
-local tasks = {}
 local buffer
 INST = {}
 
+-- function for blocks to obtain other blocks with
+local function blockFunction(x, y)
+    return blocks[x][y]
+end
+
+-- used to create game area
+local function init()
+    for i = 1,GAME_WIDTH do
+        blocks[i] = {}
+        for k = 1,GAME_HEIGHT do
+            blocks[i][k] = BLOCK.Block.new(i, k, blockFunction)
+        end
+    end
+end
+
+-- used to iterate over a set of values that belong to a block
+local function iterate(xoff, yoff, func)
+    for x = xoff,BLOCK_WIDTH - 1 + xoff do
+        for y = yoff,BLOCK_HEIGHT - 1 + yoff do
+            func(x, y)
+        end
+    end
+end
+
+-- same as above, but used to outline stead
+local function outline(xoff, yoff, func)
+    for x = xoff,BLOCK_WIDTH - 1 + xoff do
+        for y = yoff,BLOCK_HEIGHT - 1 + yoff do
+            if (x == xoff or x == BLOCK_WIDTH - 1 + xoff
+                    or y == yoff or y == BLOCK_HEIGHT - 1 + yoff) then
+                func(x, y)
+            end
+        end
+    end
+end
+
+-- function to randomly place bombs
+local function placeBombs()
+    for i = 1,BOMBS do
+        local x = math.floor(math.random() * GAME_WIDTH) + 1
+        local y = math.floor(math.random() * GAME_HEIGHT) + 1
+        local blk = blocks[x][y]
+        blk:setBomb(true)
+    end
+end
+
 local function start()
+    -- init game area
+    init()
+    -- place bombs
+    placeBombs()
     -- allocate screen buffer
     buffer = screenBuffer(4)
     -- switch screen session
@@ -45,13 +87,12 @@ local function start()
 
         -- iterate
         for i = 1,#actions do
-            local x = (actions[i]:x() - H_MARGIN) / BLOCK_WIDTH
-            local y = (actions[i]:y() - V_MARGIN) / BLOCK_HEIGHT
-            local blk = blocks[x][y]
-            if (blk ~= nil) then
-                local result = blk:onClick()
+            local x = math.floor((actions[i]:x() - H_MARGIN) / BLOCK_WIDTH)
+            local y = math.floor((actions[i]:y() - V_MARGIN) / BLOCK_HEIGHT)
+            if (x >= 1 and x <= GAME_WIDTH and y >= 1 and y <= GAME_HEIGHT) then
+                local blk = blocks[x][y]
                 -- hit mine
-                if (result) then
+                if (blk:onClick()) then
                     printc("&cYou lose!")
                     running = false
                 end
@@ -69,36 +110,36 @@ local function start()
                 for k = 1,GAME_HEIGHT do
                     local blk = blocks[i][k]
                     local ax = (BLOCK_WIDTH * i) + H_MARGIN;
-                    local ay = (BLOCK_HEIGHT * i) + V_MARGIN;
+                    local ay = (BLOCK_HEIGHT * k) + V_MARGIN;
                     local s = blk:getState()
-                    if (s == blocks.state("COVERED")) then
+                    if (s == BLOCK.state("COVERED")) then
                         iterate(ax, ay, function(x, y)
-                            screen:set(x, y, 91)
+                            frame:set(x, y, 91)
                         end)
                         outline(ax, ay, function(x, y)
-                            screen:set(x, y, 87)
+                            frame:set(x, y, 87)
                         end)
-                    elseif (s == blocks.state("SHOWING")) then
+                    elseif (s == BLOCK.state("SHOWING")) then
                         iterate(ax, ay, function(x, y)
-                            screen:set(x, y, 90)
+                            frame:set(x, y, 90)
                         end)
                         outline(ax, ay, function(x, y)
-                            screen:set(x, y, 88)
+                            frame:set(x, y, 88)
                         end)
                         local count = blk:countAdj();
                         if (count > 0) then
                             local adj = "&1" .. count
                             local len = frame:len(adj)
-                            local xoff = math.round((GAME_WIDTH / 2) - (len / 2))
-                            local yoff = math.round((GAME_HEIGHT / 2) - 5)
-                            screen:write(ax + xoff, ay + yoff, adj)
+                            local xoff = math.round((GAME_WIDTH / 2) - (len / 2)) + 1
+                            local yoff = math.round((GAME_HEIGHT / 2) + 4)
+                            frame:write(ax + xoff, ay + yoff, adj)
                         end
-                    elseif (s == blocks.state("REVEALED")) then
+                    elseif (s == BLOCK.state("REVEALED")) then
                         iterate(ax, ay, function(x, y)
-                            screen:set(x, y, 90)
+                            frame:set(x, y, 90)
                         end)
                         outline(ax, ay, function(x, y)
-                            screen:set(x, y, 86)
+                            frame:set(x, y, 86)
                         end)
                     end
                 end
@@ -115,7 +156,7 @@ local function start()
             for k = 1,GAME_HEIGHT do
                 local blk = blocks[i][k]
                 local s = blk:getState()
-                if (s == blocks.state("COVERED") and not blk:isBomb()) then
+                if (s == BLOCK.state("COVERED") and not blk:isBomb()) then
                     check = false
                 end
             end
@@ -131,33 +172,24 @@ local function start()
         -- wait a bit
         sleep(65)
     end
-end
-
-local function iterate(xoff, yoff, func)
-    for x = xoff,BLOCK_WIDTH - 1 + xoff do
-        for y = yoff,BLOCK_HEIGHT - 1 + yoff do
-            func(x, y)
-        end
-    end
-end
-
-local function outline(xoff, yoff, func)
-    for x = xoff,BLOCK_WIDTH - 1 + xoff do
-        for y = yoff,BLOCK_HEIGHT - 1 + yoff do
-            if (x == xoff or x == BLOCK_WIDTH - 1 + xoff
-                    or y == yoff or y == BLOCK_HEIGHT - 1 + yoff) then
-                func(x, y)
-            end
-        end
-    end
+    -- free buffer resources
+    buffer:destroy()
+    -- switch screen session
+    switchSession(1)
 end
 INST.start = start;
-INST.tasks = tasks;
 INST.buffer = buffer;
 
---noinspection UnusedDef
+-- main method
 function main(args)
+    -- trim string
+    args = string.gsub(args, "%s$", "")
+    local num = tonumber(args)
+    if (num ~= null) then
+        BOMBS = num
+    end
+
     start();
 end
 
-return this;
+return INST;

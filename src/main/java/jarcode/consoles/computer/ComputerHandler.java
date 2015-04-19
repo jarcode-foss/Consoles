@@ -10,6 +10,7 @@ import javafx.geometry.Pos;
 import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
 import net.minecraft.server.v1_8_R2.NBTTagList;
+import org.apache.commons.io.IOUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -35,6 +36,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -49,6 +51,22 @@ public class ComputerHandler implements Listener {
 
 	private static final Field ITEM_STACK_HANDLE;
 	private static final Constructor ITEM_STACK_CREATE;
+
+	public static final String MINESWEEPER_PROGRAM;
+	public static final String MINESWEEPER_BLOCK_PROGRAM;
+
+	static {
+		try {
+			MINESWEEPER_BLOCK_PROGRAM = IOUtils.readLines(
+					ComputerHandler.class.getResourceAsStream("/minesweeper/block.lua"))
+					.stream().collect(Collectors.joining("\n"));
+			MINESWEEPER_PROGRAM = IOUtils.readLines(
+					ComputerHandler.class.getResourceAsStream("/minesweeper/minesweeper.lua"))
+					.stream().collect(Collectors.joining("\n"));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	static {
 		Lua.map(ComputerHandler::lua_redstone, "redstone");

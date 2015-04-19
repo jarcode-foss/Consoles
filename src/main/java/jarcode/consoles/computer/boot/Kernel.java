@@ -3,6 +3,7 @@ package jarcode.consoles.computer.boot;
 import com.google.common.collect.HashBiMap;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.bin.*;
 import jarcode.consoles.computer.devices.NullDevice;
@@ -79,15 +80,7 @@ public class Kernel extends FSProvidedProgram {
 				root.contents.put("tmp", new FSFolder());
 				root.contents.put("X11", x11);
 				home.contents.put("admin", new FSFolder());
-				FSStoredFile file = new FSStoredFile();
-				try {
-					OutputStream out = file.createOutput();
-					out.write("One can only dream".getBytes(Charset.forName("UTF-8")));
-					out.close();
-				}
-				catch (IOException e) {
-					e.printStackTrace();
-				}
+				FSStoredFile file = writtenFile("One can only dream.");
 				x11.contents.put("xorg.conf", file);
 				flashPrograms();
 			}
@@ -121,6 +114,32 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x0C, root, "rm");
 		mapProgram(0x0D, root, "help");
 		mapProgram(0x0E, root, "mkdir");
+
+		try {
+			if (!root.exists("bin"))
+				root.contents.put("bin", new FSFolder());
+			FSFolder bin = (FSFolder) root.get("bin");
+			bin.contents.put("minesweeper", writtenFile(ComputerHandler.MINESWEEPER_PROGRAM));
+		} catch (FileNotFoundException ignored) {}
+
+		try {
+			if (!root.exists("lib"))
+				root.contents.put("lib", new FSFolder());
+			FSFolder lib = (FSFolder) root.get("lib");
+			lib.contents.put("minesweeper_block", writtenFile(ComputerHandler.MINESWEEPER_BLOCK_PROGRAM));
+		} catch (FileNotFoundException ignored) {}
+	}
+	private FSStoredFile writtenFile(String text) {
+		FSStoredFile file = new FSStoredFile();
+		try {
+			OutputStream out = file.createOutput();
+			out.write(text.getBytes(Charset.forName("UTF-8")));
+			out.close();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		return file;
 	}
 	private void mapProgram(int id, FSFolder root, String... names) {
 		try {

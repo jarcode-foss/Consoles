@@ -106,10 +106,8 @@ public class InterpretedProgram implements Program {
 			globals.load(new Bit32Lib());
 			globals.load(new TableLib());
 			globals.load(new StringLib());
-			globals.load(new JseMathLib());
-			globals.load(new GameIoLib(instance));
+			globals.load(new EmbeddedMathLib());
 			globals.load(new InterruptLib(this::terminated));
-			globals.load(new MathLib());
 			LoadState.install(globals);
 			LuaC.install(globals);
 
@@ -248,8 +246,13 @@ public class InterpretedProgram implements Program {
 		}
 		return result[0];
 	}
+	private void lua_load(String lib) {
+
+	}
 	private LuaValue lua_require(String path) {
-		LuaFile file = lua_resolveFile(path);
+		FSBlock block = computer.getBlock(path, "/lib");
+		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
+				"/lib", this::terminated, computer) : null;
 		if (file == null) {
 			println("lua:" + ChatColor.RED + " failed to load '" + path + "', doesn't exist");
 			return null;
@@ -266,7 +269,7 @@ public class InterpretedProgram implements Program {
 			String msg = Arrays.asList(err.getMessage().split("\n")).stream()
 					.map(this::warning)
 					.collect(Collectors.joining("\n"));
-			print(msg);
+			println(msg);
 			return null;
 		}
 		return value.call();

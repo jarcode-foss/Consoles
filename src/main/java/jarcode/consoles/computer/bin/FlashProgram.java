@@ -11,7 +11,7 @@ public class FlashProgram extends FSProvidedProgram {
 		schedule(() -> {
 			ConsoleButton delete = new ConsoleButton(computer.getConsole(), "Restore");
 			ConsoleButton deny = new ConsoleButton(computer.getConsole(), "Quit");
-			Position2D pos = computer.dialog("This program restores programs in /bin/", delete, deny);
+			Position2D pos = computer.dialog("This program restores files in /bin and /lib", delete, deny);
 			delete.addEventListener(event -> {
 				computer.getKernel().flashPrograms();
 				computer.getConsole().removeComponent(pos);

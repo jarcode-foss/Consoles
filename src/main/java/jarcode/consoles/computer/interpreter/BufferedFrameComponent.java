@@ -35,9 +35,10 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 		LuaInteraction[] arr = interactions.stream()
 				.skip(1)
 				.toArray(LuaInteraction[]::new);
+		LuaInteraction at = interactions.get(0);
 		interactions.clear();
 		interactions.addAll(Arrays.asList(arr));
-		return arr[arr.length - 1];
+		return at;
 	}
 
 	public String input() {
