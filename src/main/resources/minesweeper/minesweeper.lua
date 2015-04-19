@@ -4,7 +4,7 @@ local BLOCK = require("minesweeper_block")
 
 GAME_WIDTH = 14;
 GAME_HEIGHT = 8;
-local BOMBS = 18;
+local BOMBS = 22;
 
 local BLOCK_WIDTH = 22;
 local BLOCK_HEIGHT = 22;
@@ -95,6 +95,8 @@ local function start()
                 if (blk:onClick()) then
                     printc("&cYou lose!")
                     running = false
+                    actions = {}
+                    break;
                 end
             end
         end
@@ -119,7 +121,7 @@ local function start()
                         outline(ax, ay, function(x, y)
                             frame:set(x, y, 87)
                         end)
-                    elseif (s == BLOCK.state("SHOWING")) then
+                    elseif (s == BLOCK.state("REVEALED")) then
                         iterate(ax, ay, function(x, y)
                             frame:set(x, y, 90)
                         end)
@@ -130,17 +132,10 @@ local function start()
                         if (count > 0) then
                             local adj = "&1" .. count
                             local len = frame:len(adj)
-                            local xoff = math.round((GAME_WIDTH / 2) - (len / 2)) + 1
+                            local xoff = math.round((GAME_WIDTH / 2) - (len / 2)) + 4
                             local yoff = math.round((GAME_HEIGHT / 2) + 4)
                             frame:write(ax + xoff, ay + yoff, adj)
                         end
-                    elseif (s == BLOCK.state("REVEALED")) then
-                        iterate(ax, ay, function(x, y)
-                            frame:set(x, y, 90)
-                        end)
-                        outline(ax, ay, function(x, y)
-                            frame:set(x, y, 86)
-                        end)
                     end
                 end
             end

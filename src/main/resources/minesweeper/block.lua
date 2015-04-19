@@ -3,7 +3,6 @@
 -- converts strings into integral states
 local function state(name)
     if (name == "COVERED") then return 1 elseif
-    (name == "SHOWING") then return 2 elseif
     (name == "REVEALED") then return 3 else
         return -1 end
 end
@@ -54,7 +53,7 @@ function Block:reveal()
             adj[i]:setState(state("REVEALED"))
             adj[i]:reveal()
         elseif adj[i]:isBomb() == false then
-            adj[i]:setState(state("SHOWING"))
+            adj[i]:setState(state("REVEALED"))
         end
     end
 end
