@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.interpreter;
 
+import com.google.common.base.Joiner;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Program;
@@ -19,6 +20,7 @@ import org.luaj.vm2.lib.jse.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -33,9 +35,12 @@ public class InterpretedProgram implements Program {
 	private ProgramInstance instance;
 	private FuncPool pool;
 	private String args;
+	private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 	private List<Integer> allocatedSessions = new ArrayList<>();
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
+
+	private Globals globals;
 
 	public InterpretedProgram(FSFile file) {
 		this.file = file;
@@ -54,6 +59,7 @@ public class InterpretedProgram implements Program {
 		Lua.put(this::lua_reflect, "reflect", pool);
 		Lua.put(this::lua_write, "write", pool);
 		Lua.put(this::lua_sleep, "sleep", pool);
+		Lua.put(this::lua_require, "require", pool);
 
 		if (Consoles.componentRenderingEnabled) {
 			Lua.put(this::lua_registerPainter, "paint", pool);
@@ -94,7 +100,7 @@ public class InterpretedProgram implements Program {
 					print(" [PARSE TERMINATED]");
 			}
 			String raw = new String(buf.toByteArray(), charset);
-			Globals globals = new Globals();
+			globals = new Globals();
 			globals.load(new JseBaseLib());
 			globals.load(new PackageLib());
 			globals.load(new Bit32Lib());
@@ -131,7 +137,7 @@ public class InterpretedProgram implements Program {
 			} catch (LuaError err) {
 				if (Consoles.DEBUG)
 					err.printStackTrace();
-				println("COMPILE ERROR:");
+				println("lua:" + ChatColor.RED + " compile error");
 				String msg = Arrays.asList(err.getMessage().split("\n")).stream()
 						.map(this::warning)
 						.collect(Collectors.joining("\n"));
@@ -183,11 +189,41 @@ public class InterpretedProgram implements Program {
 	private void handleLuaError(LuaError err) {
 		if (Consoles.DEBUG)
 			err.printStackTrace();
-		println("RUNTIME ERROR:");
-		String msg = Arrays.asList(err.getMessage().split("\n")).stream()
+		println("lua:" + ChatColor.RED + " runtime error");
+		String[] arr = Arrays.asList(err.getMessage().split("\n")).stream()
 				.map(this::err)
-				.collect(Collectors.joining("\n"));
-		print(msg);
+				.toArray(String[]::new);
+		String msg = Joiner.on('\n').join(arr);
+		if (arr.length > 16) {
+			Terminal terminal = computer.getTerminal(this);
+			if (terminal != null) {
+				LuaFile file;
+				int i = 0;
+				while (resolve("lua_dump" + i) != null) {
+					i++;
+				}
+				file = lua_touch("lua_dump" + i);
+				assert file != null;
+				String version;
+				try {
+					version = globals.get("_VERSION").checkjstring();
+				}
+				catch (LuaError ignored) {
+					version = "?";
+				}
+				msg = "Lua stack trace from " + format.format(new Date(System.currentTimeMillis())) + "\n"
+						+ "Lua version: " + version + "\n\n"
+						+ ChatColor.stripColor(msg.replace("\t", "    "));
+				file.write(msg);
+				String cd = terminal.getCurrentDirectory();
+				if (cd.endsWith("/"))
+					cd = cd.substring(0, cd.length() - 1);
+				println("lua:" + ChatColor.RED + " stack trace too large!");
+				print("lua:" + ChatColor.RED + " dumped: " + ChatColor.YELLOW + cd + "/" + "lua_dump" + i);
+			}
+		}
+		else
+			print(msg);
 	}
 	protected String warning(String str) {
 		return "\t" + ChatColor.YELLOW + str;
@@ -211,6 +247,29 @@ public class InterpretedProgram implements Program {
 			e.printStackTrace();
 		}
 		return result[0];
+	}
+	private LuaValue lua_require(String path) {
+		LuaFile file = lua_resolveFile(path);
+		if (file == null) {
+			println("lua:" + ChatColor.RED + " failed to load '" + path + "', doesn't exist");
+			return null;
+		}
+		String text = file.read();
+		LuaValue value;
+		try {
+			value = globals.load(text);
+		}
+		catch (LuaError err) {
+			if (Consoles.DEBUG)
+				err.printStackTrace();
+			println("lua:" + ChatColor.RED + " failed to compile '" + path + "'");
+			String msg = Arrays.asList(err.getMessage().split("\n")).stream()
+					.map(this::warning)
+					.collect(Collectors.joining("\n"));
+			print(msg);
+			return null;
+		}
+		return value.call();
 	}
 	private LuaBuffer lua_screenBuffer(Integer index) {
 		index--;
@@ -257,8 +316,10 @@ public class InterpretedProgram implements Program {
 			i++;
 		return i;
 	}
-	private FSFile lua_touch(String path) {
-		return new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
+	private LuaFile lua_touch(String path) {
+		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
+		return file != null ? new LuaFile(file, path,
+				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	public String[] lua_reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
@@ -275,8 +336,10 @@ public class InterpretedProgram implements Program {
 		}
 	}
 	@SuppressWarnings("SpellCheckingInspection")
-	private FSFolder lua_mkdir(String path) {
-		return new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
+	private LuaFolder lua_mkdir(String path) {
+		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
+		return folder != null ? new LuaFolder(folder, path,
+				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	protected void lua_print(String formatted) {
 		formatted = ChatColor.translateAlternateColorCodes('&', formatted);

@@ -208,6 +208,9 @@ public class Lua {
 		if (java == null) {
 			return LuaValue.NIL;
 		}
+		else if (java instanceof LuaValue) {
+			return (LuaValue) java;
+		}
 		else if (java instanceof Boolean) {
 			return LuaValue.valueOf((Boolean) java);
 		}

@@ -18,7 +18,7 @@ public class LuaBuffer {
 	public void update(Integer id) {
 		LuaFrame frame = program.framePool.remove(id);
 		if (frame != null) {
-			component.addOperations(frame.operations);
+			component.setOperations(frame.operations);
 		}
 		else throw new IllegalArgumentException("Invalid frame");
 	}

@@ -24,7 +24,8 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 		this.setEnabled(true);
 	}
 
-	public void addOperations(Collection<Consumer<CanvasGraphics>> ops) {
+	public void setOperations(Collection<Consumer<CanvasGraphics>> ops) {
+		this.ops.clear();
 		this.ops.addAll(ops);
 		repaint();
 	}
@@ -58,7 +59,6 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 		for (Consumer<CanvasGraphics> op : ops) {
 			op.accept(g);
 		}
-		ops.clear();
 	}
 
 	@Override

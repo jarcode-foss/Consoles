@@ -521,7 +521,6 @@ public class ConsoleHandler implements Listener {
 					console.handleClick(arr[0], arr[1], player);
 					ComputerHandler handler = ComputerHandler.getInstance();
 					if (handler != null) {
-						System.out.println("Passing to handler");
 						handler.interact(new Position2D(arr[0], arr[1]), player, console);
 					}
 				}
