@@ -102,7 +102,7 @@ public class ComputerHandler implements Listener {
 			}
 			NBTTagCompound comp = nms.getTag();
 			comp.set("ench", new NBTTagList());
-			// this is why I go through the effort to set custom NBT tabs
+			// this is why I go through the effort to set custom NBT tags
 			// this prevents players from creating a computer without crafting
 			// it, unless they are setting the NBT tags explicitly - which
 			// would mean they are probably an admin.
@@ -112,7 +112,6 @@ public class ComputerHandler implements Listener {
 		return stack;
 	}
 
-
 	ShapedRecipe computerRecipe;
 	private ArrayList<Computer> computers = new ArrayList<>();
 	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
@@ -120,12 +119,14 @@ public class ComputerHandler implements Listener {
 
 	{
 		instance = this;
-		computerRecipe = new ShapedRecipe(newComputerStack());
-		computerRecipe.shape("AAA", "CBC", "AAA");
-		computerRecipe.setIngredient('A', Material.STONE);
-		computerRecipe.setIngredient('B', Material.REDSTONE_BLOCK);
-		computerRecipe.setIngredient('C', Material.DIAMOND);
-		Bukkit.getServer().addRecipe(computerRecipe);
+		if (Consoles.allowCrafting) {
+			computerRecipe = new ShapedRecipe(newComputerStack());
+			computerRecipe.shape("AAA", "CBC", "AAA");
+			computerRecipe.setIngredient('A', Material.STONE);
+			computerRecipe.setIngredient('B', Material.REDSTONE_BLOCK);
+			computerRecipe.setIngredient('C', Material.DIAMOND);
+			Bukkit.getServer().addRecipe(computerRecipe);
+		}
 	}
 
 	public ComputerHandler() {
@@ -229,7 +230,8 @@ public class ComputerHandler implements Listener {
 	@EventHandler
 	public void trackBlockPlace(BlockPlaceEvent e) {
 		computers.stream()
-				.filter(c -> c.getConsole().getLocation().distanceSquared(e.getPlayer().getLocation()) < 64)
+				.filter(c -> c.getConsole().getLocation().getWorld() == e.getPlayer().getWorld()
+						&& c.getConsole().getLocation().distanceSquared(e.getPlayer().getLocation()) < 64)
 				.forEach(this::updateBlocks);
 	}
 

@@ -18,6 +18,7 @@ public class Consoles extends JavaPlugin {
 
 	public static boolean frameRenderingEnabled = true;
 	public static boolean componentRenderingEnabled = false;
+	public static boolean allowCrafting = true;
 
 	static {
 		MapInjector.injectTypes();
@@ -45,6 +46,7 @@ public class Consoles extends JavaPlugin {
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
 		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);
 		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", true);
+		allowCrafting = getConfig().getBoolean("allow-computer-crafting", true);
 		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
 			try {

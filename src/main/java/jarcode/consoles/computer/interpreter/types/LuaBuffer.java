@@ -20,6 +20,7 @@ public class LuaBuffer {
 		if (frame != null) {
 			component.addOperations(frame.operations);
 		}
+		else throw new IllegalArgumentException("Invalid frame");
 	}
 
 	public String poll() {

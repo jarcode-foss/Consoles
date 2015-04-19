@@ -12,6 +12,13 @@ bungee-forward: false
 # Computer Functions
 # ------------------
 
+# Enable the crafting of computers
+allow-comptuer-crafting: true
+
+# ------------------
+# Computer Functions
+# ------------------
+
 # Advanced component rendering, but insecure and exposes the consoles API to Lua code
 custom-components: false
 

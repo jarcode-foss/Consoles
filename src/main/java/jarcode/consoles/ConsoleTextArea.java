@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 
 public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
+	private static final int MARGIN = 2;
+
 	private MapFont font = MinecraftFont.Font;
 	private int textHeight = font.getHeight() + 1;
 	private List<String> stack = new CopyOnWriteArrayList<>();
@@ -37,7 +39,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	public ConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
 		super(w, h, renderer);
-		maxStackSize = h / textHeight;
+		maxStackSize = (h - MARGIN) / textHeight;
 		maxWidth = w;
 	}
 	public void print(String text) {
@@ -179,7 +181,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		g.setFont(font);
 		g.drawBackground();
 		for (int t = 0; t < stack.size(); t++) {
-			lastColor = g.drawFormatted(0, (t * textHeight), lastColor, stack.get(t));
+			lastColor = g.drawFormatted(0, (t * textHeight) + MARGIN, lastColor, stack.get(t));
 		}
 	}
 }

@@ -215,7 +215,9 @@ public class InterpretedProgram implements Program {
 	private LuaBuffer lua_screenBuffer(Integer index) {
 		index--;
 		if (!computer.screenAvailable(index)) return null;
+		allocatedSessions.add(index);
 		BufferedFrameComponent component = new BufferedFrameComponent(computer);
+		computer.setComponent(index, component);
 		return new LuaBuffer(this, index, component);
 	}
 	private void lua_write(String text) {

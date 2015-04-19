@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 public class IndexedConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
+	protected static final int H_MARGIN = 2;
+
 	protected static final int OFFSET = 20;
 	protected static final int MARGIN = 4;
 
@@ -70,7 +72,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	public IndexedConsoleTextArea(int w, int h, ConsoleRenderer renderer) {
 		super(w, h, renderer);
-		maxStackSize = h / textHeight;
+		maxStackSize = (h - H_MARGIN) / textHeight;
 		maxWidth = w - OFFSET;
 	}
 	public void print(String text) {
@@ -269,11 +271,12 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
 				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
-				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN), (i * textHeight), lastColor, str);
+				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN),
+						(i * textHeight) + H_MARGIN, lastColor, str);
 				g.setFont(font);
 				k = entry.getKey();
 			}
-			lastColor = g.drawFormatted(OFFSET, (i * textHeight), lastColor, entry.getValue());
+			lastColor = g.drawFormatted(OFFSET, (i * textHeight) + H_MARGIN, lastColor, entry.getValue());
 			i++;
 		}
 	}

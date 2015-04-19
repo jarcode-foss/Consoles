@@ -25,14 +25,14 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 	}
 
 	public void addOperations(Collection<Consumer<CanvasGraphics>> ops) {
-		ops.addAll(ops);
+		this.ops.addAll(ops);
 		repaint();
 	}
 
 	public LuaInteraction interaction() {
 		if (interactions.size() == 0) return null;
 		LuaInteraction[] arr = interactions.stream()
-				.limit(interactions.size() - 1)
+				.skip(1)
 				.toArray(LuaInteraction[]::new);
 		interactions.clear();
 		interactions.addAll(Arrays.asList(arr));
@@ -54,6 +54,7 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 
 	@Override
 	public void paint(CanvasGraphics g, String context) {
+		System.out.println("Painting buffered component, " + ops.size() + " operations.");
 		for (Consumer<CanvasGraphics> op : ops) {
 			op.accept(g);
 		}

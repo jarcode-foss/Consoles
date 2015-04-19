@@ -37,7 +37,7 @@ public abstract class Computer implements Runnable {
 	public static final String VERSION = "1.19.2";
 
 	static final Position2D STATUS_COMPONENT_POSITION = new Position2D(2, 2);
-	public static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 4 + StatusBar.HEIGHT);
+	public static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 2 + StatusBar.HEIGHT);
 
 	private String hostname;
 

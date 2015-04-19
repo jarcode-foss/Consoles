@@ -178,7 +178,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			String stripped = ChatColor.stripColor(entry.getValue());
 			int size = stripped.length();
 			// cursor is in this stack row
-			if (x >= OFFSET && y >= i * textHeight && y < (i + 1) * textHeight) {
+			if (x >= OFFSET && y >= (i * textHeight) + H_MARGIN && y < ((i + 1) * textHeight) + H_MARGIN) {
 				char[] arr = stripped.toCharArray();
 				int w = OFFSET;
 				boolean o = false;
@@ -227,13 +227,14 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
 				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
-				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN), (i * textHeight), lastColor, str);
+				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN),
+						(i * textHeight) + H_MARGIN, lastColor, str);
 				g.setFont(font);
 				k = entry.getKey();
 				if (over >= 0) {
 					for (int t = 0; t < textHeight; t++) {
-						g.draw(OFFSET + over + 2, (i - 1) * textHeight + t, cursorColorSecondary);
-						g.draw(OFFSET + over + 3, (i - 1) * textHeight + t, cursorColorSecondary);
+						g.draw(OFFSET + over + 2, (i - 1) * textHeight + t + H_MARGIN, cursorColorSecondary);
+						g.draw(OFFSET + over + 3, (i - 1) * textHeight + t + H_MARGIN, cursorColorSecondary);
 					}
 					over = -1;
 				}
@@ -247,7 +248,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					final int fi = c;
 					final int fin = i;
 					lastColor = ((ConsoleGraphics) g).drawFormatted(OFFSET,
-							(i * textHeight), lastColor, entry.getValue(),
+							(i * textHeight) + H_MARGIN, lastColor, entry.getValue(),
 							(index, ch, sprite, px, py) -> {
 								if (index + fi == character - 1) {
 									for (int t = -1; t < sprite.getWidth(); t++) {
@@ -265,13 +266,13 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 				over = character - 1 >= size + c ? font.getWidth(stripped) : -1;
 				c += size;
 			}
-			lastColor = g.drawFormatted(OFFSET, (i * textHeight), lastColor, entry.getValue());
+			lastColor = g.drawFormatted(OFFSET, (i * textHeight) + H_MARGIN, lastColor, entry.getValue());
 			i++;
 		}
 		if (over >= 0) {
 			for (int t = 0; t < textHeight; t++) {
-				g.draw(OFFSET + over + 2, (i - 1) * textHeight + t, cursorColorSecondary);
-				g.draw(OFFSET + over + 3, (i - 1) * textHeight + t, cursorColorSecondary);
+				g.draw(OFFSET + over + 2, (i - 1) * textHeight + t + H_MARGIN, cursorColorSecondary);
+				g.draw(OFFSET + over + 3, (i - 1) * textHeight + t + H_MARGIN, cursorColorSecondary);
 			}
 		}
 	}
@@ -292,6 +293,14 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					insert("\n");
 					repaint();
 					return;
+				case "s":
+					insert(" ");
+					repaint();
+					return;
+				case "t":
+					insert("    ");
+					repaint();
+					return;
 				case "q":
 					try (OutputStream out = file.createOutput()) {
 						out.write(content.getBytes(Charset.forName("UTF-8")));
@@ -310,6 +319,18 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					return;
 				case "d":
 					top += 2;
+					rebuild();
+					repaint();
+					return;
+				case "U":
+					top = 1;
+					rebuild();
+					repaint();
+					return;
+				case "D":
+					top = content.split("\n").length - (maxStackSize - 10) + 1;
+					if (top < 1)
+						top = 1 ;
 					rebuild();
 					repaint();
 					return;
