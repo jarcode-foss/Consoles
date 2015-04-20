@@ -9,6 +9,13 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
+@Manual(
+		author = "Jarcode",
+		version = "2.1",
+		contents = "Appends, prefixes and writes to files on the filesystem. This program " +
+				"will fail when trying to resolve malformed paths, when it encounters a " +
+				"sub-folder that does not exist, or if the target folder already exists."
+)
 public class WriteProgram extends FSProvidedProgram {
 
 	public WriteProgram() {

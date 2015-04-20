@@ -63,12 +63,15 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 
 	public void onStart() {
 		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
-		advanceLine();
-		Random random = new Random();
-		println(ChatColor.GRAY + JOKES[random.nextInt(JOKES.length)]);
+		randomJoke();
 		advanceLine();
 		updatePrompt();
 		prompt();
+	}
+	public void randomJoke() {
+		advanceLine();
+		Random random = new Random();
+		println(ChatColor.GRAY + JOKES[random.nextInt(JOKES.length)]);
 	}
 	Terminal(Computer computer, boolean setupPrompt) {
 		super(computer.getViewWidth(), computer.getViewHeight(), computer.getConsole());

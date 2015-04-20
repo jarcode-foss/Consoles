@@ -7,6 +7,13 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.1",
+		contents = "Opens a dialog that presents the option to delete the computer. " +
+				"Only the owner of this computer and authorize deletion. All data is " +
+				"lost when the computer is deleted."
+)
 public class CurrentDirectoryProgram extends FSProvidedProgram {
 
 	public CurrentDirectoryProgram() {

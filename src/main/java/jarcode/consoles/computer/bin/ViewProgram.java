@@ -12,6 +12,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.2",
+		contents = "Displays the contents of a file on a separate screen instance. The program " +
+				"exists immediately, but allows the screen session to remain afterwards."
+)
 public class ViewProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {

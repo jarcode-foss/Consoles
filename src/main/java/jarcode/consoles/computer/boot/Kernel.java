@@ -47,6 +47,9 @@ public class Kernel extends FSProvidedProgram {
 		program(0x0D, new HelpProgram());
 		program(0x0E, new MakeDirectoryProgram());
 		program(0x0F, new OwnerProgram());
+		program(0x10, new ManualProgram());
+		program(0x11, new JokeProgram());
+		program(0x12, new CopyProgram());
 	}
 
 	{
@@ -116,6 +119,9 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x0D, root, "help");
 		mapProgram(0x0E, root, "mkdir");
 		mapProgram(0x0F, root, "owner");
+		mapProgram(0x10, root, "man");
+		mapProgram(0x11, root, "joke");
+		mapProgram(0x12, root, "cp");
 
 		try {
 			if (!root.exists("bin"))
@@ -155,6 +161,12 @@ public class Kernel extends FSProvidedProgram {
 		catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+	public HashBiMap<Byte, FSProvidedProgram> providedPrograms() {
+		HashBiMap<Byte, FSProvidedProgram> map = HashBiMap.create();
+		programs.entrySet().stream()
+				.forEach(en -> map.put(en.getKey(), en.getValue()));
+		return map;
 	}
 	private void program(int id, FSProvidedProgram providedProgram) {
 		programs.put((byte) id, providedProgram);

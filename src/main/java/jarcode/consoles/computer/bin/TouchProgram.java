@@ -7,6 +7,13 @@ import jarcode.consoles.computer.filesystem.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.12",
+		contents = "Creates a file at the given path on the filesystem. This program " +
+				"will fail when trying to resolve malformed paths, when it encounters a " +
+				"sub-folder that does not exist, or if the target folder already exists."
+)
 public class TouchProgram extends FSProvidedProgram {
 
 	private boolean print = true;
@@ -46,6 +53,8 @@ public class TouchProgram extends FSProvidedProgram {
 		String f = Arrays.asList(arr).stream()
 				.limit(arr.length == 0 ? 0 : arr.length - 1)
 				.collect(Collectors.joining("/"));
+		if (f.trim().isEmpty() && str.startsWith("/"))
+			f = "/";
 		String n = Arrays.asList(arr).stream()
 				.filter(s -> !s.isEmpty())
 				.reduce((o1, o2) -> o2)

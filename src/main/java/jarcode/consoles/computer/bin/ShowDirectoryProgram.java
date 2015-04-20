@@ -10,6 +10,12 @@ import org.bukkit.ChatColor;
 
 import java.util.Map;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.4",
+		contents = "Shows the current directory of the terminal instance, and will change the " +
+				"current directory when a valid path is passed to this program."
+)
 public class ShowDirectoryProgram extends FSProvidedProgram {
 
 	public ShowDirectoryProgram() {

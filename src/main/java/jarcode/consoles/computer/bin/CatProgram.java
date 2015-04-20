@@ -10,6 +10,13 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.7",
+		contents = "Returns UTF-8 encoded text of the raw output from the given file, " +
+				"which includes device files. Pressing ^c will terminate reading, and the " +
+				"program will terminate automatically when it reaches the end of the file."
+)
 public class CatProgram extends FSProvidedProgram {
 
 	public CatProgram() {

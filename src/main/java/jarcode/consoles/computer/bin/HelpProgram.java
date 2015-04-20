@@ -9,9 +9,16 @@ import org.bukkit.ChatColor;
 
 import java.util.stream.Collectors;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.6",
+		contents = "A program that prints programs installed in the /bin folder, and points " +
+				"the user to this project's source code and the 'man' command."
+)
 public class HelpProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+		computer.getTerminal(this).clear();
 		println("Installed programs: ");
 		FSBlock block = resolve("/bin");
 		if (block instanceof FSFolder) {
@@ -22,8 +29,10 @@ public class HelpProgram extends FSProvidedProgram {
 							ChatColor.RED : ChatColor.YELLOW) + entry.getKey() + ChatColor.RESET)
 					.collect(Collectors.joining("\t")));
 		}
-		print("");
-		print("Visit " + ChatColor.BLUE+ "github.com/wacossusca34/Consoles/"
+		nextln();
+		print("Use " + ChatColor.AQUA + "man [program]" + ChatColor.WHITE + " for more information on a program");
+		nextln();
+		println("Visit " + ChatColor.BLUE+ "github.com/wacossusca34/Consoles/"
 				+ ChatColor.WHITE + " for source code & support.");
 	}
 }

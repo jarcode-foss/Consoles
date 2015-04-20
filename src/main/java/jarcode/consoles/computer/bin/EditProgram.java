@@ -6,12 +6,28 @@ import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import org.bukkit.ChatColor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+@Manual(
+		author = "Jarcode",
+		version = "2.14",
+		contents = "Opens up an editor for the given file. Navigation commands are prefixed " +
+				"by the dash '-' character. The editor is opened up in a separate screen " +
+				"screen session. Commands in the editor are as follows:\n\n" +
+				"\u00A7e/-n\u00A7f adds a new line\n" +
+				"\u00A7e/-q\u00A7f saves and quits\n" +
+				"\u00A7e/-Q\u00A7f quits without saving\n" +
+				"\u00A7e/-u\u00A7f scrolls up by two lines\n" +
+				"\u00A7e/-d\u00A7f scrolls down by two lines\n" +
+				"\u00A7e/-U\u00A7f scrolls to the top of the file\n" +
+				"\u00A7e/-D\u00A7f scrolls to the bottom of the file\n" +
+				"\u00A7e/-t\u00A7f adds four spaces (tab)"
+)
 public class EditProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {

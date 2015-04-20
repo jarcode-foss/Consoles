@@ -7,13 +7,12 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 @Manual(
 		author = "Jarcode",
 		version = "1.1",
-		contents = "Clears the content in the current terminal session"
+		contents = "Prints a random joke"
 )
-public class ClearProgram extends FSProvidedProgram {
+public class JokeProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		Terminal terminal = computer.getCurrentTerminal();
-		if (terminal != null)
-			terminal.clear();
+		terminal.randomJoke();
 	}
 }

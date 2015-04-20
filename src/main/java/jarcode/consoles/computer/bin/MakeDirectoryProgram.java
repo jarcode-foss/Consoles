@@ -10,6 +10,13 @@ import jarcode.consoles.computer.filesystem.FSStoredFile;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Manual(
+		author = "Jarcode",
+		version = "1.12-b",
+		contents = "Creates a directory at the given path on the filesystem. This program " +
+				"will fail when trying to resolve malformed paths, when it encounters a " +
+				"sub-folder that does not exist, or if the target folder already exists."
+)
 public class MakeDirectoryProgram extends FSProvidedProgram {
 
 	private boolean print = true;
