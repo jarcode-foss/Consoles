@@ -3,6 +3,23 @@ A replacement map API and plugin for craftbukkit &amp; spigot servers. **Require
 
 License: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
+### Maven Repository
+
+Put this in your `<dependencies>` tag
+
+        <dependency>
+            <groupId>jarcode</groupId>
+            <artifactId>mc-consoles</artifactId>
+            <version>1.4-alpha</version>
+        </dependency>
+
+ And use the following repository:
+ 
+        <repository>
+            <id>mineflow-public</id>
+            <url>http://mineflow.network/m2</url>
+        </repository>
+
 The API provides:
 
 - A replacement for the default map renderer in the minecraft server
@@ -19,12 +36,9 @@ Behind the scenes, this API:
 - Provides a basic component set for building interfaces with the console
 - Provides _streaming_ support, so you can effectively map input and output to console components
 
-In progress:
-
-- A ComputerCraft-inspired feature that allows players to create and manage fully-featured UNIX-like computers. See source code.
-
 Non-API features:
 
+- Fully programmable Computers. Refer to the wiki.
 - Reliable image rendering from URLs!
 
 Notes:
