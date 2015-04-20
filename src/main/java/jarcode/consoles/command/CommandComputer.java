@@ -2,10 +2,13 @@ package jarcode.consoles.command;
 
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.ManagedComputer;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.stream.Collectors;
 
 public class CommandComputer extends CommandBase {
 	public CommandComputer() {
@@ -23,6 +26,17 @@ public class CommandComputer extends CommandBase {
 
 		if (args.length == 0) {
 			printHelp(sender);
+		}
+		else if (args[0].equalsIgnoreCase("list") && args.length >= 2) {
+			sender.sendMessage(ChatColor.BLUE + "Computers:");
+			String[] messages = ComputerHandler.getInstance().getComputers().stream()
+					.map(comp -> ChatColor.YELLOW + comp.getHostname()
+							+ ":\n\towner: " + comp.getOwner() + "\n"
+							+ ":\n\tlocation: " + formatLocation(comp.getConsole().getLocation()))
+					.map(str -> str.replace("\t", "    "))
+					.collect(Collectors.joining("\n"))
+					.split("\n");
+			sender.sendMessage(messages);
 		}
 		else if (args[0].equalsIgnoreCase("remove") && args.length >= 2) {
 			ComputerHandler.getInstance().find(args[1]).destroy();
@@ -66,9 +80,13 @@ public class CommandComputer extends CommandBase {
 		}
 		return true;
 	}
+	private String formatLocation(Location location) {
+		return String.format("(%d, %d, %d, %s)", location.getBlockX(),
+				location.getBlockY(), location.getBlockZ(), location.getWorld().getName());
+	}
 	private void printHelp(CommandSender sender) {
 		sender.sendMessage(ChatColor.GREEN + "Computer command usage:");
-		sender.sendMessage(ChatColor.YELLOW + "/computer list" + ChatColor.WHITE + " - " +
+		sender.sendMessage(ChatColor.BLUE + "/computer list" + ChatColor.WHITE + " - " +
 				"shows all your computers");
 		sender.sendMessage(ChatColor.BLUE + "/computer remove [hostname]" + ChatColor.WHITE + " - " +
 				"removes the computer with the given hostname");

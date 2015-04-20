@@ -4,14 +4,12 @@ import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.Position2D;
-import jarcode.consoles.api.Console;
 import jarcode.consoles.computer.interpreter.Lua;
-import javafx.geometry.Pos;
-import net.md_5.bungee.api.ChatColor;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
 import net.minecraft.server.v1_8_R2.NBTTagList;
 import org.apache.commons.io.IOUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -20,7 +18,6 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R2.block.CraftBlockState;
 import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
 import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
@@ -322,7 +319,7 @@ public class ComputerHandler implements Listener {
 			e.setCurrentItem(newComputerStack());
 		}
 	}
-	private List<Computer> getComputers() {
+	public List<Computer> getComputers() {
 		return Collections.unmodifiableList(computers);
 	}
 	private List<Computer> getComputers(UUID uuid) {

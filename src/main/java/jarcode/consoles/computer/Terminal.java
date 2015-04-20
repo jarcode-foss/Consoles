@@ -4,6 +4,7 @@ import jarcode.consoles.ConsoleFeed;
 import jarcode.consoles.InputComponent;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 
 import java.util.Random;
 import java.util.function.Consumer;
@@ -58,6 +59,8 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 
 	private final ProgramCreator creator = new ProgramCreator(this);
 
+	private volatile boolean ignoreUnauthorizedSigterm = false;
+
 	public void onStart() {
 		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
 		advanceLine();
@@ -80,7 +83,12 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 	public String getUser() {
 		return user;
 	}
-	public void sigTerm() {
+	public void setIgnoreUnauthorizedSigterm(boolean ignore) {
+		this.ignoreUnauthorizedSigterm = ignore;
+	}
+	public void sigTerm(Player player) {
+		if (ignoreUnauthorizedSigterm && (player == null || !player.getUniqueId().equals(computer.getOwner())))
+			return;
 		ProgramInstance instance = getLastProgramInstance();
 		if (instance != null) {
 			instance.terminate();

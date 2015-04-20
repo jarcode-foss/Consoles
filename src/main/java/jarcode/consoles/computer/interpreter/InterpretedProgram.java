@@ -13,6 +13,7 @@ import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.types.*;
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.luaj.vm2.*;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.*;
@@ -25,8 +26,11 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 public class InterpretedProgram implements Program {
 
+	public Map<Integer, LuaFrame> framePool = new HashMap<>();
+	
 	private FSFile file;
 	private InputStream in;
 	private OutputStream out;
@@ -36,11 +40,10 @@ public class InterpretedProgram implements Program {
 	private FuncPool pool;
 	private String args;
 	private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
 	private List<Integer> allocatedSessions = new ArrayList<>();
-	public Map<Integer, LuaFrame> framePool = new HashMap<>();
-
 	private Globals globals;
+
+	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
 	public InterpretedProgram(FSFile file) {
 		this.file = file;
@@ -48,18 +51,8 @@ public class InterpretedProgram implements Program {
 	@SuppressWarnings("SpellCheckingInspection")
 	private void map() {
 
-		Lua.put(this::lua_args, "args", pool);
-		Lua.put(this::lua_clear, "clear", pool);
-		Lua.put(this::lua_print, "printc", pool);
-		Lua.put(this::lua_read, "read", pool);
-		Lua.put(this::lua_resolveFile, "resolveFile", pool);
-		Lua.put(this::lua_resolveFolder, "resolveFolder", pool);
-		Lua.put(this::lua_touch, "touch", pool);
-		Lua.put(this::lua_mkdir, "mkdir", pool);
-		Lua.put(this::lua_reflect, "reflect", pool);
-		Lua.put(this::lua_write, "write", pool);
-		Lua.put(this::lua_sleep, "sleep", pool);
-		Lua.put(this::lua_require, "require", pool);
+		// instance lua functions, these will call with the program context in mind
+		Lua.find(this, pool);
 
 		if (Consoles.componentRenderingEnabled) {
 			Lua.put(this::lua_registerPainter, "paint", pool);
@@ -107,7 +100,7 @@ public class InterpretedProgram implements Program {
 			globals.load(new TableLib());
 			globals.load(new StringLib());
 			globals.load(new EmbeddedMathLib());
-			globals.load(new InterruptLib(this::terminated));
+			globals.load(interruptLib);
 			LoadState.install(globals);
 			LuaC.install(globals);
 
@@ -175,11 +168,20 @@ public class InterpretedProgram implements Program {
 				pool.cleanup();
 			framePool.clear();
 			Terminal terminal = computer.getTerminal(this);
-			terminal.setHandlerInterrupt(null);
+			if (terminal != null) {
+				terminal.setHandlerInterrupt(null);
+				terminal.setIgnoreUnauthorizedSigterm(false);
+			}
 			for (int i : allocatedSessions) {
 				computer.setComponent(i, null);
 			}
 		}
+	}
+	private int findFrameId() {
+		int i = 0;
+		while(framePool.containsKey(i))
+			i++;
+		return i;
 	}
 	public Computer getComputer() {
 		return computer;
@@ -197,10 +199,10 @@ public class InterpretedProgram implements Program {
 			if (terminal != null) {
 				LuaFile file;
 				int i = 0;
-				while (resolve("lua_dump" + i) != null) {
+				while (resolve("lua$dump" + i) != null) {
 					i++;
 				}
-				file = lua_touch("lua_dump" + i);
+				file = lua$touch("lua$dump" + i);
 				assert file != null;
 				String version;
 				try {
@@ -223,14 +225,14 @@ public class InterpretedProgram implements Program {
 		else
 			print(msg);
 	}
-	protected String warning(String str) {
+	private String warning(String str) {
 		return "\t" + ChatColor.YELLOW + str;
 	}
-	protected String err(String str) {
+	private String err(String str) {
 		return "\t" + ChatColor.RED + str;
 	}
 	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-	protected String lua_read() {
+	private String lua$read() {
 		final String[] result = {null};
 		AtomicBoolean locked = new AtomicBoolean(true);
 		computer.getTerminal(this).setHandlerInterrupt((str) -> {
@@ -246,10 +248,38 @@ public class InterpretedProgram implements Program {
 		}
 		return result[0];
 	}
-	private void lua_load(String lib) {
-
+	private void lua$ignoreTerminate(Boolean ignore) {
+		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
 	}
-	private LuaValue lua_require(String path) {
+	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
+		Sound match = Arrays.asList(Sound.values()).stream()
+				.filter(s -> s.name().equals(name.toUpperCase()))
+				.findFirst().orElseGet(() -> null);
+		if (match == null) {
+			throw new IllegalArgumentException(name + " is not a qualified sound");
+		}
+		schedule(() -> computer.getConsole().getLocation().getWorld()
+				.playSound(computer.getConsole().getLocation(), match,
+						(float) v1.checkdouble(), (float) v2.checkdouble()));
+	}
+	private Boolean lua$clear() {
+		try {
+			// this is to prevent spam & waiting for the last thing in the buffer to write
+			Thread.sleep(50);
+			return schedule(() -> {
+				Terminal terminal = computer.getTerminal(this);
+				if (terminal != null)
+					terminal.clear();
+				return true;
+			});
+		}
+		catch (InterruptedException e) {
+			if (Consoles.DEBUG)
+				e.printStackTrace();
+			return false;
+		}
+	}
+	private LuaValue lua$require(String path) {
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
@@ -282,7 +312,7 @@ public class InterpretedProgram implements Program {
 		computer.setComponent(index, component);
 		return new LuaBuffer(this, index, component);
 	}
-	private void lua_write(String text) {
+	private void lua$write(String text) {
 		print(text);
 	}
 	private LuaPainter lua_registerPainter(Integer index, FunctionBind painter, FunctionBind listener, Integer bg) {
@@ -293,16 +323,16 @@ public class InterpretedProgram implements Program {
 		allocatedSessions.add(index);
 		return new LuaPainter(index, computer);
 	}
-	protected String lua_args() {
+	private String lua$args() {
 		System.out.print("called");
 		return args;
 	}
-	private LuaFolder lua_resolveFolder(String path) {
+	private LuaFolder lua$resolveFolder(String path) {
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
-	private LuaFile lua_resolveFile(String path) {
+	private LuaFile lua$resolveFile(String path) {
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
@@ -313,38 +343,35 @@ public class InterpretedProgram implements Program {
 		framePool.put(id, frame);
 		return frame;
 	}
-	private int findFrameId() {
-		int i = 0;
-		while(framePool.containsKey(i))
-			i++;
-		return i;
-	}
-	private LuaFile lua_touch(String path) {
+	private LuaFile lua$touch(String path) {
 		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
 		return file != null ? new LuaFile(file, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
-	public String[] lua_reflect() {
+	private String[] lua$reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
 	}
-	public void lua_sleep(Integer ms) {
+	private void lua$sleep(Integer ms) {
 		try {
+			interruptLib.update();
 			long target = System.currentTimeMillis() + ms;
 			while (System.currentTimeMillis() < target && !terminated()) {
 				Thread.sleep(8);
 			}
+			interruptLib.update();
 		}
 		catch (InterruptedException e) {
-			e.printStackTrace();
+			throw new LuaError(e);
 		}
 	}
 	@SuppressWarnings("SpellCheckingInspection")
-	private LuaFolder lua_mkdir(String path) {
+	private LuaFolder lua$mkdir(String path) {
 		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
 		return folder != null ? new LuaFolder(folder, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
-	protected void lua_print(String formatted) {
+	@SuppressWarnings("SpellCheckingInspection")
+	private void lua$printc(String formatted) {
 		formatted = ChatColor.translateAlternateColorCodes('&', formatted);
 		println(formatted);
 	}
@@ -359,7 +386,7 @@ public class InterpretedProgram implements Program {
 	protected void println(String formatted) {
 		print(formatted + '\n');
 	}
-	protected void nextln() {
+	protected void nextL() {
 		print("\n");
 	}
 	protected FSBlock resolve(String input) {
@@ -367,22 +394,5 @@ public class InterpretedProgram implements Program {
 	}
 	protected boolean terminated() {
 		return instance.isTerminated();
-	}
-	public Boolean lua_clear() {
-		try {
-			// this is to prevent spam & waiting for the last thing in the buffer to write
-			Thread.sleep(50);
-			return schedule(() -> {
-				Terminal terminal = computer.getTerminal(this);
-				if (terminal != null)
-					terminal.clear();
-				return true;
-			});
-		}
-		catch (InterruptedException e) {
-			if (Consoles.DEBUG)
-				e.printStackTrace();
-			return false;
-		}
 	}
 }

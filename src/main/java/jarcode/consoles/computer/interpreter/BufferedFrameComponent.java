@@ -56,7 +56,6 @@ public class BufferedFrameComponent extends ConsoleComponent implements InputCom
 
 	@Override
 	public void paint(CanvasGraphics g, String context) {
-		System.out.println("Painting buffered component, " + ops.size() + " operations.");
 		for (Consumer<CanvasGraphics> op : ops) {
 			op.accept(g);
 		}

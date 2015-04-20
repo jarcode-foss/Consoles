@@ -2,7 +2,7 @@ package jarcode.consoles.command;
 
 import jarcode.consoles.ImageConsole;
 import jarcode.consoles.ImageConsoleHandler;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;

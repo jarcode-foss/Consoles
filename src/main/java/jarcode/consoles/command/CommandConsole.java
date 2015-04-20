@@ -2,7 +2,7 @@ package jarcode.consoles.command;
 
 import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.ConsoleHandler;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 public class CommandConsole extends CommandBase {

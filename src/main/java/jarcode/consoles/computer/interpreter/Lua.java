@@ -3,17 +3,16 @@ import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
 import net.jodah.typetools.TypeResolver;
-import org.luaj.vm2.LuaFunction;
-import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.Varargs;
+import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * This is meant to make method lambdas (using :: operator) usable
@@ -120,6 +119,76 @@ public class Lua {
 	}
 	public static <R> LibFunction link(NoArgFunc<R> func) {
 		return link(new Class[0], func);
+	}
+	public static void find(Object inst, FuncPool pool) {
+		find(inst.getClass(), inst, pool);
+	}
+	public static void find(Class type, Object inst, FuncPool pool) {
+		List<Method> methodList = new ArrayList<>();
+		while (type != Object.class) {
+			methodList.addAll(Arrays.asList(type.getDeclaredMethods()));
+			type = type.getSuperclass();
+		}
+		methodList.stream()
+				.filter(m -> m.getName().startsWith("lua$"))
+				.peek(m -> m.setAccessible(true))
+				.map(m -> {
+					Class[] types = m.getParameterTypes();
+					LibFunction function = new LibFunction() {
+						@Override
+						public LuaValue call() {
+							try {
+								return translateLua(m.invoke(inst));
+							} catch (IllegalAccessException | InvocationTargetException e) {
+								throw new LuaError(e);
+							}
+						}
+
+						@Override
+						public LuaValue call(LuaValue v) {
+							try {
+								return translateLua(m.invoke(inst, toJava(types, v)));
+							} catch (IllegalAccessException | InvocationTargetException e) {
+								throw new LuaError(e);
+							}
+						}
+
+						@Override
+						public LuaValue call(LuaValue v, LuaValue v1) {
+							try {
+								return translateLua(m.invoke(inst, toJava(types, v, v1)));
+							} catch (IllegalAccessException | InvocationTargetException e) {
+								throw new LuaError(e);
+							}
+						}
+
+						@Override
+						public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2) {
+							try {
+								return translateLua(m.invoke(inst, toJava(types, v, v1, v2)));
+							} catch (IllegalAccessException | InvocationTargetException e) {
+								throw new LuaError(e);
+							}
+						}
+
+						@Override
+						public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2, LuaValue v3) {
+							try {
+								return translateLua(m.invoke(inst, toJava(types, v, v1, v2, v3)));
+							} catch (IllegalAccessException | InvocationTargetException e) {
+								throw new LuaError(e);
+							}
+						}
+					};
+					return new AbstractMap.SimpleEntry<>(m.getName().substring(4), function);
+				})
+				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
+	}
+	private static Object[] toJava(Class[] types, Object... args) {
+		for (int t = 0; t < args.length; t++) {
+			args[t] = translate(types[t], (LuaValue) args[t]);
+		}
+		return args;
 	}
 	public static Computer context() {
 		Computer computer = pools.get(Thread.currentThread()).getComputer();

@@ -6,6 +6,8 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.FSFile;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +38,9 @@ public class CommandBlockDriver extends Driver {
 					if (text.length() >= 2) {
 						char c = text.charAt(1);
 						if (c == 'C' || c == 'c') {
-							if (terminal != null)
-							terminal.sigTerm();
+							if (terminal != null) {
+								terminal.sigTerm(null);
+							}
 						}
 						else {
 							int i;

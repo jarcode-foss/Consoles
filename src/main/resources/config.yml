@@ -28,3 +28,8 @@ custom-components: false
 
 # Custom frame rendering, much safer (and easier) alternative to the above, but slower and less responsive.
 frame-rendering: true
+
+# Maximum time (in miliseconds) that a program can run without calling a blocking function
+# You can tweak this to be lower if you want to avoid program threads from using too
+# many server resources.
+max-time-without-interrupt: 7000

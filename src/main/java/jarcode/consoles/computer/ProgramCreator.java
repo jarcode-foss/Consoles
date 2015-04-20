@@ -3,7 +3,7 @@ package jarcode.consoles.computer;
 import jarcode.consoles.ConsoleFeed;
 import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;

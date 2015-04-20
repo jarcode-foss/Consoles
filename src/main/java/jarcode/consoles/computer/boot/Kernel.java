@@ -10,7 +10,7 @@ import jarcode.consoles.computer.devices.NullDevice;
 import jarcode.consoles.computer.devices.PlayerCommandDevice;
 import jarcode.consoles.computer.devices.PlayerInteractDevice;
 import jarcode.consoles.computer.filesystem.*;
-import net.md_5.bungee.api.ChatColor;
+import org.bukkit.ChatColor;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
