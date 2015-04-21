@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 		version = "1.1",
 		contents = "Downloads from an external URL and saves the data to a file. " +
 				"Fails if the URL points to an invalid server or if the server returns " +
-				"an error. The URL must point to an HTTP server."
+				"an error. The URL must point to an HTTP server, and this program only " +
+				"reads a maximum of 40kb from a single URL."
 )
 public class WGetProgram extends FSProvidedProgram {
 	@Override
@@ -80,7 +81,7 @@ public class WGetProgram extends FSProvidedProgram {
 			is = con.getInputStream();
 			file = new FSStoredFile();
 			out = file.createOutput();
-			IOUtils.copy(is, out);
+			IOUtils.copyLarge(is, out, 0, 40 * 1024);
 		}
 		catch (MalformedURLException e) {
 			if (Consoles.DEBUG)
