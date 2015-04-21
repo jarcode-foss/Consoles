@@ -50,6 +50,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x10, new ManualProgram());
 		program(0x11, new JokeProgram());
 		program(0x12, new CopyProgram());
+		program(0x13, new WGetProgram());
 	}
 
 	{
@@ -122,6 +123,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x10, root, "man");
 		mapProgram(0x11, root, "joke");
 		mapProgram(0x12, root, "cp");
+		mapProgram(0x13, root, "wget");
 
 		try {
 			if (!root.exists("bin"))

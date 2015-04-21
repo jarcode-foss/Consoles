@@ -11,7 +11,7 @@ import org.bukkit.entity.Player;
 		author = "Jarcode",
 		version = "1.3",
 		contents = "Opens a dialog that presents the option to delete the computer. " +
-				"Only the owner of this computer and authorize deletion. All data is " +
+				"Only the owner of this computer can authorize deletion. All data is " +
 				"lost when the computer is deleted."
 )
 public class DeleteProgram extends FSProvidedProgram {

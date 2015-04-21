@@ -1,5 +1,6 @@
 package jarcode.consoles.command;
 
+import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.ManagedComputer;
 import org.bukkit.ChatColor;
@@ -39,7 +40,12 @@ public class CommandComputer extends CommandBase {
 			sender.sendMessage(messages);
 		}
 		else if (args[0].equalsIgnoreCase("remove") && args.length >= 2) {
-			ComputerHandler.getInstance().find(args[1]).destroy();
+			Computer computer = ComputerHandler.getInstance().find(args[1]);
+			if (computer == null) {
+				sender.sendMessage(ChatColor.RED + "That computer doesn't exist!");
+				return true;
+			}
+			computer.destroy();
 		}
 		else if (args[0].equalsIgnoreCase("create") && args.length >= 3) {
 			BlockFace face;
