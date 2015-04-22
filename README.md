@@ -10,7 +10,7 @@ Put this in your `<dependencies>` tag
         <dependency>
             <groupId>jarcode</groupId>
             <artifactId>mc-consoles</artifactId>
-            <version>1.5-alpha</version>
+            <version>1.6-alpha</version>
         </dependency>
 
  And use the following repository:
