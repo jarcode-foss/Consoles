@@ -10,6 +10,7 @@ import jarcode.consoles.computer.devices.NullDevice;
 import jarcode.consoles.computer.devices.PlayerCommandDevice;
 import jarcode.consoles.computer.devices.PlayerInteractDevice;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.interpreter.LuaDefaults;
 import org.bukkit.ChatColor;
 
 import java.io.FileNotFoundException;
@@ -125,21 +126,9 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x12, root, "cp");
 		mapProgram(0x13, root, "wget");
 
-		try {
-			if (!root.exists("bin"))
-				root.contents.put("bin", new FSFolder());
-			FSFolder bin = (FSFolder) root.get("bin");
-			bin.contents.put("minesweeper", writtenFile(ComputerHandler.MINESWEEPER_PROGRAM));
-		} catch (FileNotFoundException ignored) {}
-
-		try {
-			if (!root.exists("lib"))
-				root.contents.put("lib", new FSFolder());
-			FSFolder lib = (FSFolder) root.get("lib");
-			lib.contents.put("minesweeper_block", writtenFile(ComputerHandler.MINESWEEPER_BLOCK_PROGRAM));
-		} catch (FileNotFoundException ignored) {}
+		LuaDefaults.loadInto(computer);
 	}
-	private FSStoredFile writtenFile(String text) {
+	public static FSStoredFile writtenFile(String text) {
 		FSStoredFile file = new FSStoredFile();
 		try {
 			OutputStream out = file.createOutput();

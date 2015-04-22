@@ -55,10 +55,10 @@ public class ComputerHandler implements Listener {
 	static {
 		try {
 			MINESWEEPER_BLOCK_PROGRAM = IOUtils.readLines(
-					ComputerHandler.class.getResourceAsStream("/minesweeper/block.lua"))
+					ComputerHandler.class.getResourceAsStream("/lua/lib/minesweeper_block.lua"))
 					.stream().collect(Collectors.joining("\n"));
 			MINESWEEPER_PROGRAM = IOUtils.readLines(
-					ComputerHandler.class.getResourceAsStream("/minesweeper/minesweeper.lua"))
+					ComputerHandler.class.getResourceAsStream("/lua/bin/minesweeper.lua"))
 					.stream().collect(Collectors.joining("\n"));
 		} catch (IOException e) {
 			throw new RuntimeException(e);

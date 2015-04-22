@@ -44,13 +44,6 @@ public class FSFolder extends FSBlock {
 		return remaining == null // if null, that means this is the end of the path and this was the final node
 				|| (block instanceof FSFolder && ((FSFolder) block).exists(remaining));
 	}
-	public void mk(String path, String name, FSBlock block) throws FileNotFoundException {
-		FSBlock at = get(path);
-		if (!(at instanceof FSFolder)) {
-			throw new FileNotFoundException(path  + " is a file or program");
-		}
-		((FSFolder) at).contents.put(name, block);
-	}
 	public void mkr(String path, String name, FSBlock block) throws FileNotFoundException {
 		if (!mkdir(path))
 			throw new FileNotFoundException("Invalid path: " + path);
@@ -64,15 +57,14 @@ public class FSFolder extends FSBlock {
 	public boolean mkdir(String path) {
 		String sub = section(path, "/")[0];
 		FSBlock at = contents.get(sub);
-		String remaining = sub.length() == path.length() ? sub : path.substring(sub.length() + 1);
-		if (at == null && remaining.length() > 0)
-			contents.put(sub, new FSFolder());
-		if (remaining.length() > 0 && !(at instanceof FSFolder)) {
-			return false;
+		String remaining = sub.length() == path.length() ? null : path.substring(sub.length() + 1);
+		if (at == null) {
+			FSFolder folder = new FSFolder();
+			contents.put(sub, folder);
+			return remaining == null || folder.mkdir(remaining);
+		} else if (at instanceof FSFolder) {
+			return remaining == null || ((FSFolder) at).mkdir(remaining);
 		}
-		else if (remaining.length() > 0 && at instanceof FSFolder) {
-			return ((FSFolder) at).mkdir(remaining);
-		}
-		else return true;
+		return false;
 	}
 }

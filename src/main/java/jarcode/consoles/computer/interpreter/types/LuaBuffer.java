@@ -1,12 +1,16 @@
 package jarcode.consoles.computer.interpreter.types;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.interpreter.BufferedFrameComponent;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
 
 public class LuaBuffer {
 
+	private static final int MIN_UPDATE_TIME = 100;
+
 	private InterpretedProgram program;
 	private BufferedFrameComponent component;
+	private long lastUpdate = -1;
 	private final int index;
 
 	public LuaBuffer(InterpretedProgram program, int index, BufferedFrameComponent component) {
@@ -17,6 +21,19 @@ public class LuaBuffer {
 
 	public void update(Integer id) {
 		LuaFrame frame = program.framePool.remove(id);
+		if (System.currentTimeMillis() - lastUpdate >= MIN_UPDATE_TIME) {
+			lastUpdate = System.currentTimeMillis();
+		}
+		else {
+			try {
+				Thread.sleep(MIN_UPDATE_TIME - (System.currentTimeMillis() - lastUpdate));
+				update(id);
+			}
+			catch (InterruptedException e) {
+				if (Consoles.DEBUG)
+					e.printStackTrace();
+			}
+		}
 		if (frame != null) {
 			component.setOperations(frame.operations);
 		}
