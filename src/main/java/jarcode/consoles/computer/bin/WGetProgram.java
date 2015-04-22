@@ -23,10 +23,12 @@ import java.util.stream.Collectors;
 		version = "1.1",
 		contents = "Downloads from an external URL and saves the data to a file. " +
 				"Fails if the URL points to an invalid server or if the server returns " +
-				"an error. The URL must point to an HTTP server, and this program only " +
-				"reads a maximum of 40kb from a single URL."
+				"an error. The URL must point to an HTTP server."
 )
 public class WGetProgram extends FSProvidedProgram {
+
+	public static final int CHUNK_SIZE = 1024;
+
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		
@@ -73,6 +75,7 @@ public class WGetProgram extends FSProvidedProgram {
 		FSStoredFile file;
 		OutputStream out = null;
 		InputStream is = null;
+		println("Downloading...");
 		try {
 			URL url = new URL(args[0]);
 			URLConnection con = url.openConnection();
@@ -81,7 +84,23 @@ public class WGetProgram extends FSProvidedProgram {
 			is = con.getInputStream();
 			file = new FSStoredFile();
 			out = file.createOutput();
-			IOUtils.copyLarge(is, out, 0, 40 * 1024);
+
+			int t = 0;
+			boolean d = false;
+			while (IOUtils.copyLarge(is, out, 0, CHUNK_SIZE) == CHUNK_SIZE) {
+				Thread.sleep(300);
+				if (terminated()) {
+					println("Terminated.");
+					break;
+				}
+				t++;
+				d = !d;
+				if (d) {
+					terminal.clear();
+					nextln();
+					println("downloaded: " + (t * CHUNK_SIZE) + " bytes");
+				}
+			}
 		}
 		catch (MalformedURLException e) {
 			if (Consoles.DEBUG)
@@ -109,6 +128,8 @@ public class WGetProgram extends FSProvidedProgram {
 				catch (IOException ignored) {}
 			}
 		}
+		nextln();
+		println("saved to: " + n);
 		((FSFolder) folder).contents.put(n, file);
 	}
 }

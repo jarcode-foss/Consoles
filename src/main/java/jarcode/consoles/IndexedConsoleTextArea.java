@@ -270,7 +270,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 		for (Map.Entry<Integer, String> entry : stack.entries()) {
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
-				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
+				String str = ChatColor.GRAY.toString() + (entry.getKey() % 1000) + ChatColor.WHITE;
 				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN),
 						(i * textHeight) + H_MARGIN, lastColor, str);
 				g.setFont(font);

@@ -69,7 +69,7 @@ public class ConsolePixelBuffer {
 			initSwitches(context);
 		byte[][][] buffer = buffers.get(context);
 		UpdateSwitch[][] updated = switches.get(context);
-		if (x / SIZE >= 0 && x / SIZE < this.w && y / SIZE >= 0 && y / SIZE < this.h) {
+		if (x >= 0 && x < this.w * SIZE && y >= 0 && y < this.h * SIZE) {
 			buffer[x / SIZE][y / SIZE][x % SIZE + ((y % SIZE) * SIZE)] = b;
 			updated[x / SIZE][y / SIZE].fire();
 		}
