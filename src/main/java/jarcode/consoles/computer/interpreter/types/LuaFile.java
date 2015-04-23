@@ -38,6 +38,26 @@ public class LuaFile extends LuaBlock {
 		}
 		return false;
 	}
+	public byte[] data() {
+		try (InputStream is = file.createInput()) {
+			int i;
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			while (true) {
+				if (supplier.getAsBoolean())
+					break;
+				if (is.available() > 0 || is instanceof ByteArrayInputStream) {
+					i = is.read();
+					if (i == -1) break;
+					out.write(i);
+				}
+			}
+			out.toByteArray();
+		} catch (IOException e) {
+			if (Consoles.DEBUG)
+				e.printStackTrace();
+		}
+		return null;
+	}
 	public String read() {
 		try (InputStream is = file.createInput()) {
 			int i;
