@@ -450,7 +450,7 @@ public class ConsoleHandler implements Listener {
 		if (local)
 			clearAllocations(e.getPlayer());
 	}
-	// block maps
+	// block maps (crafting)
 	@EventHandler
 	public void onItemCraft(CraftItemEvent e) {
 		if (e.getRecipe().getResult().getType() == Material.MAP
@@ -458,7 +458,7 @@ public class ConsoleHandler implements Listener {
 			e.setCancelled(true);
 	}
 
-	// block maps
+	// block maps (pick block)
 	@EventHandler
 	public void onItemCreative(InventoryCreativeEvent e) {
 		if (e.getCurrentItem() != null
@@ -467,17 +467,29 @@ public class ConsoleHandler implements Listener {
 				|| e.getCursor().getType() == Material.EMPTY_MAP)))
 			e.setCancelled(true);
 	}
+	// block frame damage (for any reason)
 	@EventHandler
 	public void onEntityDamage(EntityDamageEvent e) {
 		if (e.getEntity() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getEntity()))
 			e.setCancelled(true);
 	}
+	// block frame breaking (for any reason)
 	@EventHandler
 	public void onFrameBreak(HangingBreakEvent e) {
 		if (e.getEntity() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getEntity())) {
 			e.setCancelled(true);
 		}
 	}
+	// block map item pickup
+	@EventHandler
+	public void onItemPickup(PlayerPickupItemEvent e) {
+		if (e.getItem().getItemStack().getType() == Material.MAP
+				|| e.getItem().getItemStack().getType() == Material.EMPTY_MAP) {
+			e.setCancelled(true);
+			e.getItem().remove();
+		}
+	}
+	// block breaking console paintings
 	@EventHandler
 	public void blockBreaking(BlockBreakEvent e) {
 		if (hittingConsole(e.getPlayer()))
