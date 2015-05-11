@@ -3,6 +3,7 @@ import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
 import net.jodah.typetools.TypeResolver;
+import org.bukkit.Bukkit;
 import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
@@ -24,6 +25,13 @@ public class Lua {
 
 	public static Map<String, LibFunction> staticFunctions = new ConcurrentHashMap<>();
 	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
+
+	// the function mapping tricks that I am using here is very... controversial for me.
+	// this is a split between me wanting to avoid using repetitive code (like below),
+	// but also wanting to use references to any method in Java (function pointers!).
+
+	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
+	// unique piece of code that I have written.
 
 	public static <R, T1, T2, T3, T4> void map(FourArgFunc<R, T1, T2, T3, T4> func, String luaName) {
 		staticFunctions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func));
@@ -190,6 +198,8 @@ public class Lua {
 		}
 		return args;
 	}
+	// retrieves the computer that the current program is being executed in
+	// used in static Java methods that are meant to be visible to lua
 	public static Computer context() {
 		Computer computer = pools.get(Thread.currentThread()).getComputer();
 		if (computer == null)
@@ -422,5 +432,8 @@ public class Lua {
 			return null;
 		}
 		else throw new RuntimeException("Unsupported interface");
+	}
+	public static void main(Runnable task) {
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), task);
 	}
 }

@@ -9,28 +9,29 @@ import java.util.function.BooleanSupplier;
 public class InterruptLib extends DebugLib {
 
 	private BooleanSupplier supplier;
-	private final int max;
 	private volatile long lastInterrupt = System.currentTimeMillis();
 	private byte off = 0;
 
 	public InterruptLib(BooleanSupplier supplier) {
 		this.supplier = supplier;
-		this.max = Consoles.maxTimeWithoutInterrupt;
 	}
 	public void update() {
 		lastInterrupt = System.currentTimeMillis();
 	}
 	@Override
 	public void onInstruction(int i, Varargs varargs, int i1) {
+		// we check every 20 instructions, less overhead this way.
 		if (off == 20) {
 			off = 0;
-			if (System.currentTimeMillis() - lastInterrupt > max)
+			// check if the program has been running too long without an interrupt
+			if (System.currentTimeMillis() - lastInterrupt > Consoles.maxTimeWithoutInterrupt)
 				throw new ProgramInterruptException("Program terminated (ran too long without interrupt)");
+			// check if the program has been terminated
+			if (supplier.getAsBoolean()) {
+				throw new ProgramInterruptException("Program terminated");
+			}
 		}
 		off++;
-		if (supplier.getAsBoolean()) {
-			throw new ProgramInterruptException("Program terminated");
-		}
 		super.onInstruction(i, varargs, i1);
 	}
 }

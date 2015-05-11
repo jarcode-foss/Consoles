@@ -152,16 +152,19 @@ public class ComputerHandler implements Listener {
 				() -> computers.addAll(ComputerData.makeAll()));
 	}
 
+	// updates the computer's cache of tracked blocks that are behind it, re-indexing the array.
 	public void updateBlocks(Computer computer) {
 		ManagedConsole console = computer.getConsole();
 		BlockFace f = console.getDirection();
 		Location at = console.getLocation();
+		// horizontal modifiers
 		Location[] hm = {
 				new Location(at.getWorld(), 1, 0, 0), // N
 				new Location(at.getWorld(), 0, 0, 1), // E
 				new Location(at.getWorld(), 1, 0, 0), // S
 				new Location(at.getWorld(), 0, 0, 1), // W
 		};
+		// offsets (origin block position behind the computer
 		Location[] pm = {
 				new Location(at.getWorld(), 0, 0, 1), // N
 				new Location(at.getWorld(), -1, 0, 0), // E
@@ -176,12 +179,13 @@ public class ComputerHandler implements Listener {
 			case WEST: i = 3; break;
 		}
 		if (i == -1) return;
+		// origin
 		Location p = at.clone().add(pm[i]);
 		Location o;
-		for (int h = 0; h < 2; h++) {
+		for (int h = 0; h < computer.getConsole().getFrameHeight(); h++) {
 			p.setY(p.getBlockY() + h);
 			o = p.clone();
-			for (int t = 0; t < 3; t++) {
+			for (int t = 0; t < computer.getConsole().getFrameWidth(); t++) {
 				if (o.getBlock().getType() == Material.REDSTONE_BLOCK && !trackedBlocks.containsKey(o)) {
 					trackedBlocks.put(o.clone(), computer);
 				}
@@ -190,9 +194,12 @@ public class ComputerHandler implements Listener {
 		}
 	}
 
+	// I commit a few crimes here, but it's a simple way of fixing the threading issues
+	// with the lua calls.
 	@SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
 	public static boolean lua_redstone(Integer index, Boolean on) {
 		Computer computer = Lua.context();
+		// our supplier to be called in the main thread
 		BooleanSupplier func = () -> {
 			Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
 			if (blocks != null && index < blocks.length && index >= 0) {
@@ -206,16 +213,22 @@ public class ComputerHandler implements Listener {
 				return true;
 			} else return false;
 		};
-		Object lock = new Object();
+		// flags and locks
+		final Object lock = new Object();
 		AtomicBoolean done = new AtomicBoolean(false);
 		AtomicBoolean result = new AtomicBoolean(false);
+		// run our task in the main thread
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			synchronized (lock) {
+				// set the result
 				result.set(func.getAsBoolean());
+				// task has finished
 				done.set(true);
+				// notify the lock
 				lock.notify();
 			}
 		});
+		// wait on the lock
 		try {
 			while (!done.get()) {
 				synchronized (lock) {
@@ -224,7 +237,8 @@ public class ComputerHandler implements Listener {
 			}
 		}
 		catch (InterruptedException e) {
-			e.printStackTrace();
+			// this shouldn't happen, if it does, crash the program.
+			throw new RuntimeException(e);
 		}
 		return result.get();
 	}

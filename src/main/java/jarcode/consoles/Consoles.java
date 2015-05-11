@@ -16,9 +16,13 @@ public class Consoles extends JavaPlugin {
 
 	private static Consoles instance;
 
+	// whether to enable the basic frame rendering for computers
 	public static boolean frameRenderingEnabled = true;
+	// whether to expose the raw component rendering to computers
 	public static boolean componentRenderingEnabled = false;
+	// allow the crafting of computers
 	public static boolean allowCrafting = true;
+	// maximum time that a program is allowed to run before being interrupted
 	public static int maxTimeWithoutInterrupt = 7000;
 	public static int maxComputers = 3;
 

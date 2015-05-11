@@ -52,6 +52,7 @@ public class InterpretedProgram implements Program {
 	private void map() {
 
 		// instance lua functions, these will call with the program context in mind
+		// maps all functions that start with lua$
 		Lua.find(this, pool);
 
 		if (Consoles.componentRenderingEnabled) {
@@ -250,6 +251,11 @@ public class InterpretedProgram implements Program {
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
 		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
+	}
+	private String[] lua$soundList() {
+		return Arrays.asList(Sound.values()).stream()
+				.map(Enum::name)
+				.toArray(String[]::new);
 	}
 	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
 		Sound match = Arrays.asList(Sound.values()).stream()

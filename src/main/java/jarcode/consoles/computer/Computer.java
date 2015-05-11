@@ -344,11 +344,11 @@ public abstract class Computer implements Runnable {
 	}
 	public static void lua_dialog(String text) {
 		Computer computer = Lua.context();
-		computer.showDialog(text);
+		Lua.main(() -> computer.showDialog(text));
 	}
 	public static void lua_messageOwner(String text) {
 		Computer computer = Lua.context();
-		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+		Lua.main(() -> {
 			UUID uuid = computer.getOwner();
 			Player player = Bukkit.getPlayer(uuid);
 			player.sendMessage(text);
