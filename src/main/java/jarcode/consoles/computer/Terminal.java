@@ -28,21 +28,22 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 					"he never returned!\"",
 			"\"The best thing about 404 jokes is... wait, damnit, it's around here somewhere...\"",
 			"\"You have a problem, so you decide to use floating point numbers. Now you have " +
-					"2.000000000000001 problems.\"",
+					"2.00000000001 problems.\"",
 			"\"You have a problem, so you decide to use multithreading. have problems. Now 2 you\"",
 			"\"There are 10 types of people in this world: those that understand binary, those that don't\"",
 			"\"Q: How many Microsoft employees does it take to change a light bulb? A: None, " +
 					"they just declare darkness the new standard.\"",
 			"\"So I found out the other day that Ruby is a bit more mature than Java. Why's that, you ask? " +
 					"Because Ruby calmly raises its exceptions. Java throws them.\"",
-			"\"What's the only thing dumber than one of my coworkers?\"",
 			"\"I know a great IPv6 joke, but I don't think you're ready for it.\"",
 			"\"Q: What's the best way to accelerate a Mac? A: 9.8m/s^2\"",
 			"\"VPNs. The printers of the networking world.\"",
-			"\"Working with regular expressions is like working with the Old Testament. Lots of rules " +
-					"and no mercy.\"",
 			"\"Men communicate in TCP. Women in UDP.\"",
-			"\"Check the log file at /dev/null\""
+			"\"Check the log file at /dev/null\"",
+			"\"This mod was a complete waste of my time.\" - Jarcode",
+			"\"Real programmers write in C. No wait, real programmers write assembly. Or was it actual CPU " +
+					"instructions? I forget, I have a Java project to finish.\"",
+			"\"Are we supposed to write joke entries in this array?\""
 	};
 
 	public static Terminal newTerminal(Computer computer) {
