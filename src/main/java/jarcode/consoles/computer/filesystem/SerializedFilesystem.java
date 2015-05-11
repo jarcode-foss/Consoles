@@ -245,8 +245,10 @@ public class SerializedFilesystem {
 		try {
 			wrapped = new GZIPOutputStream(out, 512, true);
 			data = new DataOutputStream(wrapped);
+			// write the root folder's UUID
 			data.writeLong(root.getMostSignificantBits());
 			data.writeLong(root.getLeastSignificantBits());
+			// iterate through all of the mappings and write them
 			for (Map.Entry<UUID, byte[]> entry : serializedMappings.entrySet()) {
 				data.writeBoolean(true);
 				data.writeLong(entry.getKey().getMostSignificantBits());

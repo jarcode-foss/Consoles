@@ -22,6 +22,8 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 	@Override
 	public void from(String input) {
 
+		String absPath = null;
+
 		String argument;
 
 		// string encapsulation
@@ -57,6 +59,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 		if (input.startsWith("/")) {
 			input = input.substring(1);
 			try {
+				absPath = old;
 				block = terminal.getComputer().getRoot().get(input);
 			}
 			catch (FileNotFoundException e) {
@@ -69,8 +72,12 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 
 			// cd
 			block = terminal.getComputer().getBlock(input, terminal.getCurrentDirectory());
-			if (block != null)
+			if (block != null) {
+				String cd = terminal.getCurrentDirectory();
+				String p = cd.endsWith("/") ? cd.substring(0, cd.length() - 1) : cd;
+				absPath = p + "/" + input;
 				break check;
+			}
 			// loop through path entries if no match in current directory
 			for (String path : terminal.getComputer().getSystemPath()) {
 				try {
@@ -78,6 +85,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 					if (pathBlock instanceof FSFolder) {
 						FSFolder folder = (FSFolder) pathBlock;
 						try {
+							absPath = "/" + path + "/" + input;
 							block = folder.get(input);
 							break check;
 						}
@@ -108,6 +116,11 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 						result = "invalid path: must be a file or provided program";
 						return;
 					}
+					else {
+						String cd = terminal.getCurrentDirectory();
+						String p = cd.endsWith("/") ? cd.substring(0, cd.length() - 1) : cd;
+						absPath = p + "/" + input;
+					}
 				} catch (FileNotFoundException e) {
 					result = old + ": program not found";
 					return;
@@ -119,7 +132,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 			}
 		}
 		// try running the program
-		result = tryBlock(block, argument, terminal.getUser());
+		result = tryBlock(block, argument, terminal.getUser(), absPath);
 	}
 
 	@Override
@@ -144,7 +157,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 	public ProgramInstance getLastInstance() {
 		return lastInstance;
 	}
-	String tryBlock(FSBlock target, String argument, String user) {
+	String tryBlock(FSBlock target, String argument, String user, String path) {
 		ProgramInstance instance;
 		if ((target instanceof FSFile || target instanceof FSProvidedProgram)) {
 			if (target.getOwner().equals(user))
@@ -155,7 +168,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 					return "permission denied";
 		}
 		if (target instanceof FSFile) {
-			instance = new ProgramInstance(new InterpretedProgram((FSFile) target), argument, terminal.getComputer());
+			instance = new ProgramInstance(new InterpretedProgram((FSFile) target, path), argument, terminal.getComputer());
 		}
 		else if (target instanceof FSProvidedProgram) {
 			instance = new ProgramInstance((FSProvidedProgram) target, argument, terminal.getComputer());

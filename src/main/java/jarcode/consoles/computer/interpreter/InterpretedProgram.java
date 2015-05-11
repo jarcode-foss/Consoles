@@ -32,6 +32,7 @@ public class InterpretedProgram implements Program {
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
 	
 	private FSFile file;
+	private String path;
 	private InputStream in;
 	private OutputStream out;
 	private Computer computer;
@@ -45,8 +46,9 @@ public class InterpretedProgram implements Program {
 
 	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
-	public InterpretedProgram(FSFile file) {
+	public InterpretedProgram(FSFile file, String path) {
 		this.file = file;
+		this.path = path;
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private void map() {
@@ -285,13 +287,31 @@ public class InterpretedProgram implements Program {
 			return false;
 		}
 	}
+	private String lua$programDir() {
+		String[] arr = this.path.split("/");
+		return Arrays.asList(arr).stream()
+				.limit(arr.length - 1)
+				.collect(Collectors.joining("/"));
+	}
+	private String lua$programPath() {
+		return path;
+	}
 	private LuaValue lua$require(String path) {
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
 		if (file == null) {
-			println("lua:" + ChatColor.RED + " failed to load '" + path + "', doesn't exist");
-			return null;
+			String[] arr = this.path.split("/");
+			String programDir = Arrays.asList(arr).stream()
+					.limit(arr.length - 1)
+					.collect(Collectors.joining("/"));
+			block = computer.getBlock(path, programDir);
+			file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
+					programDir, this::terminated, computer) : null;
+			if (file == null) {
+				println("lua:" + ChatColor.RED + " failed to load '" + path + "', doesn't exist");
+				return null;
+			}
 		}
 		String text = file.read();
 		LuaValue value;

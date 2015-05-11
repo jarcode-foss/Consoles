@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// this class represents a serialized computer
 public class ComputerData {
 
 	private static final Gson GSON;
@@ -49,6 +50,7 @@ public class ComputerData {
 
 	static {
 		GSON = new GsonBuilder()
+				// we want readable json headers
 				.setPrettyPrinting()
 				.registerTypeAdapter(Location.class, new LocationTypeAdapter())
 				.registerTypeAdapter(LocalPosition.class, new LocalPositionTypeAdapter())
@@ -64,6 +66,7 @@ public class ComputerData {
 
 	private UUID owner;
 
+	// sets up a ComputerData object that is prepared to load from a folder
 	public static ComputerData fromFolder(File folder) throws IOException {
 		File header = new File(folder.getAbsolutePath() + File.separator + "header.json");
 		File fs = new File(folder.getAbsolutePath() + File.separator + "fs.dat");
@@ -76,6 +79,7 @@ public class ComputerData {
 		return data;
 	}
 
+	// deletes the data that corresponds to the given computer's hostname
 	public static boolean delete(String hostname) {
 		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
 		if (!folder.exists())
@@ -89,6 +93,7 @@ public class ComputerData {
 		return true;
 	}
 
+	// renames a computer
 	public static boolean rename(String old, String hostname) {
 		File folder = new File(file.getAbsolutePath() + File.separator + old);
 		return folder.exists() && folder.renameTo(new File(file.getAbsolutePath() + File.separator + hostname));
@@ -110,6 +115,7 @@ public class ComputerData {
 		}
 	}
 
+	// loads and instantiates all the computers currently saved to disk
 	public static List<Computer> makeAll() {
 		Consoles.getInstance().getLogger().info("Loading computers...");
 		File[] files = file.listFiles();
@@ -142,6 +148,8 @@ public class ComputerData {
 		owner = computer.getOwner();
 		meta = computer.getConsole().createMeta();
 	}
+	// if this ComputerData object was created from a computer, this method is used to
+	// save everything to file.
 	public void save() throws IOException {
 		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
 		if (!folder.exists() && !folder.mkdir())
@@ -158,6 +166,7 @@ public class ComputerData {
 		writer.write(GSON.toJson(this, ComputerData.class));
 		writer.close();
 	}
+	// if this ComputerData object was created from a folder, this creates the computer
 	public Computer toComputer() throws IOException {
 		ManagedComputer computer = new ManagedComputer(hostname, owner, meta.createConsole());
 		computer.load(filesystem);
@@ -175,6 +184,7 @@ public class ComputerData {
 		data.write(arr);
 		out.close();
 	}
+	@SuppressWarnings("unused")
 	private void writeBlankJson(OutputStream out) {
 		FileOutputStream fos = null;
 		try {
