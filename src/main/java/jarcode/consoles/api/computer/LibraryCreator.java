@@ -11,6 +11,28 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class LibraryCreator {
+
+	/**
+	 * Links a Java object as a library visible to lua code. The immediate type
+	 * is the class that is introspected when mapping out methods.
+	 *
+	 * @param instance the target object to use
+	 * @param name the same of the library
+	 * @see {@link jarcode.consoles.api.computer.LibraryCreator#link(java.lang.Class type,
+	 * java.lang.Object instance, java.lang.String name)}
+	 */
+	public static void link(Object instance, String name) {
+
+	}
+	/**
+	 * Links a Java class (and its instance) as a library that is meant to be visible
+	 * to Lua programs running in computers. All types are mapped automatically, and
+	 * un-convertible types are wrapped into Lua tables (objects).
+	 *
+	 * @param type the target class to introspect
+	 * @param instance the instance of the class to use
+	 * @param name the name of the library
+	 */
 	public static void link(Class<?> type, Object instance, String name) {
 		Library library = new Library(name, methods(type, instance));
 		Lua.libraries.put(name, library);
