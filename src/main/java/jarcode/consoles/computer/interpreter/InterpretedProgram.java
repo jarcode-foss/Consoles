@@ -104,6 +104,7 @@ public class InterpretedProgram implements Program {
 			globals.load(new StringLib());
 			globals.load(new EmbeddedMathLib());
 			globals.load(interruptLib);
+			Lua.libraries.values().forEach(globals::load);
 			LoadState.install(globals);
 			LuaC.install(globals);
 
@@ -202,10 +203,10 @@ public class InterpretedProgram implements Program {
 			if (terminal != null) {
 				LuaFile file;
 				int i = 0;
-				while (resolve("lua$dump" + i) != null) {
+				while (resolve("lua_dump" + i) != null) {
 					i++;
 				}
-				file = lua$touch("lua$dump" + i);
+				file = lua$touch("lua_dump" + i);
 				assert file != null;
 				String version;
 				try {

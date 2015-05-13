@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
  */
 public class Lua {
 
+	public static Map<String, LibFunction> libraries = new ConcurrentHashMap<>();
 	public static Map<String, LibFunction> staticFunctions = new ConcurrentHashMap<>();
 	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
 
@@ -192,7 +193,7 @@ public class Lua {
 				})
 				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
 	}
-	private static Object[] toJava(Class[] types, Object... args) {
+	public static Object[] toJava(Class[] types, Object... args) {
 		for (int t = 0; t < args.length; t++) {
 			args[t] = translate(types[t], (LuaValue) args[t]);
 		}
@@ -283,7 +284,7 @@ public class Lua {
 			}
 		};
 	}
-	private static LuaValue translateLua(Object java) {
+	public static LuaValue translateLua(Object java) {
 		if (java == null) {
 			return LuaValue.NIL;
 		}

@@ -1,8 +1,6 @@
 package jarcode.consoles;
 
-import jarcode.consoles.api.Console;
 import net.minecraft.server.v1_8_R2.*;
-import org.bukkit.Bukkit;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;

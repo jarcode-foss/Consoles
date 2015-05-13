@@ -68,7 +68,6 @@ public class ConsoleMapRenderer {
 	private int x, y;
 	private HashMap<String, Short> newContexts = new HashMap<>();
 
-	@SuppressWarnings("deprecation")
 	public ConsoleMapRenderer(ConsolePixelBuffer pixelBuffer, int x, int y, ConsoleRenderer renderer, short id) {
 		this.id = id;
 		this.pixelBuffer = pixelBuffer;
@@ -121,6 +120,7 @@ public class ConsoleMapRenderer {
 	}
 	// old code used to manually update the metadata of an item frame
 	@Deprecated
+	@SuppressWarnings("unused")
 	public void updateMap(final PlayerConnection connection, final short mapId) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			Integer entityId = renderer.entityMap().get(id);

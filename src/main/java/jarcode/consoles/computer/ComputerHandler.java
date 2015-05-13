@@ -49,22 +49,6 @@ public class ComputerHandler implements Listener {
 	private static final Field ITEM_STACK_HANDLE;
 	private static final Constructor ITEM_STACK_CREATE;
 
-	public static final String MINESWEEPER_PROGRAM;
-	public static final String MINESWEEPER_BLOCK_PROGRAM;
-
-	static {
-		try {
-			MINESWEEPER_BLOCK_PROGRAM = IOUtils.readLines(
-					ComputerHandler.class.getResourceAsStream("/lua/lib/minesweeper_block.lua"))
-					.stream().collect(Collectors.joining("\n"));
-			MINESWEEPER_PROGRAM = IOUtils.readLines(
-					ComputerHandler.class.getResourceAsStream("/lua/bin/minesweeper.lua"))
-					.stream().collect(Collectors.joining("\n"));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	static {
 		Lua.map(ComputerHandler::lua_redstone, "redstone");
 		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");

@@ -26,6 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 
 public abstract class Computer implements Runnable {
+
+	// Lua<->Java mappings
 	static {
 		Lua.map(Computer::lua_session, "switchSession");
 		Lua.map(Computer::lua_dialog, "dialog");
@@ -207,13 +209,6 @@ public abstract class Computer implements Runnable {
 			Consoles.getInstance().getLogger().severe("Failed to save computer!");
 			e.printStackTrace();
 		}
-	}
-
-	// LUA
-
-	static {
-		Lua.map(Computer::lua_session, "switchSession");
-		Lua.map(Computer::lua_dialog, "dialog");
 	}
 	private void printAfter(final String text, long delay) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {

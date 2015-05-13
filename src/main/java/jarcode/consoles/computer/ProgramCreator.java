@@ -127,7 +127,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 				}
 			}
 			catch (FileNotFoundException e) {
-				result = ChatColor.RED + "invalid current directory. Restart your terminal instance!";
+				result = old + ": program not found";
 				return;
 			}
 		}
