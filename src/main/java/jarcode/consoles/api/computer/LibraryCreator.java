@@ -22,7 +22,7 @@ public class LibraryCreator {
 	 * java.lang.Object instance, java.lang.String name)}
 	 */
 	public static void link(Object instance, String name) {
-
+		link(instance.getClass(), instance, name);
 	}
 	/**
 	 * Links a Java class (and its instance) as a library that is meant to be visible
