@@ -5,20 +5,7 @@ License: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
 ### Maven Repository
 
-Put this in your `<dependencies>` tag
-
-        <dependency>
-            <groupId>jarcode</groupId>
-            <artifactId>mc-consoles</artifactId>
-            <version>1.6-alpha</version>
-        </dependency>
-
- And use the following repository:
- 
-        <repository>
-            <id>mineflow-public</id>
-            <url>http://mineflow.network/m2</url>
-        </repository>
+The maven repository is no longer up. If you would like to host a maven repository for this project, let me know.
 
 The API provides:
 
