@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 
 public class Consoles extends JavaPlugin {
 
-	public static final boolean DEBUG = true;
+	public static final boolean DEBUG = false;
 
 	private static Consoles instance;
 
