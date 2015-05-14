@@ -12,10 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.CommandBlock;
+import org.bukkit.block.*;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
@@ -39,7 +36,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ComputerHandler implements Listener {
@@ -138,6 +137,15 @@ public class ComputerHandler implements Listener {
 
 	// updates the computer's cache of tracked blocks that are behind it, re-indexing the array.
 	public void updateBlocks(Computer computer) {
+		iterateBehind((block) -> {
+			if (block.getType() == Material.REDSTONE_BLOCK && !trackedBlocks.containsKey(block.getLocation())) {
+				trackedBlocks.put(block.getLocation().clone(), computer);
+			}
+		}, computer);
+	}
+
+	// iterates over blocks behind the computer
+	private void iterateBehind(Consumer<Block> consumer, Computer computer) {
 		ManagedConsole console = computer.getConsole();
 		BlockFace f = console.getDirection();
 		Location at = console.getLocation();
@@ -170,12 +178,27 @@ public class ComputerHandler implements Listener {
 			p.setY(p.getBlockY() + h);
 			o = p.clone();
 			for (int t = 0; t < computer.getConsole().getFrameWidth(); t++) {
-				if (o.getBlock().getType() == Material.REDSTONE_BLOCK && !trackedBlocks.containsKey(o)) {
-					trackedBlocks.put(o.clone(), computer);
-				}
+				consumer.accept(o.getBlock());
 				o.add(hm[i]);
 			}
 		}
+	}
+
+	// finds all chests behind the computer
+	@SuppressWarnings("SuspiciousMethodCalls")
+	public Chest[] findChests(Computer computer) {
+		List<Chest> chests = new ArrayList<>();
+		iterateBehind((block) -> {
+			if (block.getType() == Material.CHEST && block.getState() instanceof Chest) {
+				boolean overlap = false;
+				for (Chest chest : chests)
+					if (chest.getBlockInventory() == ((Chest) block.getState()).getBlockInventory())
+						overlap = true;
+				if (!overlap)
+					chests.add((Chest) block.getState());
+			}
+		}, computer);
+		return chests.toArray(new Chest[chests.size()]);
 	}
 
 	// I commit a few crimes here, but it's a simple way of fixing the threading issues

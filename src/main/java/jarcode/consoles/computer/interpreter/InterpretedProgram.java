@@ -2,10 +2,7 @@ package jarcode.consoles.computer.interpreter;
 
 import com.google.common.base.Joiner;
 import jarcode.consoles.Consoles;
-import jarcode.consoles.computer.Computer;
-import jarcode.consoles.computer.Program;
-import jarcode.consoles.computer.ProgramInstance;
-import jarcode.consoles.computer.Terminal;
+import jarcode.consoles.computer.*;
 import jarcode.consoles.computer.bin.MakeDirectoryProgram;
 import jarcode.consoles.computer.bin.TouchProgram;
 import jarcode.consoles.computer.filesystem.FSBlock;
@@ -14,6 +11,7 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.types.*;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
+import org.bukkit.block.Chest;
 import org.luaj.vm2.*;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.*;
@@ -369,6 +367,14 @@ public class InterpretedProgram implements Program {
 		LuaFrame frame = new LuaFrame(id, computer);
 		framePool.put(id, frame);
 		return frame;
+	}
+	private int lua$chestList() {
+		return ComputerHandler.getInstance().findChests(computer).length;
+	}
+	private LuaValue lua$chest(int index) {
+		Chest[] chests = ComputerHandler.getInstance().findChests(computer);
+		if (index > chests.length || index < 0) return LuaValue.NIL;
+		else return CoerceJavaToLua.coerce(new LuaChest(chests[index]));
 	}
 	private LuaFile lua$touch(String path) {
 		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
