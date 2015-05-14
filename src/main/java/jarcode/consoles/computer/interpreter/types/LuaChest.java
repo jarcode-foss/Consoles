@@ -101,13 +101,6 @@ public class LuaChest {
 		ItemStack[] arr = inv.getContents();
 		for (int t = 0; t < arr.length; t++)
 			arr[t] = arr[t] != null ? arr[t].clone() : null;
-		System.out.println("Attempting to craft: " + r.getResult().getType());
-		System.out.println("Ingredient list: " + Joiner.on(", ")
-				.join(
-						args.stream()
-								.map((s) -> s.getType() + ": " + s.getAmount() + ": " + s.getDurability())
-								.collect(Collectors.toList())
-				));
 		for (ItemStack ingredient : args) {
 			boolean found = false;
 			for (int t = 0; t < arr.length; t++) {
