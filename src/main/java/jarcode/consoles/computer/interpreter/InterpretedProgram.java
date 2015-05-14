@@ -371,7 +371,7 @@ public class InterpretedProgram implements Program {
 	private int lua$chestList() {
 		return ComputerHandler.getInstance().findChests(computer).length;
 	}
-	private LuaValue lua$chest(int index) {
+	private LuaValue lua$getChest(int index) {
 		Chest[] chests = ComputerHandler.getInstance().findChests(computer);
 		if (index > chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index]);
