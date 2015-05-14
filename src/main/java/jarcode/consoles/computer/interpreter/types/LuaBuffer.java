@@ -36,6 +36,7 @@ public class LuaBuffer {
 		}
 		if (frame != null) {
 			component.setOperations(frame.operations);
+			frame.operations.clear();
 		}
 		else throw new IllegalArgumentException("Invalid frame");
 	}
