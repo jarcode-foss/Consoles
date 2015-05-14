@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.interpreter.types;
 
+import com.google.common.base.Joiner;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
@@ -7,6 +8,7 @@ import org.bukkit.inventory.*;
 import org.luaj.vm2.LuaValue;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class LuaChest {
 
@@ -27,12 +29,11 @@ public class LuaChest {
 		ItemStack stack = inv.getItem(slot);
 		return stack == null ? "AIR" : stack.getType().name();
 	}
-	public int move(int slot, LuaValue table) {
-		return move(slot, table, 64);
+	public int move(int slot, LuaChest chest) {
+		return move(slot, chest, 64);
 	}
-	public int move(int slot, LuaValue table, int amt) {
-		if (amt == 0 || table == LuaValue.NIL || !table.isuserdata() || slot < 0) return -2;
-		LuaChest chest = (LuaChest) table.checkuserdata();
+	public int move(int slot, LuaChest chest, int amt) {
+		if (amt == 0 || chest == null || slot < 0) return -2;
 		ItemStack source = inv.getItem(slot);
 		if (source == null || source.getType() == Material.AIR) return -1;
 		ItemStack clone = source.clone();
@@ -68,7 +69,7 @@ public class LuaChest {
 			}
 		}
 		if (r == null)
-			return -1; // no recipe for target
+			return -2; // no recipe for target
 		List<ItemStack> args = null;
 		if (r instanceof ShapedRecipe) {
 			args = new ArrayList<>();
@@ -96,17 +97,26 @@ public class LuaChest {
 			args = shapeless.getIngredientList();
 		}
 		if (args == null)
-			return -2; // invalid recipe
+			return -3; // invalid recipe
 		ItemStack[] arr = inv.getContents();
 		for (int t = 0; t < arr.length; t++)
-			arr[t] = arr[t].clone();
+			arr[t] = arr[t] != null ? arr[t].clone() : null;
+		System.out.println("Attempting to craft: " + r.getResult().getType());
+		System.out.println("Ingredient list: " + Joiner.on(", ")
+				.join(
+						args.stream()
+								.map((s) -> s.getType() + ": " + s.getAmount() + ": " + s.getDurability())
+								.collect(Collectors.toList())
+				));
 		for (ItemStack ingredient : args) {
 			boolean found = false;
 			for (int t = 0; t < arr.length; t++) {
 				if (arr[t] != null
-						&& arr[t].getDurability() == ingredient.getDurability()
+						&& (arr[t].getDurability() == ingredient.getDurability() || ingredient.getDurability() == 32767)
 						&& arr[t].getType() == ingredient.getType()) {
-					arr[t] = null;
+					if (arr[t].getAmount() <= 1)
+						arr[t] = null;
+					else arr[t].setAmount(arr[t].getAmount() - 1);
 					found = true;
 					break;
 				}

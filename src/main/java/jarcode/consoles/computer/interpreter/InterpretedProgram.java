@@ -374,7 +374,8 @@ public class InterpretedProgram implements Program {
 	private LuaValue lua$chest(int index) {
 		Chest[] chests = ComputerHandler.getInstance().findChests(computer);
 		if (index > chests.length || index < 0) return LuaValue.NIL;
-		else return CoerceJavaToLua.coerce(new LuaChest(chests[index]));
+		LuaChest lua = new LuaChest(chests[index]);
+		return CoerceJavaToLua.coerce(lua);
 	}
 	private LuaFile lua$touch(String path) {
 		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
