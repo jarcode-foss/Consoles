@@ -2,19 +2,14 @@
 
 -- List implementation for Lua, very similar to ArrayList in Java.
 -- We use static_arr instead of tables for performance.
-List {
-    arr = static_arr(0),
-
-    add = add,
-    append = append,
-    remove = remove,
-    size = size,
-    table = table
+List = {
+    arr = nil
 }
 List.__index = List;
 
 function List.new()
-    local self = setmetatable({}, List);
+    local self = setmetatable({}, List)
+    sel.arr = static_arr
     return self;
 end
 function List:add(index, elem)
@@ -66,4 +61,10 @@ function split(input, separator)
     end
     return t
 end
+
+List.add = add
+List.append = append
+List.remove = remove
+List.size = size
+List.table = table
 

@@ -2,7 +2,7 @@
 
 require("list")
 
-Server {
+Server = {
     -- strings
     channel,
 
@@ -11,13 +11,10 @@ Server {
 
     -- message handler
     messageHandler = nil,
-
-    -- functions
-    send = send, poll = poll, addClient = addClient
 }
 Server.__index = Server
 
-Target {
+Target = {
     computer, channel,
     send = send
 }
@@ -87,3 +84,7 @@ end
 function Server:setHandler(func)
     this.messageHandler = func
 end
+-- functions
+Server.send = send
+Server.poll = poll
+Server.addClient = addClient

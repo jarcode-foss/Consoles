@@ -43,7 +43,7 @@ public class LuaArray extends LuaValue {
 	private LuaValue resolve(int i) {
 		i--;
 		if (i >= arr.length || i < 0) return error("out of range");
-		return arr[i];
+		return arr[i] == null ? NIL : arr[i];
 	}
 
 	@Override

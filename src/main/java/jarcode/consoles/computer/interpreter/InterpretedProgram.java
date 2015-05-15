@@ -9,6 +9,7 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.types.*;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.block.Chest;
@@ -18,6 +19,7 @@ import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.*;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -193,9 +195,28 @@ public class InterpretedProgram implements Program {
 	}
 	private void handleLuaError(LuaError err) {
 		if (Consoles.DEBUG)
-			err.printStackTrace();
+			System.out.println(ExceptionUtils.getFullStackTrace(err));
+		String errorBreakdown = err.getMessage();
+		boolean inst;
+		do {
+			inst = false;
+			if (err.getCause() instanceof LuaError) {
+				errorBreakdown += "\n\nCaused by:\n" + err.getCause().getMessage();
+				inst = true;
+			}
+			else if (err.getCause() instanceof InvocationTargetException) {
+				if (((InvocationTargetException) err.getCause()).getTargetException() != null)
+					errorBreakdown += "\n\nCaused by:\n" + ((InvocationTargetException) err.getCause())
+							.getTargetException().getMessage();
+				if (((InvocationTargetException) err.getCause()).getTargetException() instanceof LuaError) {
+					err = (LuaError) ((InvocationTargetException) err.getCause()).getTargetException();
+					inst = true;
+				}
+			}
+		}
+		while (inst);
 		println("lua:" + ChatColor.RED + " runtime error");
-		String[] arr = Arrays.asList(err.getMessage().split("\n")).stream()
+		String[] arr = Arrays.asList(errorBreakdown.split("\n")).stream()
 				.map(this::err)
 				.toArray(String[]::new);
 		String msg = Joiner.on('\n').join(arr);
@@ -269,7 +290,7 @@ public class InterpretedProgram implements Program {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
 				computer.unregisterMessageListener(channel);
 				registeredChannels.remove(channel);
-			});
+			}, this::terminated);
 			computer.registerMessageListener(channel, ch::append);
 			registeredChannels.add(channel);
 			return ch;
