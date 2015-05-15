@@ -1,7 +1,9 @@
 -- Written by Jarcode
 
+-- List implementation for Lua, very similar to ArrayList in Java.
+-- We use static_arr instead of tables for performance.
 List {
-    arr = {},
+    arr = static_arr(0),
 
     add = add,
     append = append,
@@ -18,7 +20,7 @@ end
 function List:add(index, elem)
     if index < 1 then return end
     if index > self:size() then self:append(elem) end
-    local n_arr = {}
+    local n_arr = static_arr(self.arr.len + 1)
     for i = 1, index - 1 do
         n_arr[i] = self.arr[i];
     end
@@ -30,7 +32,7 @@ function List:add(index, elem)
 end
 function List:remove(index)
     if index > self:size() or index < 1 then return end
-    local n_arr = {}
+    local n_arr = static_arr(self.arr.len - 1)
     for i = 1, index - 1 do
         n_arr[i] = self.arr[i];
     end
@@ -40,10 +42,12 @@ function List:remove(index)
     self.arr = n_arr;
 end
 function List:append(elem)
-    self.arr[self:size() + 1] = elem;
+    local n_arr = static_arr(self.arr.len + 1)
+    n_arr[self:size() + 1] = elem;
+    self.arr = n_arr;
 end
 function List:size()
-    return #self.arr
+    return self.arr.len
 end
 function List:table()
     local ret = {}

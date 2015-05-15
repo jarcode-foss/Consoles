@@ -1,7 +1,10 @@
 package jarcode.consoles.computer.interpreter.types;
 
+import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
+
+import java.util.Objects;
 
 public class LuaArray extends LuaValue {
 
@@ -25,11 +28,19 @@ public class LuaArray extends LuaValue {
 	public LuaValue get(LuaValue value) {
 		if (value.isint())
 			return resolve(value.checkint());
+		else if (value.isstring() && value.checkjstring().equals("len"))
+			return LuaInteger.valueOf(arr.length);
 		else return error("not integer");
 	}
 	@Override
 	public LuaValue get(int i) {
 		return resolve(i);
+	}
+	@Override
+	public LuaValue get(String str) {
+		if (str.equals("len"))
+			return LuaInteger.valueOf(arr.length);
+		else return NIL;
 	}
 	private LuaValue resolve(int i) {
 		i--;

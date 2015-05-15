@@ -50,7 +50,6 @@ public class InterpretedProgram implements Program {
 		this.file = file;
 		this.path = path;
 	}
-	@SuppressWarnings("SpellCheckingInspection")
 	private void map() {
 
 		// instance lua functions, these will call with the program context in mind
