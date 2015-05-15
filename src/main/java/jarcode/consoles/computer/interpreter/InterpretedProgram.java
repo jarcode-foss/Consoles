@@ -44,6 +44,8 @@ public class InterpretedProgram implements Program {
 
 	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
+	private List<String> registeredChannels = new ArrayList<>();
+
 	public InterpretedProgram(FSFile file, String path) {
 		this.file = file;
 		this.path = path;
@@ -169,6 +171,8 @@ public class InterpretedProgram implements Program {
 			if (pool != null)
 				pool.cleanup();
 			framePool.clear();
+			registeredChannels.forEach(computer::unregisterMessageListener);
+			registeredChannels.clear();
 			Terminal terminal = computer.getTerminal(this);
 			if (terminal != null) {
 				terminal.setHandlerInterrupt(null);
@@ -249,6 +253,26 @@ public class InterpretedProgram implements Program {
 			e.printStackTrace();
 		}
 		return result[0];
+	}
+	private String lua$hostname() {
+		return computer.getHostname();
+	}
+	private LuaComputer lua$findComputer(String hostname) {
+		Computer computer = ComputerHandler.getInstance().find(hostname);
+		if (computer == null) return null;
+		else return new LuaComputer(computer);
+	}
+	private LuaChannel lua$registerChannel(String channel) {
+		if (!computer.isChannelRegistered(channel)) {
+			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
+				computer.unregisterMessageListener(channel);
+				registeredChannels.remove(channel);
+			});
+			computer.registerMessageListener(channel, ch::append);
+			registeredChannels.add(channel);
+			return ch;
+		}
+		else return null;
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
 		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
@@ -335,7 +359,7 @@ public class InterpretedProgram implements Program {
 		allocatedSessions.add(index);
 		BufferedFrameComponent component = new BufferedFrameComponent(computer);
 		computer.setComponent(index, component);
-		return new LuaBuffer(this, index, component);
+		return new LuaBuffer(this, index, component, interruptLib::update);
 	}
 	private void lua$write(String text) {
 		print(text);

@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public abstract class Computer implements Runnable {
 
@@ -61,6 +63,8 @@ public abstract class Computer implements Runnable {
 
 	private List<BiConsumer<String, String>> listeners = new CopyOnWriteArrayList<>();
 	private List<BiConsumer<String, Position2D>> interactListeners = new CopyOnWriteArrayList<>();
+
+	private Map<String, Consumer<String>> messageListeners = new ConcurrentHashMap<>();
 
 	public Computer(String hostname, UUID owner, ManagedConsole console) {
 		this.hostname = hostname;
@@ -119,6 +123,18 @@ public abstract class Computer implements Runnable {
 	}
 	public void registerCommandListener(BiConsumer<String, String> consumer) {
 		listeners.add(consumer);
+	}
+	public boolean isChannelRegistered(String channel) {
+		return messageListeners.containsKey(channel);
+	}
+	public void registerMessageListener(String channel, Consumer<String> consumer) {
+		messageListeners.put(channel, consumer);
+	}
+	public void unregisterMessageListener(String channel) {
+		messageListeners.remove(channel);
+	}
+	public Consumer<String> getMessageListener(String channel) {
+		return messageListeners.get(channel);
 	}
 	public void clickEvent(Position2D pos, String player) {
 		interactListeners.stream().forEach(consumer -> consumer.accept(player, pos.copy()));

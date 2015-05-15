@@ -12,11 +12,13 @@ public class LuaBuffer {
 	private BufferedFrameComponent component;
 	private long lastUpdate = -1;
 	private final int index;
+	private Runnable update;
 
-	public LuaBuffer(InterpretedProgram program, int index, BufferedFrameComponent component) {
+	public LuaBuffer(InterpretedProgram program, int index, BufferedFrameComponent component, Runnable update) {
 		this.program = program;
 		this.component = component;
 		this.index = index;
+		this.update = update;
 	}
 
 	public void update(Integer id) {
@@ -34,6 +36,7 @@ public class LuaBuffer {
 					e.printStackTrace();
 			}
 		}
+		update.run();
 		if (frame != null) {
 			component.setOperations(frame.operations);
 			frame.operations.clear();
