@@ -37,13 +37,14 @@ public class LuaArray extends LuaValue {
 		return arr[i];
 	}
 
-
+	@Override
 	public void set(LuaValue value, LuaValue data) {
 		if (value.isint())
 			set(value.checkint(), data);
 		else error("not integer");
 	}
 
+	@Override
 	public void set(int i, LuaValue data) {
 		i--;
 		if (i >= arr.length || i < 0) {
@@ -53,6 +54,7 @@ public class LuaArray extends LuaValue {
 		arr[i] = data;
 	}
 
+	@Override
 	public void set(int value, String data) {
 		set(value, LuaString.valueOf(data));
 	}

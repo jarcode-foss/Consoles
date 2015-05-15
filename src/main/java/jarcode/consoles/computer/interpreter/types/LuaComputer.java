@@ -19,4 +19,10 @@ public class LuaComputer {
 		}
 		else return false;
 	}
+	public String hostname() {
+		return computer.getHostname();
+	}
+	public String owner() {
+		return computer.getOwner().toString();
+	}
 }

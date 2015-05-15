@@ -254,6 +254,9 @@ public class InterpretedProgram implements Program {
 		}
 		return result[0];
 	}
+	private String lua$owner() {
+		return computer.getOwner().toString();
+	}
 	private String lua$hostname() {
 		return computer.getHostname();
 	}
@@ -274,7 +277,7 @@ public class InterpretedProgram implements Program {
 		}
 		else return null;
 	}
-	private LuaValue lua$arr(int size) {
+	private LuaValue lua$static_arr(int size) {
 		return new LuaArray(size);
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
