@@ -112,8 +112,6 @@ public class InterpretedProgram implements Program {
 			globals.load(new BaseLib());
 
 			for (Map.Entry<String, LibFunction> entry : pool.functions.entrySet()) {
-				if (Consoles.DEBUG)
-					System.out.println("mapping: " + entry.getKey() + ", to " + entry.getValue());
 				globals.set(entry.getKey(), entry.getValue());
 			}
 			globals.STDOUT = new PrintStream(out);
@@ -195,7 +193,7 @@ public class InterpretedProgram implements Program {
 	}
 	private void handleLuaError(LuaError err) {
 		if (Consoles.DEBUG)
-			System.out.println(ExceptionUtils.getFullStackTrace(err));
+			Consoles.getInstance().getLogger().severe("\n" + ExceptionUtils.getFullStackTrace(err));
 		String errorBreakdown = err.getMessage();
 		boolean inst;
 		do {
@@ -371,10 +369,6 @@ public class InterpretedProgram implements Program {
 			if (Consoles.DEBUG)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " failed to compile '" + path + "'");
-			String msg = Arrays.asList(err.getMessage().split("\n")).stream()
-					.map(this::warning)
-					.collect(Collectors.joining("\n"));
-			println(msg);
 			return null;
 		}
 		return value.call();
@@ -399,7 +393,6 @@ public class InterpretedProgram implements Program {
 		return new LuaPainter(index, computer);
 	}
 	private String lua$args() {
-		System.out.print("called");
 		return args;
 	}
 	private LuaFolder lua$resolveFolder(String path) {

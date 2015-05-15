@@ -1,12 +1,11 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.ConsoleHandler;
-import jarcode.consoles.Consoles;
-import jarcode.consoles.ManagedConsole;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.*;
 import jarcode.consoles.computer.interpreter.Lua;
+import jarcode.consoles.util.PacketUtils;
 import net.minecraft.server.v1_8_R2.NBTTagCompound;
 import net.minecraft.server.v1_8_R2.NBTTagList;
+import net.minecraft.server.v1_8_R2.PacketPlayInHeldItemSlot;
 import org.apache.commons.io.IOUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -25,6 +24,7 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ComputerHandler implements Listener {
@@ -261,6 +262,21 @@ public class ComputerHandler implements Listener {
 				.filter(entry -> entry.getValue() == computer)
 				.map(Map.Entry::getKey)
 				.toArray(Location[]::new);
+	}
+
+	@EventHandler
+	public void scrollListen(PlayerItemHeldEvent event) {
+		int diff = event.getNewSlot() - event.getPreviousSlot();
+		if (diff == 8) diff = -1;
+		if (diff == -8) diff = 1;
+		if (Math.abs(diff) > 3) return;
+		for (ManagedConsole console : ConsoleHandler.getInstance()
+				.getConsolesLookingAt(event.getPlayer().getEyeLocation())) {
+			ConsoleComponent component = console.getComponent(Computer.ROOT_COMPONENT_POSITION);
+			if (component instanceof EditorComponent) {
+				((EditorComponent) component).scroll(diff * 2);
+			}
+		}
 	}
 
 	@EventHandler

@@ -413,6 +413,9 @@ public abstract class ConsoleRenderer implements Canvas {
 	public ConsoleComponent[] getComponents() {
 		return components.values().toArray(new ConsoleComponent[components.size()]);
 	}
+	public ConsoleComponent getComponent(Position2D pos) {
+		return components.get(pos);
+	}
 	private void drawComponents() {
 		if (!Thread.holdsLock(RENDERER_LOCK)) synchronized (RENDERER_LOCK) {
 			drawComponents();

@@ -78,9 +78,6 @@ public class SerializedFilesystem {
 							out.write(entry.getKey().getBytes(Charset.forName("UTF-8")));
 							out.writeLong(entry.getValue().uuid.getMostSignificantBits());
 							out.writeLong(entry.getValue().uuid.getLeastSignificantBits());
-							if (Consoles.DEBUG) {
-								Consoles.getInstance().getLogger().info("[DEBUG] FS: block entry: " + entry.getKey());
-							}
 						}
 					}
 				}
@@ -155,9 +152,6 @@ public class SerializedFilesystem {
 		byte[] data = new byte[header.length + content.length];
 		System.arraycopy(header, 0, data, 0, header.length);
 		System.arraycopy(content, 0, data, header.length, content.length);
-		if (Consoles.DEBUG) {
-			Consoles.getInstance().getLogger().info("[DEBUG] FS: writing block uuid: " + block.uuid + ", len: " + data.length);
-		}
 		return data;
 	}
 	public void serialize() {
@@ -231,6 +225,7 @@ public class SerializedFilesystem {
 			FSBlock block = serializer.deserialize(remaining, uuid);
 			block.permissions = permissions;
 			block.owner = owner;
+			mappings.put(uuid, block);
 			return block;
 		}
 		catch (IOException e) {
@@ -299,8 +294,6 @@ public class SerializedFilesystem {
 					}
 				}
 				serializedMappings.put(uuid, bytes);
-				if (Consoles.DEBUG)
-					Consoles.getInstance().getLogger().info("read block: " + uuid + ", len: " + len);
 			}
 		}
 		finally {

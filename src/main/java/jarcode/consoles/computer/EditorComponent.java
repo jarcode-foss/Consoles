@@ -347,6 +347,20 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		repaint();
 	}
 
+	public void scroll(int amt) {
+		if (amt == 0) return;
+		if (amt > 0) {
+			top += amt;
+		}
+		else if (amt < 0) {
+			top += amt;
+			if (top < 1)
+				top = 1;
+		}
+		rebuild();
+		repaint();
+	}
+
 	public void quit() {
 		computer.switchView(1);
 		computer.setComponent(tty, null);
