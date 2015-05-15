@@ -1,5 +1,6 @@
 package jarcode.classloading.loader;
 
+import org.bukkit.plugin.Plugin;
 import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntries;
 import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntry;
 import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntryUtf8;
@@ -8,8 +9,17 @@ import java.io.*;
 
 public class MinecraftVersionModifier implements ClassModifier {
 
-	private static final String PREFIX = "net/minecraft/server/v1_8_R2/";
-	private static final String REPLACED = "net/minecraft/server/version/";
+	private static final String PREFIX_CB = "org/bukkit/craftbukkit/";
+	private static final String PREFIX_NMS = "net/minecraft/server/";
+	// the fake prefix to use for class mappings
+	private String pkg;
+	private String current;
+
+	public MinecraftVersionModifier(Plugin plugin, String current) {
+		pkg = plugin.getServer().getClass().getPackage().getName();
+		pkg = pkg.substring(pkg.lastIndexOf('.') + 1);
+		this.current = current;
+	}
 
 	// credit to ikillforeyou/Overcaste for this code
 	@Override
@@ -37,7 +47,9 @@ public class MinecraftVersionModifier implements ClassModifier {
 					if (e.getTag() == ConstantPoolEntries.UTF8_TAG) {
 						// Replace all instances of the explicit version to our value.
 						written = new ConstantPoolEntryUtf8(e.getTag(),
-								((ConstantPoolEntryUtf8) e).getValue().replace(PREFIX, REPLACED));
+								((ConstantPoolEntryUtf8) e).getValue()
+										.replace(PREFIX_CB + current, PREFIX_CB + pkg)
+										.replace(PREFIX_NMS + current, PREFIX_NMS + pkg));
 					}
 					written.write(dout);
 				}
