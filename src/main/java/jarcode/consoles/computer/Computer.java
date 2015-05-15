@@ -12,10 +12,8 @@ import net.minecraft.server.v1_8_R2.*;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
-import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 
 import java.io.File;
 import java.io.FileInputStream;

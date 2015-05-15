@@ -1,5 +1,6 @@
 package jarcode.consoles;
 
+import jarcode.classloading.loader.WrappedPlugin;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
@@ -10,7 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
 
-public class Consoles extends JavaPlugin {
+public class Consoles extends WrappedPlugin {
 
 	public static final boolean DEBUG = false;
 

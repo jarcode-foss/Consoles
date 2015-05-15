@@ -48,7 +48,6 @@ public class ConsoleHandler implements Listener {
 	private static final short STARTING_INDEX = 20;
 	private static final ConsoleHandler INSTANCE = new ConsoleHandler();
 
-
 	private static final Field PACKET_LIST;
 	private static final Field PACKET_ENTITY_ID;
 	private static final Field COMMAND_LISTENER;
