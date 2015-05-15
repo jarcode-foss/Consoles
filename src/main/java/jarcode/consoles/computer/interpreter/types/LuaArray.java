@@ -4,8 +4,6 @@ import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 
-import java.util.Objects;
-
 public class LuaArray extends LuaValue {
 
 	LuaValue[] arr;
