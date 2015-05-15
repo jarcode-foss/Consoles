@@ -15,10 +15,14 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	static {
 		try {
-			COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
-			CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
-			COMMAND_RESULT.setAccessible(true);
-			CHAT_COMPONENT.setAccessible(true);
+			// these field names are sensitive, they have changed recently
+			if (Pkg.is("v1_8_R2")) {
+				COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
+				CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
+				COMMAND_RESULT.setAccessible(true);
+				CHAT_COMPONENT.setAccessible(true);
+			}
+			else throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
 		}
 		catch (Throwable e) {
 			throw new RuntimeException(e);
@@ -61,40 +65,6 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		return consoleListener != null;
 	}
 
-	@Override
-	public int j() {
-		return underlying.j();
-	}
-
-	@Override
-	public IChatBaseComponent k() {
-		return underlying.k();
-	}
-
-	@Override
-	public void a(NBTTagCompound nbttagcompound) {
-		underlying.a(nbttagcompound);
-	}
-
-	@Override
-	public void b(NBTTagCompound nbttagcompound) {
-		underlying.b(nbttagcompound);
-	}
-
-	@Override
-	public boolean a(int i, String s) {
-		return underlying.a(i, s);
-	}
-
-	@Override
-	public void setCommand(String s) {
-		underlying.setCommand(s);
-	}
-
-	@Override
-	public String getCommand() {
-		return underlying.getCommand();
-	}
 	private boolean override() {
 		String command = getCommand().toLowerCase();
 		if(command.startsWith("/")) {
@@ -103,7 +73,38 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		command = command.split(" ")[0];
 		return Arrays.asList(OVERRIDEN_COMMANDS).contains(command);
 	}
-	@Override
+
+	// -- override methods --
+	// (we can't use @Override for version reasons)
+
+	public int j() {
+		return underlying.j();
+	}
+
+	public IChatBaseComponent k() {
+		return underlying.k();
+	}
+
+	public void a(NBTTagCompound nbttagcompound) {
+		underlying.a(nbttagcompound);
+	}
+
+	public void b(NBTTagCompound nbttagcompound) {
+		underlying.b(nbttagcompound);
+	}
+
+	public boolean a(int i, String s) {
+		return underlying.a(i, s);
+	}
+
+	public void setCommand(String s) {
+		underlying.setCommand(s);
+	}
+
+	public String getCommand() {
+		return underlying.getCommand();
+	}
+
 	public void a(World world) {
 		if (consoleListener != null) {
 			sendMessage(new ChatComponentText(consoleListener.execute(this.sender, getCommand())));
@@ -133,82 +134,66 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		}
 	}
 
-	@Override
 	public String getName() {
 		return underlying.getName();
 	}
 
-	@Override
 	public IChatBaseComponent getScoreboardDisplayName() {
 		return underlying.getScoreboardDisplayName();
 	}
 
-	@Override
 	public void setName(String s) {
 		underlying.setName(s);
 	}
 
-	@Override
 	public void sendMessage(IChatBaseComponent ichatbasecomponent) {
 		underlying.sendMessage(ichatbasecomponent);
 	}
 
-	@Override
 	public boolean getSendCommandFeedback() {
 		return underlying.getSendCommandFeedback();
 	}
 
-	@Override
 	public void a(CommandObjectiveExecutor.EnumCommandResult result, int i) {
 		underlying.a(result, i);
 	}
 
-	@Override
 	public void h() {
 		underlying.h();
 	}
 
-	@Override
 	public void b(IChatBaseComponent ichatbasecomponent) {
 		underlying.b(ichatbasecomponent);
 	}
 
-	@Override
 	public void a(boolean flag) {
 		underlying.a(flag);
 	}
 
-	@Override
 	public boolean m() {
 		return underlying.m();
 	}
 
-	@Override
 	public boolean a(EntityHuman entityhuman) {
 		return override() || underlying.a(entityhuman);
 	}
 
-	@Override
 	public CommandObjectiveExecutor n() {
 		return underlying.n();
 	}
 
-	@Override
 	public BlockPosition getChunkCoordinates() {
 		return null;
 	}
 
-	@Override
 	public Vec3D d() {
 		return underlying.d();
 	}
 
-	@Override
 	public World getWorld() {
 		return underlying.getWorld();
 	}
 
-	@Override
 	public Entity f() {
 		return underlying.f();
 	}

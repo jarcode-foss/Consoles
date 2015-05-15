@@ -17,6 +17,9 @@ versions, it just means we're going to try to get it to work.
 When we need to, we can switch on Pkg.VERSION to check the package naming of the server, thus allowing us
 to write code specific for each version.
 
+The goal of this system to to provide support for server versions 1.8.3 and higher, and fields and methods
+that have multiple names across versions will be replaced with reflection over time.
+
  */
 public class ConsolesLoader extends JavaPlugin {
 

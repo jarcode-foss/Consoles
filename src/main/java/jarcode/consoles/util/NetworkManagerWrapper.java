@@ -3,6 +3,7 @@ package jarcode.consoles.util;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import jarcode.consoles.Pkg;
 import jarcode.consoles.util.unsafe.UnsafeTools;
 import net.minecraft.server.v1_8_R2.*;
 
@@ -31,13 +32,16 @@ public class NetworkManagerWrapper extends NetworkManager {
 
 	static {
 		try {
-			CHANNEL_READ_0 = NetworkManager.class
-					.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
-			CHANNEL_READ_0.setAccessible(true);
-			HANDLE_LISTENER = NetworkManager.class.getDeclaredMethod("a", ChannelHandlerContext.class, Packet.class);
-			HANDLE_LISTENER.setAccessible(true);
-			PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("h");
-			PROTOCOL_DIRECTION.setAccessible(true);
+			if (Pkg.is("v1_8_R2")) {
+				CHANNEL_READ_0 = NetworkManager.class
+						.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
+				CHANNEL_READ_0.setAccessible(true);
+				HANDLE_LISTENER = NetworkManager.class.getDeclaredMethod("a", ChannelHandlerContext.class, Packet.class);
+				HANDLE_LISTENER.setAccessible(true);
+				PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("h");
+				PROTOCOL_DIRECTION.setAccessible(true);
+			}
+			else throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -84,11 +88,13 @@ public class NetworkManagerWrapper extends NetworkManager {
 		// underlying, 'real' network manager
 		this.underlying = underlying;
 		// copy references to public fields in original object
+
 		this.l = underlying.l;
+		this.k = underlying.k;
+
 		this.spoofedUUID = underlying.spoofedUUID;
 		this.spoofedProfile = underlying.spoofedProfile;
 		this.preparing = underlying.preparing;
-		this.k = underlying.k;
 		try {
 			// copy protocol direction
 			PROTOCOL_DIRECTION.set(this, PROTOCOL_DIRECTION.get(underlying));
@@ -111,39 +117,39 @@ public class NetworkManagerWrapper extends NetworkManager {
 	 * corresponds with the underlying flag.
 	 */
 
-	@Override
+	
 	public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
 		underlying.channelRegistered(ctx);
 	}
 
-	@Override
+	
 	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
 		underlying.channelUnregistered(ctx);
 	}
 
-	@Override
+	
 	public void channelActive(ChannelHandlerContext channelhandlercontext) throws Exception {
 		underlying.channelActive(channelhandlercontext);
 		// flip the preparing flag to correspond with the underlying object
 		this.preparing = false;
 	}
 
-	@Override
+	
 	public void a(EnumProtocol enumprotocol) {
 		underlying.a(enumprotocol);
 	}
 
-	@Override
+	
 	public void channelInactive(ChannelHandlerContext channelhandlercontext) throws Exception {
 		underlying.channelInactive(channelhandlercontext);
 	}
 
-	@Override
+	
 	public void exceptionCaught(ChannelHandlerContext channelhandlercontext, Throwable throwable) throws Exception {
 		underlying.exceptionCaught(channelhandlercontext, throwable);
 	}
 
-	@Override
+	
 	protected void a(ChannelHandlerContext channelhandlercontext, Packet packet) {
 		try {
 			HANDLE_LISTENER.invoke(underlying, channelhandlercontext, packet);
@@ -152,7 +158,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 		}
 	}
 
-	@Override
+	
 	public void a(PacketListener packetlistener) {
 		underlying.a(packetlistener);
 	}
@@ -178,7 +184,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 		}
 		return list;
 	}
-	@Override
+	
 	public void handle(Packet packet) {
 		List<Predicate<? extends Packet>> list = listenersFor(packet.getClass());
 		for (Predicate<? extends Packet> listener : list) {
@@ -194,100 +200,100 @@ public class NetworkManagerWrapper extends NetworkManager {
 	}
 
 	@SuppressWarnings("unchecked")
-	@Override
+	
 	public final void a(Packet packet, GenericFutureListener<? extends Future<? super Void>> future,
 	                    GenericFutureListener<? extends Future<? super Void>>... listeners) {
 		underlying.a(packet, future, listeners);
 	}
 
-	@Override
+	
 	public void a() {
 		underlying.a();
 	}
 
-	@Override
+	
 	public SocketAddress getSocketAddress() {
 		return underlying.getSocketAddress();
 	}
 
-	@Override
+	
 	public void close(IChatBaseComponent ichatbasecomponent) {
 		// flip the preparing flag to correspond with the underlying object
 		preparing = false;
 		underlying.close(ichatbasecomponent);
 	}
 
-	@Override
+	
 	public boolean c() {
 		return underlying.c();
 	}
 
-	@Override
+	
 	public void a(SecretKey secretkey) {
 		underlying.a(secretkey);
 	}
 
-	@Override
+	
 	public boolean g() {
 		return underlying.g();
 	}
 
-	@Override
+	
 	public boolean h() {
 		return underlying.h();
 	}
 
-	@Override
+	
 	public PacketListener getPacketListener() {
 		return underlying.getPacketListener();
 	}
 
-	@Override
+	
 	public IChatBaseComponent j() {
 		return underlying.j();
 	}
 
-	@Override
+	
 	public void k() {
 		underlying.k();
 	}
 
-	@Override
+	
 	public void a(int i) {
 		underlying.a(i);
 	}
 
-	@Override
+	
 	public void l() {
 		underlying.l();
 	}
 
-	@Override
+	
 	public boolean acceptInboundMessage(Object msg) throws Exception {
 		return underlying.acceptInboundMessage(msg);
 	}
 
-	@Override
+	
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		underlying.channelRead(ctx, msg);
 	}
 
-	@Override
+	
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
 		underlying.channelReadComplete(ctx);
 	}
 
-	@Override
+	
 	public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 		underlying.userEventTriggered(ctx, evt);
 	}
 
-	@Override
+	
 	public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
 		underlying.channelWritabilityChanged(ctx);
 	}
 
-	@Override
+	
 	protected void channelRead0(ChannelHandlerContext channelhandlercontext, Packet object) {
 		// we can't access protected methods, use reflection
 		try {
@@ -298,37 +304,36 @@ public class NetworkManagerWrapper extends NetworkManager {
 		}
 	}
 
-	@Override
+	
 	public SocketAddress getRawAddress() {
 		return underlying.getRawAddress();
 	}
 
-	@Override
+	
 	public boolean isSharable() {
 		return underlying.isSharable();
 	}
 
-	@Override
+	
 	public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
 		underlying.handlerAdded(ctx);
 	}
 
-	@Override
+	
 	public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
 		underlying.handlerRemoved(ctx);
 	}
-	@Override
+	
 	public int hashCode() {
 		return underlying.hashCode();
 	}
 
 	@SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-	@Override
+	
 	public boolean equals(Object obj) {
 		return underlying.equals(obj);
 	}
-
-	@Override
+	
 	public String toString() {
 		return underlying.toString();
 	}
