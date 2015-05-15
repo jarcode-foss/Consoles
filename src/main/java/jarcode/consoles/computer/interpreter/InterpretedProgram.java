@@ -274,6 +274,9 @@ public class InterpretedProgram implements Program {
 		}
 		else return null;
 	}
+	private LuaValue lua$arr(int size) {
+		return new LuaArray(size);
+	}
 	private void lua$ignoreTerminate(Boolean ignore) {
 		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
 	}
