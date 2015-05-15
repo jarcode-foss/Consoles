@@ -3,8 +3,6 @@ package jarcode.consoles;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.PacketUtils;
@@ -389,9 +387,9 @@ public class ConsoleHandler implements Listener {
 		// get list of objects
 		List<WatchableObject> list = (List<WatchableObject>) get(PACKET_LIST, packet);
 		// create object mappings of the above list
-		TIntObjectMap map = new TIntObjectHashMap(10, 0.5F, -1);
+		HashMap<Integer, WatchableObject> objects = new HashMap<>();
 		for (WatchableObject aList : list) {
-			map.put(aList.a(), aList);
+			objects.put(aList.a(), aList);
 		}
 		// get entity id
 		int id;
@@ -401,9 +399,9 @@ public class ConsoleHandler implements Listener {
 			throw new RuntimeException(ex);
 		}
 		// if the map/packet contains an item stack, and is for a console entity
-		if (map.containsKey(8) && isConsoleEntity(id)) {
+		if (objects.containsKey(8) && isConsoleEntity(id)) {
 			// get stack from the map
-			ItemStack stack = (ItemStack) ((WatchableObject) map.get(8)).b();
+			ItemStack stack = (ItemStack) objects.get(8).b();
 			// global map id
 			short global = (short) stack.getData();
 			// player context map id
@@ -414,10 +412,9 @@ public class ConsoleHandler implements Listener {
 			else return false;
 		}
 		// block other map metadata
-		else if (map.containsKey(8) && ((WatchableObject) map.get(8)).b() instanceof ItemStack) {
-			ItemStack stack = (ItemStack) ((WatchableObject) map.get(8)).b();
+		else if (objects.containsKey(8) && objects.get(8).b() instanceof ItemStack) {
+			ItemStack stack = (ItemStack) objects.get(8).b();
 			if (stack.getItem() == Items.FILLED_MAP || stack.getItem() == Items.MAP) {
-				System.out.println("Blocked non-console item frame metadata packet");
 				return false;
 			}
 		}
