@@ -25,9 +25,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /*
 
@@ -205,23 +208,30 @@ public abstract class WrappedPlugin extends PluginBase {
 		}
 	}
 
+
 	public InputStream getResource(String filename)
 	{
 		if (filename == null) {
 			throw new IllegalArgumentException("Filename cannot be null");
 		}
-		try
-		{
-			URL url = getClassLoader().getResource(filename);
-
-			if (url == null) {
-				return null;
+		ZipFile file = null;
+		try {
+			file = new ZipFile(getFile());
+			Enumeration<? extends ZipEntry> e = file.entries();
+			while (e.hasMoreElements()) {
+				ZipEntry entry = e.nextElement();
+				if (entry.getName().equals(filename))
+					return file.getInputStream(entry);
 			}
-
-			URLConnection connection = url.openConnection();
-			connection.setUseCaches(false);
-			return connection.getInputStream();
-		} catch (IOException localIOException) {
+		} catch (IOException e) {
+			getLogger().severe("Failed to load resource");
+			e.printStackTrace();
+		}
+		finally {
+			if (file != null)
+				try {
+					file.close();
+				} catch (IOException ignored) {}
 		}
 		return null;
 	}
