@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.interpreter;
 
+import jarcode.classloading.loader.WrappedPlugin;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.boot.Kernel;
@@ -26,7 +27,7 @@ public class LuaDefaults {
 	static {
 		SCRIPTS.clear();
 		try {
-			File jar = new File(LuaDefaults.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+			File jar = new File(WrappedPlugin.class.getProtectionDomain().getCodeSource().getLocation().toURI());
 			ZipFile file = new ZipFile(jar);
 			Enumeration<? extends ZipEntry> entries = file.entries();
 			while (entries.hasMoreElements()) {
