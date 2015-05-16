@@ -1,5 +1,6 @@
 package jarcode.classloading.loader;
 
+import jarcode.consoles.Pkg;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -33,10 +34,15 @@ public final class WrappedClassLoader extends ClassLoader {
 
 	private static final HashMap<String, Class<?>> LOOKUP_TABLE = new HashMap<>();
 	static {
-			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedPlugin", WrappedPlugin.class);
-			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedPluginLoader", WrappedPluginLoader.class);
-			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedClassLoader", WrappedClassLoader.class);
-	};
+		map(WrappedPlugin.class);
+		map(WrappedPluginLoader.class);
+		map(WrappedClassLoader.class);
+		map(Pkg.class);
+	}
+
+	private static void map(Class<?> type) {
+		LOOKUP_TABLE.put(type.getName(), type);
+	}
 
 	// These are UNLOADED classes, which are removed as soon as they are loaded to conserve memory
 	private Map<String, byte[]> classes = new HashMap<>();
