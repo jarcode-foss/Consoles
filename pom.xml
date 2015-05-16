@@ -87,17 +87,16 @@
             <version>0.4.0</version>
         </dependency>
         <dependency>
+            <groupId>org.luaj</groupId>
+            <artifactId>luaj-jse</artifactId>
+            <version>3.0</version>
+        </dependency>
+        <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
             <version>1.8-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>luaj</groupId>
-            <artifactId>luaj</artifactId>
-            <version>3.0</version>
-            <type>jar</type>
         </dependency>
     </dependencies>
 </project>
