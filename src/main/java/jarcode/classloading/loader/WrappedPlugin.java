@@ -8,6 +8,7 @@ import com.avaje.ebeaninternal.api.SpiEbeanServer;
 import com.avaje.ebeaninternal.server.ddl.DdlGenerator;
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Server;
 import org.bukkit.Warning;
@@ -220,8 +221,12 @@ public abstract class WrappedPlugin extends PluginBase {
 			Enumeration<? extends ZipEntry> e = file.entries();
 			while (e.hasMoreElements()) {
 				ZipEntry entry = e.nextElement();
-				if (entry.getName().equals(filename))
-					return file.getInputStream(entry);
+				if (entry.getName().equals(filename)) {
+					InputStream is = file.getInputStream(entry);
+					byte[] data = new byte[is.available()];
+					IOUtils.readFully(file.getInputStream(entry), data);
+					return new ByteArrayInputStream(data);
+				}
 			}
 		} catch (IOException e) {
 			getLogger().severe("Failed to load resource");
