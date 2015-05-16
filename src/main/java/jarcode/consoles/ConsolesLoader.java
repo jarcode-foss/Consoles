@@ -70,7 +70,29 @@ public class ConsolesLoader extends JavaPlugin {
 		}
 	}
 
+	@Override
 	public void onEnable() {
 		enableTask.run();
+
+		// now this plugin is relatively useless to keep running, so we're going
+		// to disable and unload it.
+
+		// disable our plugin normally
+		getServer().getPluginManager().disablePlugin(this);
+
+		PluginManager manager = getServer().getPluginManager();
+
+		try {
+			// grab the lookup name map and plugin list, just like before
+			Map<String, Plugin> map = (Map<String, Plugin>) grab(SimplePluginManager.class, manager, "lookupNames");
+			List<Plugin> plugins = (List<Plugin>) grab(SimplePluginManager.class, manager, "plugins");
+
+			// remove this plugin from the mappings and the plugin list
+			map.remove(getDescription().getName());
+			plugins.remove(this);
+		} catch (Throwable e) {
+			getLogger().severe("Failed to unload Consoles plugin loader!");
+			e.printStackTrace();
+		}
 	}
 }

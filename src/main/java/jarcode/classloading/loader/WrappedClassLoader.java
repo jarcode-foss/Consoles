@@ -19,6 +19,16 @@ import java.util.*;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
+/*
+
+This is the class loader that loads the actual consoles plugin. Having control
+over this means a lot - we can instrument our own code, and edit how classes
+are loaded.
+
+This class loader loads everything into memory first, and then slowly loads it
+into the JVM as classes need to be resolved.
+
+ */
 public final class WrappedClassLoader extends ClassLoader {
 
 	private static final HashMap<String, Class<?>> LOOKUP_TABLE = new HashMap<>();

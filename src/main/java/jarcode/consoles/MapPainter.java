@@ -14,13 +14,14 @@ public class MapPainter implements Runnable {
 
 	private final Object LOCK = new Object();
 	private ArrayList<StackEntry> stack = new ArrayList<>();
-	private volatile boolean running = true;
+	private volatile boolean running = false;
 
 	// only in paint thread
 	private String context;
 
 	@Override
 	public void run() {
+		running = true;
 		while (running) {
 
 			long at = System.currentTimeMillis();

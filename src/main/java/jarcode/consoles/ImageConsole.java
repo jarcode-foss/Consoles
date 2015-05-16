@@ -38,7 +38,7 @@ public class ImageConsole {
 	}
 	public void create(final boolean save) {
 		if (created) return;
-		SyncTaskScheduler.instance().runSyncTask(() -> {
+		SyncTaskScheduler.getInstance().runSyncTask(() -> {
 			PreparedMapImage image = null;
 			try {
 				image = ImageComponent.render(url);

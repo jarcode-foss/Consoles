@@ -29,6 +29,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/*
+
+Plugin implementation that we use for Consoles. Most of this
+code is the same as a normal JavaPlugin.
+
+ */
 public abstract class WrappedPlugin extends PluginBase {
 	private boolean isEnabled = false;
 	private PluginLoader loader = null;
@@ -47,7 +53,7 @@ public abstract class WrappedPlugin extends PluginBase {
 	public WrappedPlugin() {
 		ClassLoader classLoader = getClass().getClassLoader();
 		if (!(classLoader instanceof WrappedClassLoader)) {
-			throw new IllegalStateException("CryptPlugin requires " + WrappedClassLoader.class.getName());
+			throw new IllegalStateException("WrappedPlugin requires " + WrappedClassLoader.class.getName());
 		}
 		((WrappedClassLoader) classLoader).initialize(this);
 	}

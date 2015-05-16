@@ -27,7 +27,7 @@ public class InterruptLib extends DebugLib {
 			if (System.currentTimeMillis() - lastInterrupt > Consoles.maxTimeWithoutInterrupt)
 				throw new ProgramInterruptException("Program terminated (ran too long without interrupt)");
 			// check if the program has been terminated
-			if (supplier.getAsBoolean()) {
+			if (supplier.getAsBoolean() || Lua.killAll) {
 				throw new ProgramInterruptException("Program terminated");
 			}
 		}

@@ -24,7 +24,7 @@ public class SyncTaskScheduler implements Runnable {
 		return instance;
 	}
 
-	public static SyncTaskScheduler instance() {
+	public static SyncTaskScheduler getInstance() {
 		return instance;
 	}
 

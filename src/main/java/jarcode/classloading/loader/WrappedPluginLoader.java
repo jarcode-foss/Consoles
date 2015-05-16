@@ -27,6 +27,12 @@ import java.util.jar.JarInputStream;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
+/*
+
+Custom plugin loader for a WrappedPlugin. Most of this is very similar
+to the JavaPluginLoader in Bukkit.
+
+ */
 public final class WrappedPluginLoader implements PluginLoader {
 
 	private static final Field ASSOCIATIONS;

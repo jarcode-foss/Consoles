@@ -4,10 +4,10 @@ import jarcode.classloading.loader.WrappedPlugin;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
+import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
 
@@ -55,6 +55,7 @@ public class Consoles extends WrappedPlugin {
 				// experimental, computers
 				CommandComputer.class
 		);
+		Lua.killAll = false; // if this plugin was reloaded
 		saveDefaultConfig();
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
 		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);
@@ -71,13 +72,25 @@ public class Consoles extends WrappedPlugin {
 			}
 		register(
 				ConsoleHandler::getInstance, ConsoleBungeeHook::new, SyncTaskScheduler::create,
-				this::getCommandHandler, ImageConsoleHandler::new,
-				// experimental, computers
-				ComputerHandler::new
+				this::getCommandHandler, ImageConsoleHandler::new, ComputerHandler::new
 		);
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
 	}
+
+	@Override
+	public void onDisable() {
+		ConsoleHandler.getInstance().getPainter().stop();
+		Lua.killAll = true;
+		try {
+			SyncTaskScheduler.getInstance().end();
+		}
+		catch (InterruptedException e) {
+			getLogger().warning("Failed to end synchronized task scheduler!");
+			e.printStackTrace();
+		}
+	}
+
 	// this is made just because I like using :: and ->
 	// no, you can't just pass references to the listeners.
 	// that would be boring.
