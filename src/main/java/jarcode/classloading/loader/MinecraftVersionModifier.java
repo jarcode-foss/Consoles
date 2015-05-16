@@ -25,8 +25,6 @@ public class MinecraftVersionModifier implements ClassModifier {
 		ByteArrayOutputStream ret = new ByteArrayOutputStream();
 		ByteArrayInputStream src = new ByteArrayInputStream(in);
 
-		System.out.println("\nInstrumenting: " + classname + "\n");
-
 		try (DataInputStream din = new DataInputStream(src); DataOutputStream dout = new DataOutputStream(ret)) {
 			dout.writeInt(din.readInt()); // Ignore magic.
 			dout.writeShort(din.readUnsignedShort()); // Ignore minor
