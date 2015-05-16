@@ -28,6 +28,12 @@ public class Consoles extends WrappedPlugin {
 	public static int maxComputers = 3;
 
 	static {
+		System.out.println("Instantiating plugin from: " + Consoles.class.getClassLoader().getClass().getSimpleName());
+		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
+			Thread.dumpStack();
+			System.exit(0);
+			throw new RuntimeException();
+		}
 		MapInjector.injectTypes();
 		MapInjector.clearNBTMapFiles();
 	}

@@ -1,14 +1,14 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class ConstantPoolEntryInterfaceMethodReference extends ConstantPoolEntry {
+public class ConstantPoolEntryFieldReference extends ConstantPoolEntry {
     protected final int classIndex;
     protected final int nameAndTypeIndex;
 
-    public ConstantPoolEntryInterfaceMethodReference(int tag, int classIndex, int nameAndTypeIndex) {
+    public ConstantPoolEntryFieldReference(int tag, int classIndex, int nameAndTypeIndex) {
         super(tag);
         this.classIndex = classIndex;
         this.nameAndTypeIndex = nameAndTypeIndex;
@@ -58,7 +58,7 @@ public class ConstantPoolEntryInterfaceMethodReference extends ConstantPoolEntry
 
         @Override
         public ConstantPoolEntry build( ) {
-            return new ConstantPoolEntryInterfaceMethodReference(tag, classIndex, nameAndTypeIndex);
+            return new ConstantPoolEntryFieldReference(tag, classIndex, nameAndTypeIndex);
         }
     }
 }

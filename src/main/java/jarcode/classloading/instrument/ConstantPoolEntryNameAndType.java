@@ -1,4 +1,4 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

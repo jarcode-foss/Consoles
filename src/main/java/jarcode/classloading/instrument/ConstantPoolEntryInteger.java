@@ -1,25 +1,25 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class ConstantPoolEntryDouble extends ConstantPoolEntry {
-    protected final double value;
+public class ConstantPoolEntryInteger extends ConstantPoolEntry {
+    protected final int value;
 
-    public ConstantPoolEntryDouble(int tag, double value) {
+    public ConstantPoolEntryInteger(int tag, int value) {
         super(tag);
         this.value = value;
     }
 
-    public double getValue( ) {
+    public int getValue( ) {
         return value;
     }
 
     @Override
     public void write(DataOutputStream dout) throws IOException {
         super.write(dout);
-        dout.writeDouble(value);
+        dout.writeInt(value);
     }
 
     public static Factory factory( ) {
@@ -27,17 +27,17 @@ public class ConstantPoolEntryDouble extends ConstantPoolEntry {
     }
 
     public static class Factory extends ConstantPoolEntry.Factory {
-        protected double value;
+        protected int value;
 
         @Override
         public void read(int tag, DataInputStream din) throws IOException {
             super.read(tag, din);
-            value = din.readDouble();
+            value = din.readInt();
         }
 
         @Override
         public ConstantPoolEntry build( ) {
-            return new ConstantPoolEntryDouble(tag, value);
+            return new ConstantPoolEntryInteger(tag, value);
         }
     }
 }

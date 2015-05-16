@@ -1,4 +1,4 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -23,7 +23,7 @@ public class ConstantPoolEntryMethodType extends ConstantPoolEntry {
     @Override
     public void write(DataOutputStream dout) throws IOException {
         super.write(dout);
-        dout.writeInt(descriptorIndex);
+        dout.writeShort(descriptorIndex);
     }
 
     public static Factory factory( ) {
@@ -36,7 +36,7 @@ public class ConstantPoolEntryMethodType extends ConstantPoolEntry {
         @Override
         public void read(int tag, DataInputStream din) throws IOException {
             super.read(tag, din);
-            descriptorIndex = din.readInt();
+            descriptorIndex = din.readUnsignedShort();
         }
 
         @Override

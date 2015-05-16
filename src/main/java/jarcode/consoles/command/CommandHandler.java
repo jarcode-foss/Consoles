@@ -29,6 +29,10 @@ public class CommandHandler implements Listener {
 
 	public CommandHandler(Class... defaults) {
 
+		if (Consoles.getInstance() == null) {
+			throw new RuntimeException("Main plugin has not been instantiated yet!");
+		}
+
 		for (Class<?> commandClass : defaults) {
 			try {
 				if (handleClass(commandClass))

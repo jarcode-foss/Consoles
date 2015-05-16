@@ -1,6 +1,5 @@
 package jarcode.classloading.loader;
 
-import jarcode.controller.base.AbstractGame;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -12,13 +11,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.util.*;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
 
 public final class WrappedClassLoader extends ClassLoader {
+
+	private static final HashMap<String, Class<?>> LOOKUP_TABLE = new HashMap<>();
+	static {
+			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedPlugin", WrappedPlugin.class);
+			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedPluginLoader", WrappedPluginLoader.class);
+			LOOKUP_TABLE.put("jarcode.classloading.loader.WrappedClassLoader", WrappedClassLoader.class);
+	};
 
 	// These are UNLOADED classes, which are removed as soon as they are loaded to conserve memory
 	private Map<String, byte[]> classes = new HashMap<>();
@@ -41,7 +49,7 @@ public final class WrappedClassLoader extends ClassLoader {
 	public WrappedClassLoader(InputStream in, WrappedPluginLoader loader, PluginDescriptionFile description,
 	                          File dataFolder, File file, ClassModifier... modifiers)
 			throws InvalidPluginException, MalformedURLException {
-		super(WrappedClassLoader.class.getClassLoader());
+		super(WrappedClassLoader.class.getClassLoader().getParent());
 		this.loader = loader;
 		this.server = loader.server;
 		this.description = description;
@@ -62,7 +70,6 @@ public final class WrappedClassLoader extends ClassLoader {
 					inputStream.closeEntry();
 					String transformedName = className(entryName);
 					classes.put(transformedName, classBytes);
-
 				}
 			}
 			inputStream.close();
@@ -85,6 +92,7 @@ public final class WrappedClassLoader extends ClassLoader {
 				throw new InvalidPluginException("main class '" + description.getMain() + "' does not extend WrappedPlugin", ex);
 			}
 			try {
+				injectParents();
 				this.plugin = pluginClass.getConstructor().newInstance();
 			}
 			catch (InvocationTargetException | NoSuchMethodException e) {
@@ -95,6 +103,24 @@ public final class WrappedClassLoader extends ClassLoader {
 		}
 		catch (InstantiationException ex) {
 			throw new InvalidPluginException("Abnormal plugin type", ex);
+		}
+	}
+
+	// We have to do this so that the default plugin class loader will query
+	// this class loader before trying to load classes itself.
+	private void injectParents() throws InvalidPluginException {
+		ClassLoader pluginLoader = WrappedClassLoader.class.getClassLoader();
+		try {
+			Field field = ClassLoader.class.getDeclaredField("parent");
+			field.setAccessible(true);
+
+			Field modifiersField = Field.class.getDeclaredField("modifiers");
+			modifiersField.setAccessible(true);
+			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+			field.set(pluginLoader, this);
+		}
+		catch (Throwable e) {
+			throw new InvalidPluginException(e);
 		}
 	}
 
@@ -130,9 +156,13 @@ public final class WrappedClassLoader extends ClassLoader {
 
 	public Class loadClass(String name) throws ClassNotFoundException {
 		try {
-			return this.getParent().loadClass(name);
-		} catch (ClassNotFoundException e) {
+			// prioritize classes under this loader
+			if (LOOKUP_TABLE.containsKey(name)) {
+				return LOOKUP_TABLE.get(name);
+			}
 			return findClass(name);
+		} catch (ClassNotFoundException e) {
+			return this.getParent().loadClass(name);
 		}
 	}
 	public InputStream getResourceAsStream(String str) {
@@ -170,6 +200,7 @@ public final class WrappedClassLoader extends ClassLoader {
 			if (loaded.containsKey(name)) {
 				return loaded.get(name);
 			}
+			if (!classes.containsKey(name)) throw new ClassNotFoundException();
 			byte[] classBytes = classes.get(name);
 			Class type;
 
@@ -185,7 +216,7 @@ public final class WrappedClassLoader extends ClassLoader {
 			return type;
 		}
 		catch (NullPointerException e) {
-			throw new NullPointerException("Null pointer while trying to access class: " + name);
+			throw new ClassNotFoundException("Null pointer while trying to access class: " + name, e);
 		}
 	}
 	public void loadAllClasses() {

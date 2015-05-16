@@ -1,4 +1,4 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -41,13 +41,11 @@ public class ConstantPoolEntries {
     }
 
     public static ConstantPoolEntry readEntry(DataInputStream din) throws IOException {
-        try {
-            int tag = din.readUnsignedByte();
-            ConstantPoolEntry.Factory b = factories.get(tag);
-            b.read(tag, din);
-            return b.build();
-        } catch (IOException e) {
-            throw e;
-        }
+	    int tag = din.readUnsignedByte();
+	    ConstantPoolEntry.Factory b = factories.get(tag);
+	    if (b == null)
+		    System.out.println("invalid tag: " + tag);
+	    b.read(tag, din);
+	    return b.build();
     }
 }

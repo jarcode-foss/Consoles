@@ -1,4 +1,4 @@
-package user.theovercaste.overdecompiler.constantpool;
+package jarcode.classloading.instrument;
 
 public class ConstantPoolValueRetriever {
     public static String getNameAndTypeName(ConstantPoolEntry[] constantPool, int index) {

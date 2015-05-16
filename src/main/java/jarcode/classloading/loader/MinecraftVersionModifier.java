@@ -1,9 +1,7 @@
 package jarcode.classloading.loader;
 
+import jarcode.classloading.instrument.*;
 import org.bukkit.plugin.Plugin;
-import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntries;
-import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntry;
-import user.theovercaste.overdecompiler.constantpool.ConstantPoolEntryUtf8;
 
 import java.io.*;
 
@@ -27,6 +25,8 @@ public class MinecraftVersionModifier implements ClassModifier {
 		ByteArrayOutputStream ret = new ByteArrayOutputStream();
 		ByteArrayInputStream src = new ByteArrayInputStream(in);
 
+		System.out.println("\nInstrumenting: " + classname + "\n");
+
 		try (DataInputStream din = new DataInputStream(src); DataOutputStream dout = new DataOutputStream(ret)) {
 			dout.writeInt(din.readInt()); // Ignore magic.
 			dout.writeShort(din.readUnsignedShort()); // Ignore minor
@@ -36,15 +36,17 @@ public class MinecraftVersionModifier implements ClassModifier {
 			for (int i = 1; i < constantPoolCount; i++) {
 				constantPool[i] = ConstantPoolEntries.readEntry(din);
 				if (constantPool[i] == null) {
-					System.out.println("Invalid constant pool entry found: " + i);
-					constantPoolCount--;
+					System.out.println("Invalid constant pool for index: " + constantPoolCount);
+				}
+				if(constantPool[i] instanceof ConstantPoolEntryLong || constantPool[i] instanceof ConstantPoolEntryDouble) {
+					i++;
 				}
 			}
 			dout.writeShort(constantPoolCount);
 			for (ConstantPoolEntry e : constantPool) {
 				if (e != null) {
 					ConstantPoolEntry written = e;
-					if (e.getTag() == ConstantPoolEntries.UTF8_TAG) {
+					if (e instanceof ConstantPoolEntryUtf8) {
 						// Replace all instances of the explicit version to our value.
 						written = new ConstantPoolEntryUtf8(e.getTag(),
 								((ConstantPoolEntryUtf8) e).getValue()
