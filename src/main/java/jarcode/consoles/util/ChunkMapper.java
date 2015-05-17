@@ -41,88 +41,94 @@ public class ChunkMapper {
 					int k2 = (centerX / i + k1 - 64) * i;
 					int l2 = (centerZ / i + l1 - 64) * i;
 					HashMultiset hashmultiset = HashMultiset.create();
-					Chunk chunk = world.getChunkAtWorldCoords(new BlockPosition(k2, 0, l2));
-					if(!chunk.isEmpty()) {
-						int i3 = k2 & 15;
-						int j3 = l2 & 15;
-						int k3 = 0;
-						double d1 = 0.0D;
-						if(world.worldProvider.o()) {
-							int blockPosition = k2 + l2 * 231871;
-							blockPosition = blockPosition * blockPosition * 31287121 + blockPosition * 11;
-							if((blockPosition >> 20 & 1) == 0) {
-								hashmultiset.add(Blocks.DIRT.g(Blocks.DIRT.getBlockData().set(BlockDirt.VARIANT, BlockDirt.EnumDirtVariant.DIRT)), 10);
-							} else {
-								hashmultiset.add(Blocks.STONE.g(Blocks.STONE.getBlockData().set(BlockStone.VARIANT, BlockStone.EnumStoneVariant.STONE)), 100);
-							}
+					Chunk chunk = world.getChunkAt(k2 >> 4, l2 >> 4);
 
-							d1 = 100.0D;
+					if (chunk.isEmpty()) {
+						world.getWorld().loadChunk(k2 >> 4, l2 >> 4, false);
+						chunk = world.getChunkAt(k2 >> 4, l2 >> 4);
+					}
+
+					int i3 = k2 & 15;
+					int j3 = l2 & 15;
+					int k3 = 0;
+					double d1 = 0.0D;
+					if(world.worldProvider.o()) {
+						int blockPosition = k2 + l2 * 231871;
+						blockPosition = blockPosition * blockPosition * 31287121 + blockPosition * 11;
+						if((blockPosition >> 20 & 1) == 0) {
+							hashmultiset.add(Blocks.DIRT.g(Blocks.DIRT.getBlockData().set(BlockDirt.VARIANT, BlockDirt.EnumDirtVariant.DIRT)), 10);
 						} else {
-							BlockPosition.MutableBlockPosition var37 = new BlockPosition.MutableBlockPosition();
-
-							for(int i4 = 0; i4 < i; ++i4) {
-								for(int b0 = 0; b0 < i; ++b0) {
-									int material = chunk.b(i4 + i3, b0 + j3) + 1;
-									IBlockData b1 = Blocks.AIR.getBlockData();
-									if(material > 1) {
-										do {
-											--material;
-											b1 = chunk.getBlockData(var37.c(i4 + i3, material, b0 + j3));
-										} while(b1.getBlock().g(b1) == MaterialMapColor.b && material > 0);
-
-										if(material > 0 && b1.getBlock().getMaterial().isLiquid()) {
-											int b2 = material - 1;
-
-											Block block;
-											do {
-												block = chunk.getTypeAbs(i4 + i3, b2--, b0 + j3);
-												++k3;
-											} while(b2 > 0 && block.getMaterial().isLiquid());
-										}
-									}
-
-									d1 += (double)material / (double)(i * i);
-									hashmultiset.add(b1.getBlock().g(b1));
-								}
-							}
+							hashmultiset.add(Blocks.STONE.g(Blocks.STONE.getBlockData().set(BlockStone.VARIANT, BlockStone.EnumStoneVariant.STONE)), 100);
 						}
 
-						k3 /= i * i;
-						double d2 = (d1 - d0) * 4.0D / (double)(i + 4) + ((double)(k1 + l1 & 1) - 0.5D) * 0.4D;
-						byte var38 = 1;
-						if(d2 > 0.6D) {
+						d1 = 100.0D;
+					} else {
+						BlockPosition.MutableBlockPosition var37 = new BlockPosition.MutableBlockPosition();
+
+						for(int i4 = 0; i4 < i; ++i4) {
+							for(int b0 = 0; b0 < i; ++b0) {
+								int height = chunk.b(i4 + i3, b0 + j3) + 1;
+								IBlockData b1 = Blocks.AIR.getBlockData();
+								if(height > 1) {
+									do {
+										--height;
+										b1 = chunk.getBlockData(var37.c(i4 + i3, height, b0 + j3));
+									} while(b1.getBlock().g(b1) == MaterialMapColor.b && height > 0);
+
+									if(height > 0 && b1.getBlock().getMaterial().isLiquid()) {
+										int b2 = height - 1;
+
+										Block block;
+										do {
+											block = chunk.getTypeAbs(i4 + i3, b2--, b0 + j3);
+											++k3;
+										} while(b2 > 0 && block.getMaterial().isLiquid());
+									}
+								}
+
+								d1 += (double)height / (double)(i * i);
+								hashmultiset.add(b1.getBlock().g(b1));
+							}
+						}
+					}
+
+					k3 /= i * i;
+					double d2 = (d1 - d0) * 4.0D / (double)(i + 4) + ((double)(k1 + l1 & 1) - 0.5D) * 0.4D;
+					byte var38 = 1;
+					if(d2 > 0.6D) {
+						var38 = 2;
+					}
+
+					if(d2 < -0.6D) {
+						var38 = 0;
+					}
+
+					MaterialMapColor var39 = Iterables.getFirst(Multisets.copyHighestCountFirst(hashmultiset), MaterialMapColor.b);
+					if(var39 == MaterialMapColor.n) {
+						d2 = (double)k3 * 0.1D + (double)(k1 + l1 & 1) * 0.2D;
+						var38 = 1;
+						if(d2 < 0.5D) {
 							var38 = 2;
 						}
 
-						if(d2 < -0.6D) {
+						if(d2 > 0.9D) {
 							var38 = 0;
 						}
+					}
 
-						MaterialMapColor var39 = Iterables.getFirst(Multisets.copyHighestCountFirst(hashmultiset), MaterialMapColor.b);
-						if(var39 == MaterialMapColor.n) {
-							d2 = (double)k3 * 0.1D + (double)(k1 + l1 & 1) * 0.2D;
-							var38 = 1;
-							if(d2 < 0.5D) {
-								var38 = 2;
-							}
-
-							if(d2 > 0.9D) {
-								var38 = 0;
-							}
-						}
-
-						d0 = d1;
-						if(l1 >= 0 && i2 * i2 + j2 * j2 < j1 * j1 && (!flag1 || (k1 + l1 & 1) != 0)) {
-							synchronized (section.LOCK) {
-								byte var40 = section.colors[k1 + l1 * 128];
-								assert var39 != null;
-								byte var41 = (byte) (var39.M * 4 + var38);
-								if (var40 != var41) {
-									section.colors[k1 + l1 * 128] = var41;
-									section.flag(k1, l1);
-									updated = true;
-									System.out.println("Switching bit: " + k1 + ", " + l1);
-								}
+					d0 = d1;
+					if(l1 >= 0 && i2 * i2 + j2 * j2 < j1 * j1 && (!flag1 || (k1 + l1 & 1) != 0)) {
+						synchronized (section.LOCK) {
+							byte var40 = section.colors[k1 + l1 * 128];
+							assert var39 != null;
+							byte var41 = (byte) (var39.M * 4 + var38);
+							if (var41 >= 0 && var41 <= 3)
+								var41 = (byte) ((k1 + l1 & 1) != 0 ? 44 : 46);
+							if (var40 != var41) {
+								section.colors[k1 + l1 * 128] = var41;
+								section.flag(k1, l1);
+								updated = true;
+								System.out.println("Switching bit: " + k1 + ", " + l1);
 							}
 						}
 					}
