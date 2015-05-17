@@ -44,6 +44,10 @@ public class Consoles extends WrappedPlugin {
 
 	{
 		instance = this;
+
+		// set up package name
+		Pkg.VERSION = getServer().getClass().getPackage().getName();
+		Pkg.VERSION = Pkg.VERSION.substring(Pkg.VERSION.lastIndexOf('.') + 1);
 	}
 
 	private CommandHandler commandHandler;

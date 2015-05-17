@@ -1,19 +1,22 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.Position2D;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.util.ChunkMapper;
 import jarcode.consoles.util.InstanceListener;
 import net.minecraft.server.v1_8_R2.World;
 import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
+import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 public class MapComponent extends ConsoleComponent {
 
-	private final int centerX, centerZ;
+	private static final int ZOOM = 1;
+
+	private final int originX, originZ;
 	private final World world;
 
 	private final InstanceListener listener = new InstanceListener();
@@ -27,26 +30,43 @@ public class MapComponent extends ConsoleComponent {
 
 	public MapComponent(int w, int h, Computer computer, int centerX, int centerZ) {
 		super(w, h, computer.getConsole());
-		this.centerX = centerX - 200;
-		this.centerZ = centerZ - 200;
+		Position2D corner = ChunkMapper.align(centerX, centerZ, ZOOM);
+		this.originX = corner.getX();
+		this.originZ = corner.getY();
 		this.world = ((CraftWorld) computer.getConsole().getLocation().getWorld()).getHandle();
 
 		// I love generics! This is so nice to write.
 		listener.chain(this::trigger)
-				.register(PlayerJoinEvent.class)
 				.register(BlockBreakEvent.class)
 				.register(BlockPlaceEvent.class);
+		mapAll();
 	}
 
-	public void trigger(PlayerEvent e) {
-		int x = e.getPlayer().getLocation().getBlockX();
-		int z = e.getPlayer().getLocation().getBlockZ();
+	public void trigger(BlockEvent e) {
+		if (update(e.getBlock().getX(), e.getBlock().getY())) repaint();
+	}
+	private void mapAll() {
+		int off = (64 * (ZOOM + 1));
+		for (int x = 0; x < 3; x++)
+			for (int y = 0; y < 3; y++)
+				update(off + originX + (x * (128 * (ZOOM + 1))), off + originZ + (y * (128 * (ZOOM + 1))));
+	}
+	private boolean update(int x, int y) {
 		boolean update = false;
-		for (int xo = 0; xo < 3; xo ++)
+		for (int xo = 0; xo < 3; xo++)
 			for (int yo = 0; yo < 2; yo++)
 				update = ChunkMapper.updateSection(sections[xo + (yo * 3)], world,
-						centerX + (xo * 128), centerZ + (yo * 128), x, z, 1);
-		if (update) repaint();
+						originX + (xo * (128 * (ZOOM + 1))), originZ + (yo * (128 * (ZOOM + 1))), x, y, ZOOM);
+		return update;
+	}
+
+	@Override
+	public void handleClick(int x, int y, Player player) {
+		int ux = originX + (x * (ZOOM + 1));
+		int uz = originZ + (y * (ZOOM + 1));
+		player.sendMessage("Updating: " + ux + ", " + uz + " (origin: " + originX + ", " + originZ + ")");
+
+		if (update(ux, uz)) repaint();
 	}
 
 	@Override
@@ -56,7 +76,7 @@ public class MapComponent extends ConsoleComponent {
 
 	@Override
 	public void paint(CanvasGraphics g, String context) {
-		for (int xo = 0; xo < 3; xo ++)
+		for (int xo = 0; xo < 3; xo++)
 			for (int yo = 0; yo < 2; yo++)
 				sections[xo + (yo * 3)].render(g, xo * 128, yo * 128);
 	}

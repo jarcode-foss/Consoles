@@ -45,9 +45,6 @@ public class ConsolesLoader extends JavaPlugin {
 		// inject our plugin loader
 		WrappedPluginLoader loader = WrappedPluginLoader.inject(this,
 				new MinecraftVersionModifier(this, COMPILED_VERSION));
-		// set up package name
-		Pkg.VERSION = getServer().getClass().getPackage().getName();
-		Pkg.VERSION = Pkg.VERSION.substring(Pkg.VERSION.lastIndexOf('.') + 1);
 		try {
 			// load plugin through wrapper loader (direct loading)
 			Plugin plugin = loader.loadPlugin(this.getFile());

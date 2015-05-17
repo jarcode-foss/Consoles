@@ -18,11 +18,13 @@ public class ChunkMapper {
 	@SuppressWarnings({"unchecked", "ConstantConditions"})
 	public static boolean updateSection(PreparedMapSection section, World world, int centerX, int centerZ,
 	                                                     int updateX, int updateZ, int scale) {
+		System.out.println("updating map with center: " + centerX + ", " + centerZ);
+
 		boolean updated = false;
 
 		int i = 1 << scale;
-		int l = MathHelper.floor(updateX - (double) centerX) / i + 64;
-		int i1 = MathHelper.floor(updateZ - (double) centerZ) / i + 64;
+		int l = (updateX - centerX) / i + 64;
+		int i1 = (updateZ - centerZ) / i + 64;
 		int j1 = 128 / i;
 		if(world.worldProvider.o()) {
 			j1 /= 2;
@@ -119,6 +121,7 @@ public class ChunkMapper {
 									section.colors[k1 + l1 * 128] = var41;
 									section.flag(k1, l1);
 									updated = true;
+									System.out.println("Switching bit: " + k1 + ", " + l1);
 								}
 							}
 						}
@@ -127,6 +130,13 @@ public class ChunkMapper {
 			}
 		}
 		return updated;
+	}
+
+	public static Position2D align(int x, int y, int scale) {
+		int j = 128 * (1 << scale);
+		int k = MathHelper.floor((x + 64.0D) / (double)j);
+		int l = MathHelper.floor((y + 64.0D) / (double)j);
+		return new Position2D(k * j + j / 2 - 64, l * j + j / 2 - 64);
 	}
 
 	public static class PreparedMapSection {
@@ -140,7 +150,7 @@ public class ChunkMapper {
 			synchronized (LOCK) {
 				flags.stream()
 						.filter(flag -> g.getWidth() > x + flag.getX() && g.getHeight() > y + flag.getY())
-						.forEach(flag -> g.draw(flag.getX(), flag.getY(), colors[flag.getX() + (flag.getY() * 128)]));
+						.forEach(flag -> g.draw(flag.getX() + x, flag.getY() + y, colors[flag.getX() + (flag.getY() * 128)]));
 				flags.clear();
 			}
 		}

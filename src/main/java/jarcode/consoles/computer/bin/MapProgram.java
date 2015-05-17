@@ -12,11 +12,25 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 public class MapProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+
+		int x = computer.getConsole().getLocation().getBlockX();
+		int y = computer.getConsole().getLocation().getBlockZ();
+
+		if (!str.trim().isEmpty()) {
+			String[] split = str.split(" ");
+			x = Integer.parseInt(split[0]);
+			y = Integer.parseInt(split[1]);
+		}
+
+		print("Using coords: " + x + ", " + y);
+
+		final int finalX = x;
+		final int finalY = y;
 		schedule(() -> {
+
 			MapComponent component = new MapComponent(computer.getViewWidth(),
 					computer.getViewHeight(), computer,
-					computer.getConsole().getLocation().getBlockX(),
-					computer.getConsole().getLocation().getBlockY());
+					finalX, finalY);
 			computer.setComponent(6, component);
 			computer.switchView(7);
 		});

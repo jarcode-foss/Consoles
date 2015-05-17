@@ -37,7 +37,6 @@ public final class WrappedClassLoader extends ClassLoader {
 		map(WrappedPlugin.class);
 		map(WrappedPluginLoader.class);
 		map(WrappedClassLoader.class);
-		map(Pkg.class);
 	}
 
 	private static void map(Class<?> type) {
