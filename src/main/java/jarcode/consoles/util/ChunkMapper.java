@@ -18,7 +18,6 @@ public class ChunkMapper {
 	@SuppressWarnings({"unchecked", "ConstantConditions"})
 	public static boolean updateSection(PreparedMapSection section, World world, int centerX, int centerZ,
 	                                                     int updateX, int updateZ, int scale) {
-		System.out.println("updating map with center: " + centerX + ", " + centerZ);
 
 		boolean updated = false;
 
@@ -128,7 +127,6 @@ public class ChunkMapper {
 								section.colors[k1 + l1 * 128] = var41;
 								section.flag(k1, l1);
 								updated = true;
-								System.out.println("Switching bit: " + k1 + ", " + l1);
 							}
 						}
 					}
@@ -155,7 +153,11 @@ public class ChunkMapper {
 		public void render(CanvasGraphics g, int x, int y) {
 			synchronized (LOCK) {
 				flags.stream()
-						.filter(flag -> g.getWidth() > x + flag.getX() && g.getHeight() > y + flag.getY())
+						.filter(flag ->
+								g.getWidth() > x + flag.getX()
+								&& g.getHeight() > y + flag.getY()
+								&& y + flag.getY() > 0
+								&& x + flag.getX() > 0)
 						.forEach(flag -> g.draw(flag.getX() + x, flag.getY() + y, colors[flag.getX() + (flag.getY() * 128)]));
 				flags.clear();
 			}
