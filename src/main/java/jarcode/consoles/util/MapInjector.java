@@ -1,9 +1,9 @@
 package jarcode.consoles.util;
 
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
 
 import java.io.File;
 import java.io.IOException;

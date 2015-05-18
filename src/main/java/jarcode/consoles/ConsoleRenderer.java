@@ -6,14 +6,14 @@ import com.google.common.collect.ImmutableBiMap;
 import jarcode.consoles.api.*;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.Region;
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R2.entity.CraftItemFrame;
-import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftItemFrame;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -151,7 +151,7 @@ public abstract class ConsoleRenderer implements Canvas {
 					renderers.add(renderer);
 				}
 				// get NMS world
-				net.minecraft.server.v1_8_R2.World mcWorld = ((CraftWorld) pos.getWorld()).getHandle();
+				net.minecraft.server.v1_8_R3.World mcWorld = ((CraftWorld) pos.getWorld()).getHandle();
 				// create item frame entity
 				EntityItemFrame itemFrame = new EntityItemFrame(mcWorld, new BlockPosition(
 						pos.getBlockX() + xm, pos.getBlockY() + (height - y) - 1, pos.getBlockZ() + zm), d);
@@ -235,10 +235,10 @@ public abstract class ConsoleRenderer implements Canvas {
 	@SuppressWarnings("deprecation")
 	private MapView getView(short i, World world) {
 		MapView view = Bukkit.getServer().getMap(i);
-		net.minecraft.server.v1_8_R2.World mcWorld = ((CraftWorld) world).getHandle();
+		net.minecraft.server.v1_8_R3.World mcWorld = ((CraftWorld) world).getHandle();
 		if (view == null) {
 			WorldMap map = Items.FILLED_MAP.getSavedMap(
-					new net.minecraft.server.v1_8_R2.ItemStack(Items.MAP, 1, i), mcWorld
+					new net.minecraft.server.v1_8_R3.ItemStack(Items.MAP, 1, i), mcWorld
 			);
 			view = map.mapView;
 		}

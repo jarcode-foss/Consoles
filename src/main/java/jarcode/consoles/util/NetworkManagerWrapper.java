@@ -1,11 +1,12 @@
 package jarcode.consoles.util;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import jarcode.consoles.Pkg;
 import jarcode.consoles.util.unsafe.UnsafeTools;
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
@@ -61,7 +62,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 	public static NetworkManagerWrapper wrap(NetworkManager manager) {
 
 		// check protocol state, this wrapper is only meant for 'play'
-		Object protocol = manager.k.attr(c).get();
+		Object protocol = getProtocol(manager);
 		if (protocol != EnumProtocol.PLAY) {
 			throw new RuntimeException("Wrong protocol: " + protocol);
 		}
@@ -79,6 +80,44 @@ public class NetworkManagerWrapper extends NetworkManager {
 		return wrapper;
 	}
 
+	// multi-version support
+	private static String channelFieldName() {
+		String name;
+		switch (Pkg.VERSION) {
+			case "1_8_R3":
+				name = "channel";
+				break;
+			case "1_8_R2":
+				name = "k";
+				break;
+			default:
+				throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
+		}
+		return name;
+	}
+
+	private static void replaceChannel(NetworkManager from, NetworkManager to) {
+		String name = channelFieldName();
+		Field field;
+		try {
+			field = NetworkManager.class.getDeclaredField(name);
+			field.set(to, field.get(from));
+		} catch (NoSuchFieldException | IllegalAccessException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	private static Object getProtocol(NetworkManager from) {
+		String name = channelFieldName();
+		Field field;
+		try {
+			field = NetworkManager.class.getDeclaredField(name);
+			return ((Channel) field.get(from)).attr(c).get();
+		} catch (NoSuchFieldException | IllegalAccessException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
 	private NetworkManager underlying;
 	private HashMap<Class<? extends Packet>, List<Predicate<? extends Packet>>> listeners;
 
@@ -90,7 +129,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 		// copy references to public fields in original object
 
 		this.l = underlying.l;
-		this.k = underlying.k;
+		replaceChannel(underlying, this);
 
 		this.spoofedUUID = underlying.spoofedUUID;
 		this.spoofedProfile = underlying.spoofedProfile;

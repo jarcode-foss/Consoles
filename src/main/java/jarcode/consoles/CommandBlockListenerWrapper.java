@@ -1,8 +1,10 @@
 package jarcode.consoles;
 
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
@@ -121,7 +123,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			setResult(0);
 		}
 		MinecraftServer minecraftserver = MinecraftServer.getServer();
-		if(minecraftserver != null && minecraftserver.N()) {
+		if(minecraftserver != null && underlyingCheck()) {
 			minecraftserver.getCommandHandler();
 			try {
 				setChatComponent(null);
@@ -131,6 +133,27 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			}
 		} else {
 			setResult(0);
+		}
+	}
+
+	// I'm not sure what this method is for, but it's a check when handling vanilla commands
+	// in the minecraft server. It changed in the last version, so I'm just adding this fix.
+	public boolean underlyingCheck() {
+		String name;
+		switch (Pkg.VERSION) {
+			case "1_8_R2":
+				name = "N";
+				break;
+			case "1_8_R3":
+				name = "O";
+				break;
+			default: throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
+		}
+		try {
+			Method method = MinecraftServer.class.getMethod(name);
+			return (Boolean) method.invoke(this);
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

@@ -30,7 +30,7 @@ that have multiple names across versions will be replaced with reflection over t
 public class ConsolesLoader extends JavaPlugin {
 
 	// This is the version we compile against, which should be the latest spigot/CB build.
-	private static final String COMPILED_VERSION = "v1_8_R2";
+	private static final String COMPILED_VERSION = "v1_8_R3";
 
 	private static Object grab(Class from, Object inst, String name)
 			throws IllegalAccessException, NoSuchFieldException {

@@ -8,11 +8,11 @@ import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
-import org.bukkit.craftbukkit.v1_8_R2.block.CraftCommandBlock;
+import org.bukkit.craftbukkit.v1_8_R3.block.CraftCommandBlock;
 import org.bukkit.entity.Player;
 
 import java.io.File;

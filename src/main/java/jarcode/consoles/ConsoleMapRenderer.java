@@ -1,9 +1,9 @@
 package jarcode.consoles;
 
 import jarcode.consoles.util.MapInjector;
-import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

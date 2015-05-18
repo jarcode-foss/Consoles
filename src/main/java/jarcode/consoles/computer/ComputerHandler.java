@@ -3,9 +3,9 @@ package jarcode.consoles.computer;
 import jarcode.consoles.*;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.PacketUtils;
-import net.minecraft.server.v1_8_R2.NBTTagCompound;
-import net.minecraft.server.v1_8_R2.NBTTagList;
-import net.minecraft.server.v1_8_R2.PacketPlayInHeldItemSlot;
+import net.minecraft.server.v1_8_R3.NBTTagCompound;
+import net.minecraft.server.v1_8_R3.NBTTagList;
+import net.minecraft.server.v1_8_R3.PacketPlayInHeldItemSlot;
 import org.apache.commons.io.IOUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -13,9 +13,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R2.command.VanillaCommandWrapper;
-import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R3.command.VanillaCommandWrapper;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -93,9 +93,9 @@ public class ComputerHandler implements Listener {
 			e.printStackTrace();
 		}
 		if (glow) {
-			net.minecraft.server.v1_8_R2.ItemStack nms;
+			net.minecraft.server.v1_8_R3.ItemStack nms;
 			try {
-				nms = (net.minecraft.server.v1_8_R2.ItemStack) ITEM_STACK_HANDLE.get((CraftItemStack) stack);
+				nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get((CraftItemStack) stack);
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
@@ -408,9 +408,9 @@ public class ComputerHandler implements Listener {
 	private boolean isComputer(ItemStack stack) {
 		ItemMeta meta = stack.getItemMeta();
 
-		net.minecraft.server.v1_8_R2.ItemStack nms;
+		net.minecraft.server.v1_8_R3.ItemStack nms;
 		try {
-			nms = (net.minecraft.server.v1_8_R2.ItemStack) ITEM_STACK_HANDLE.get(stack);
+			nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get(stack);
 		} catch (IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
