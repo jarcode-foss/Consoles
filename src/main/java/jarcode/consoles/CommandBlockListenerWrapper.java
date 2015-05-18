@@ -141,10 +141,10 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	public boolean underlyingCheck() {
 		String name;
 		switch (Pkg.VERSION) {
-			case "1_8_R2":
+			case "v1_8_R2":
 				name = "N";
 				break;
-			case "1_8_R3":
+			case "v1_8_R3":
 				name = "O";
 				break;
 			default: throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);

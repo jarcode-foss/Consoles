@@ -84,10 +84,10 @@ public class NetworkManagerWrapper extends NetworkManager {
 	private static String channelFieldName() {
 		String name;
 		switch (Pkg.VERSION) {
-			case "1_8_R3":
+			case "v1_8_R3":
 				name = "channel";
 				break;
-			case "1_8_R2":
+			case "v1_8_R2":
 				name = "k";
 				break;
 			default:
