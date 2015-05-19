@@ -17,7 +17,7 @@ import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,9 +65,9 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 
 	private final InstanceListener listener = new InstanceListener();
 
-	private final AtomicBoolean renderBar = new AtomicBoolean(true);
+	private final List<String> renderBar = new CopyOnWriteArrayList<>();
 
-	private final AtomicBoolean resetBuffer = new AtomicBoolean(false);
+	private final List<String> resetBuffer = new CopyOnWriteArrayList<>();
 
 	private final AtomicInteger currentView = new AtomicInteger(0);
 
@@ -136,7 +136,7 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 	@Override
 	public void paint(CanvasGraphics g, String context) {
 		InfiniteMapView view = views[currentView.get()];
-		view.render(g);
+		view.render(g, context);
 		int wl = FONT.getChar('W').getWidth() + 1;
 		for (int x = 0; x < CROSS_DATA[0].length; x++)
 			for (int y = 0; y < CROSS_DATA.length; y++)
@@ -147,7 +147,8 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 		g.draw(CROSS_MARGIN + CROSS_DATA[0].length + wl + 1, CROSS_MARGIN + 10, CROSS_COLOR, "E");
 		g.draw(CROSS_MARGIN, CROSS_MARGIN + 10, CROSS_COLOR, "W");
 
-		if (renderBar.getAndSet(false)) {
+		if (!renderBar.contains(context)) {
+			renderBar.add(context);
 			g.drawBackground(0, getHeight() - BAR_HEIGHT, getWidth(), BAR_HEIGHT);
 			for (int x = 0; x < g.getWidth(); x++) {
 				g.draw(x, getHeight() - (2 + BAR_HEIGHT), (byte) 44);
@@ -168,8 +169,8 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 			int scale = Integer.parseInt(input);
 			if (scale >= 0 && scale < views.length) {
 				currentView.set(scale);
-				renderBar.set(true);
-				resetBuffer.set(true);
+				renderBar.clear();
+				resetBuffer.clear();
 				for (InfiniteMapView view : views) {
 					view.view.x = startX;
 					view.view.z = startZ;
@@ -224,9 +225,11 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 					+ ChatColor.WHITE + ")";
 		}
 
-		public void render(CanvasGraphics g) {
-			if (resetBuffer.getAndSet(false))
+		public void render(CanvasGraphics g, String context) {
+			if (!resetBuffer.contains(context)) {
 				g.drawBackground(0, 0, windowWidth, windowHeight);
+				resetBuffer.add(context);
+			}
 			List<Allocation> list = store.map.entrySet().stream()
 					.filter(entry -> new Allocation(entry.getKey().getX(),
 							entry.getKey().getY(), sectionSize, sectionSize).overlap(view))
@@ -254,7 +257,7 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 		}
 		public void move(int x, int y) {
 			view = new Allocation(x, y, view.w, view.d);
-			renderBar.set(true);
+			renderBar.clear();
 		}
 
 		public void render(CanvasGraphics g, ChunkMapper.PreparedMapSection section,

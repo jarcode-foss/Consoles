@@ -196,10 +196,11 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 	}
 	private void writeConsole(String text) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			this.print(text);
-			repaint();
-		});
+		if (Consoles.getInstance().isEnabled())
+			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+				this.print(text);
+				repaint();
+			});
 	}
 	public interface FeedEncoder {
 		public String get(byte[] read);
