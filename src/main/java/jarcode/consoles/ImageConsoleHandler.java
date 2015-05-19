@@ -148,10 +148,6 @@ public class ImageConsoleHandler {
 				console.create(false);
 			}
 		}
-		else {
-			Consoles.getInstance().getLogger()
-					.severe("Image consoles could not be reconstructed due to invalid JSON data.");
-		}
 	}
 
 	public void save() {
