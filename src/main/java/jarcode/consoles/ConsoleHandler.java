@@ -31,6 +31,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.inventory.Inventory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -265,6 +266,14 @@ public class ConsoleHandler implements Listener {
 	public void wrapCommandBlocks(PlayerInteractEvent e) {
 		if (e.getClickedBlock() != null && e.getClickedBlock().getState() instanceof CommandBlock) {
 			wrap((CommandBlock) e.getClickedBlock().getState());
+		}
+	}
+	@EventHandler
+	public void removeMaps(PlayerJoinEvent e) {
+		Inventory inv = e.getPlayer().getInventory();
+		for (int t = 0; t < inv.getSize(); t++) {
+			if (inv.getItem(t).getType() == Material.MAP || inv.getItem(t).getType() == Material.EMPTY_MAP)
+				inv.setItem(t, null);
 		}
 	}
 	@EventHandler

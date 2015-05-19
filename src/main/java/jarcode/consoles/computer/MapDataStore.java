@@ -51,8 +51,12 @@ public class MapDataStore {
 		listener.register(PluginDisableEvent.class, (e) -> {
 			if (e.getPlugin() == plugin) for (World w : Bukkit.getWorlds())
 				save(plugin, w);
+			levels.clear();
 		});
 		listener.associate(plugin);
+		for (World world : Bukkit.getWorlds()) {
+			init(plugin, world, 0, 0);
+		}
 	}
 	public static void handle(Event event) {
 		if (event instanceof PlayerEvent) {
