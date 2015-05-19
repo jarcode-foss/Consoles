@@ -33,7 +33,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 
 	static {
 		try {
-			if (Pkg.is("v1_8_R2")) {
+			if (Pkg.is("v1_8_R2") || Pkg.is("v1_8_R3")) {
 				CHANNEL_READ_0 = NetworkManager.class
 						.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
 				CHANNEL_READ_0.setAccessible(true);
