@@ -1,15 +1,13 @@
 package jarcode.consoles.computer.interpreter.types;
 
-import com.google.common.base.Joiner;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.inventory.*;
-import org.luaj.vm2.LuaValue;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 public class LuaChest {
 
 	private Chest bukkit;

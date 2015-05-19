@@ -9,11 +9,12 @@ import net.minecraft.server.v1_8_R3.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class ChunkMapper {
 
 	// most of this code is decompiled and extracted from the minecraft server
-	// I have not yet bothered to try to understand it. Most of this is
+	// I have not yet bothered to try to understand it completely. Most of this is
 	// difficult to read because of the decompiler used.
 	@SuppressWarnings({"unchecked", "ConstantConditions"})
 	public static boolean updateSection(PreparedMapSection section, World world, int centerX, int centerZ,
@@ -21,24 +22,35 @@ public class ChunkMapper {
 
 		boolean updated = false;
 
-		int i = 1 << scale;
-		int l = (updateX - centerX) / i + 64;
-		int i1 = (updateZ - centerZ) / i + 64;
-		int j1 = 128 / i;
+		// blocks per pixel
+		int blockAmount = 1 << scale;
+
+		// translating and offsetting coordinates from the update position to the section area
+		int translatedX = (updateX - centerX) / blockAmount + 64;
+		int translatedZ = (updateZ - centerZ) / blockAmount + 64;
+
+		// update/render radius
+		int renderRadius = 128 / blockAmount;
+
+		// I have no idea
 		if(world.worldProvider.o()) {
-			j1 /= 2;
+			renderRadius /= 2;
 		}
 
-		for(int k1 = l - j1 + 1; k1 < l + j1; ++k1) {
+		// yeah... I have no idea what the rest of this does, other than iterate through the
+		// section area.
+		for(int k1 = translatedX - renderRadius + 1; k1 < translatedX + renderRadius; ++k1) {
+
+			// this variable in particular is confusing.
 			double d0 = 0.0D;
 
-			for(int l1 = i1 - j1 - 1; l1 < i1 + j1; ++l1) {
+			for(int l1 = translatedZ - renderRadius - 1; l1 < translatedZ + renderRadius; ++l1) {
 				if(k1 >= 0 && l1 >= -1 && k1 < 128 && l1 < 128) {
-					int i2 = k1 - l;
-					int j2 = l1 - i1;
-					boolean flag1 = i2 * i2 + j2 * j2 > (j1 - 2) * (j1 - 2);
-					int k2 = (centerX / i + k1 - 64) * i;
-					int l2 = (centerZ / i + l1 - 64) * i;
+					int i2 = k1 - translatedX;
+					int j2 = l1 - translatedZ;
+					boolean flag1 = i2 * i2 + j2 * j2 > (renderRadius - 2) * (renderRadius - 2);
+					int k2 = (centerX / blockAmount + k1 - 64) * blockAmount;
+					int l2 = (centerZ / blockAmount + l1 - 64) * blockAmount;
 					HashMultiset hashmultiset = HashMultiset.create();
 					Chunk chunk = world.getChunkAt(k2 >> 4, l2 >> 4);
 
@@ -64,8 +76,8 @@ public class ChunkMapper {
 					} else {
 						BlockPosition.MutableBlockPosition var37 = new BlockPosition.MutableBlockPosition();
 
-						for(int i4 = 0; i4 < i; ++i4) {
-							for(int b0 = 0; b0 < i; ++b0) {
+						for(int i4 = 0; i4 < blockAmount; ++i4) {
+							for(int b0 = 0; b0 < blockAmount; ++b0) {
 								int height = chunk.b(i4 + i3, b0 + j3) + 1;
 								IBlockData b1 = Blocks.AIR.getBlockData();
 								if(height > 1) {
@@ -85,14 +97,14 @@ public class ChunkMapper {
 									}
 								}
 
-								d1 += (double)height / (double)(i * i);
+								d1 += (double)height / (double)(blockAmount * blockAmount);
 								hashmultiset.add(b1.getBlock().g(b1));
 							}
 						}
 					}
 
-					k3 /= i * i;
-					double d2 = (d1 - d0) * 4.0D / (double)(i + 4) + ((double)(k1 + l1 & 1) - 0.5D) * 0.4D;
+					k3 /= blockAmount * blockAmount;
+					double d2 = (d1 - d0) * 4.0D / (double)(blockAmount + 4) + ((double)(k1 + l1 & 1) - 0.5D) * 0.4D;
 					byte var38 = 1;
 					if(d2 > 0.6D) {
 						var38 = 2;
@@ -116,16 +128,27 @@ public class ChunkMapper {
 					}
 
 					d0 = d1;
-					if(l1 >= 0 && i2 * i2 + j2 * j2 < j1 * j1 && (!flag1 || (k1 + l1 & 1) != 0)) {
+					// this check (with flag1) is used to create the pixel outline for the renders
+					if(l1 >= 0 && i2 * i2 + j2 * j2 < renderRadius * renderRadius && (!flag1 || (k1 + l1 & 1) != 0)) {
 						synchronized (section.LOCK) {
+
+							// sample color from this section
 							byte var40 = section.colors[k1 + l1 * 128];
 							assert var39 != null;
+
+							// get color
 							byte var41 = (byte) (var39.M * 4 + var38);
+
+							// if this color corresponds to unexplored space, even though
+							// it's in our radius, then there's no blocks at this position!
+
+							// I add a special pattern for missing blocks/unloaded chunks
 							if (var41 >= 0 && var41 <= 3)
 								var41 = (byte) ((k1 + l1 & 1) != 0 ? 44 : 46);
+
+							// if the color is different than the sampled color, add an update flag
 							if (var40 != var41) {
 								section.colors[k1 + l1 * 128] = var41;
-								section.flag(k1, l1);
 								updated = true;
 							}
 						}
@@ -136,31 +159,13 @@ public class ChunkMapper {
 		return updated;
 	}
 
-	public static Position2D align(int x, int y, int scale) {
-		int j = 128 * (1 << scale);
-		int k = MathHelper.floor((x + 64.0D) / (double)j);
-		int l = MathHelper.floor((y + 64.0D) / (double)j);
-		return new Position2D(k * j + j / 2 - 64, l * j + j / 2 - 64);
-	}
-
+	// our 'fake' map, used as a 128x128 buffer for a map, so that we can
+	// use the above code just like it was used in the minecraft server
+	// previously
 	public static class PreparedMapSection {
-		private byte[] colors = new byte[128 * 128];
-		private List<Position2D> flags = new ArrayList<>();
+		// color data
+		public final byte[] colors = new byte[128 * 128];
+		// this is accessed from multiple threads, we need to synchronize
 		private final Object LOCK = new Object();
-		private void flag(int x, int y) {
-			flags.add(new Position2D(x, y));
-		}
-		public void render(CanvasGraphics g, int x, int y) {
-			synchronized (LOCK) {
-				flags.stream()
-						.filter(flag ->
-								g.getWidth() > x + flag.getX()
-								&& g.getHeight() > y + flag.getY()
-								&& y + flag.getY() > 0
-								&& x + flag.getX() > 0)
-						.forEach(flag -> g.draw(flag.getX() + x, flag.getY() + y, colors[flag.getX() + (flag.getY() * 128)]));
-				flags.clear();
-			}
-		}
 	}
 }

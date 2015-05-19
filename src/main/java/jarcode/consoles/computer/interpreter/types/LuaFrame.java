@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 public class LuaFrame {
 
 	private static final MapFont FONT = MinecraftFont.Font;
@@ -26,7 +27,8 @@ public class LuaFrame {
 		return id;
 	}
 	public void set(Integer x, Integer y, Integer c) {
-		operations.add((g) -> g.draw(x, y, convert(c)));
+		if (x >= 0 && y >= 0 && getHeight() > y && getWidth() > x)
+			operations.add((g) -> g.draw(x, y, convert(c)));
 	}
 	public int len(String text) {
 		text = ChatColor.translateAlternateColorCodes('&', text);

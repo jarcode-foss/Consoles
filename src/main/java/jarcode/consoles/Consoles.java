@@ -4,6 +4,7 @@ import jarcode.classloading.loader.WrappedPlugin;
 import jarcode.consoles.bungee.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
+import jarcode.consoles.computer.MapDataStore;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
@@ -60,6 +61,7 @@ public class Consoles extends WrappedPlugin {
 				CommandComputer.class
 		);
 		Lua.killAll = false; // if this plugin was reloaded
+		MapDataStore.init(this);
 		saveDefaultConfig();
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
 		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);

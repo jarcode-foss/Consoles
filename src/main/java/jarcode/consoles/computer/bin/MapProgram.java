@@ -7,7 +7,11 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 @Manual(
 		author = "Jarcode",
 		version = "1.8",
-		contents = "A program that maps out the area adjacent to this computer"
+		contents = "A program that allows you to navigate mapped area in the current world." +
+				"The viewer is opened up in a separate screen " +
+				"screen session. Commands are as follows:\n\n" +
+				"\u00A7e/[number]\u00A7f sets the map scale\n" +
+				"\u00A7e/-q\u00A7f quits the program\n"
 )
 public class MapProgram extends FSProvidedProgram {
 	@Override
@@ -22,15 +26,13 @@ public class MapProgram extends FSProvidedProgram {
 			y = Integer.parseInt(split[1]);
 		}
 
-		print("Using coords: " + x + ", " + y);
-
 		final int finalX = x;
 		final int finalY = y;
 		schedule(() -> {
 
 			MapComponent component = new MapComponent(computer.getViewWidth(),
 					computer.getViewHeight(), computer,
-					finalX, finalY);
+					finalX, finalY, 6);
 			computer.setComponent(6, component);
 			computer.switchView(7);
 		});

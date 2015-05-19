@@ -4,6 +4,7 @@ import jarcode.consoles.computer.Computer;
 
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 public class LuaComputer {
 
 	private Computer computer;

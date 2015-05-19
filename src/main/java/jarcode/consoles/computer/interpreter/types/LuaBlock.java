@@ -7,6 +7,7 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unused")
 public abstract class LuaBlock {
 
 	protected final String path, cd;

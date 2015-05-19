@@ -3,6 +3,8 @@ package jarcode.consoles.util;
 import jarcode.consoles.Consoles;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.plugin.Plugin;
 
 import java.util.function.Consumer;
 
@@ -57,6 +59,19 @@ public class InstanceListener {
 	 */
 	public <S extends Event> ConsumerChain<S> chain(Consumer<S> consumer) {
 		return new ConsumerChain<>(consumer);
+	}
+
+	/**
+	 * Associates this listener with a plugin, causing it to be destroyed when
+	 * the plugin is unloaded
+	 *
+	 * @param plugin the plugin to associate with
+	 */
+	public void associate(Plugin plugin) {
+		register(PluginDisableEvent.class, (e) -> {
+			if (e.getPlugin() == plugin)
+				destroy();
+		});
 	}
 
 	/**

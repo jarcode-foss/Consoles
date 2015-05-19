@@ -1,5 +1,5 @@
  name: Consoles
  load: STARTUP
- version: 1.9b-alpha
+ version: 1.10-alpha
  author: Jarcode
  main: jarcode.consoles.Consoles

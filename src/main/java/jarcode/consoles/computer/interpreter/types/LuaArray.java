@@ -4,6 +4,7 @@ import org.luaj.vm2.LuaInteger;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
 
+@SuppressWarnings("unused")
 public class LuaArray extends LuaValue {
 
 	LuaValue[] arr;

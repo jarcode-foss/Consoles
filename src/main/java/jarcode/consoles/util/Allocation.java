@@ -10,7 +10,7 @@ public class Allocation {
 	}
 	public boolean inside(Allocation another) {
 		for (LocalPosition pos : another.corners()) {
-			if (!inside(pos)) return false;
+			if (!inside(pos.x, pos.z)) return false;
 		}
 		return true;
 	}
@@ -22,9 +22,9 @@ public class Allocation {
 		corners[3] = new LocalPosition(x + (w - 1), 0, z + (d - 1));
 		return corners;
 	}
-	public boolean inside(LocalPosition point) {
-		if ((point.x <= ((w + x) - 1)) && (point.x >= x)) {
-			if ((point.z <= ((d + z) - 1)) && (point.z >= z)) {
+	public boolean inside(int lx, int lz) {
+		if ((lx <= ((w + x) - 1)) && (lx >= x)) {
+			if ((lz <= ((d + z) - 1)) && (lz >= z)) {
 				return true;
 			}
 		}

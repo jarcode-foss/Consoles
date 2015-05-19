@@ -6,6 +6,7 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 
 import java.util.function.BooleanSupplier;
 
+@SuppressWarnings("unused")
 public class LuaFolder extends LuaBlock {
 	private final FSFolder file;
 	private BooleanSupplier supplier;

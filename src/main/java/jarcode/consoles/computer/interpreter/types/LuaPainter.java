@@ -2,6 +2,7 @@ package jarcode.consoles.computer.interpreter.types;
 
 import jarcode.consoles.computer.Computer;
 
+@SuppressWarnings("unused")
 public class LuaPainter {
 
 	private final Computer computer;

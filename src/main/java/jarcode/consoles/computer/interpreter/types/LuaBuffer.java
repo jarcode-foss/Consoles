@@ -4,6 +4,7 @@ import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.interpreter.BufferedFrameComponent;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
 
+@SuppressWarnings("unused")
 public class LuaBuffer {
 
 	private static final int MIN_UPDATE_TIME = 100;

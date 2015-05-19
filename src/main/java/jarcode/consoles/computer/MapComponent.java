@@ -1,29 +1,31 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.Consoles;
+import jarcode.consoles.InputComponent;
 import jarcode.consoles.Position2D;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.event.bukkit.MapUpdateEvent;
 import jarcode.consoles.util.Allocation;
 import jarcode.consoles.util.ChunkMapper;
 import jarcode.consoles.util.InstanceListener;
-import jarcode.consoles.util.LocalPosition;
-import net.minecraft.server.v1_8_R3.World;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-public class MapComponent extends ConsoleComponent {
+public class MapComponent extends ConsoleComponent implements InputComponent {
 
+	// this is the cross for the 'compass' image for the map program
+	// it's a dirty way of storing the data, but it works. Sue me.
 	private static final byte[][] CROSS_DATA = {
 			{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
@@ -45,67 +47,90 @@ public class MapComponent extends ConsoleComponent {
 	private static final int OFFSET_RATIO_X = 140;
 	private static final int OFFSET_RATIO_Y = 80;
 
+	private static final int REPAINT_DELAY = 200;
+
+	private static final int BAR_HEIGHT = 20;
+
 	private static final MapFont FONT = MinecraftFont.Font;
 
-	private final int originX, originZ;
+	private static final String INFO = ChatColor.GREEN + "Input a number"
+			+ ChatColor.WHITE + " to change scale, " + ChatColor.GREEN + "/q" + ChatColor.WHITE + " to quit";
+
+	private final int startX, startZ;
 	private final World world;
+
+	private final Computer computer;
+
+	private final int tty;
 
 	private final InstanceListener listener = new InstanceListener();
 
+	private final AtomicBoolean renderBar = new AtomicBoolean(true);
+
+	private final AtomicBoolean resetBuffer = new AtomicBoolean(false);
+
+	private final AtomicInteger currentView = new AtomicInteger(0);
+
 	private InfiniteMapView[] views = new InfiniteMapView[4];
 
-	private AtomicInteger currentView = new AtomicInteger(0);
+	private long lastRepaint = 0;
 
-	public MapComponent(int w, int h, Computer computer, int centerX, int centerZ) {
+	private int lastRepaintTask = -1;
+
+	public MapComponent(int w, int h, Computer computer, int centerX, int centerZ, int tty) {
 		super(w, h, computer.getConsole());
 
-		this.originX = centerX - OFFSET_RATIO_X;
-		this.originZ = centerZ - OFFSET_RATIO_Y;
+		this.computer = computer;
+		this.tty = tty;
+
+		this.startX = centerX - OFFSET_RATIO_X;
+		this.startZ = centerZ - OFFSET_RATIO_Y;
+
+		this.world = computer.getConsole().getLocation().getWorld();
 
 		for (int t = 0; t < views.length; t++)
-			views[t] = new InfiniteMapView(originX, originZ, w, h, t);
+			views[t] = new InfiniteMapView(MapDataStore.levels.get(world.getName())[t],
+					startX, startZ, w, h - (BAR_HEIGHT + 2));
 
-		this.world = ((CraftWorld) computer.getConsole().getLocation().getWorld()).getHandle();
+		listener.register(MapUpdateEvent.class, this::handleUpdate);
 
-		// I love generics! This is so nice to write.
-		listener.chain(this::trigger)
-				.register(BlockBreakEvent.class)
-				.register(BlockPlaceEvent.class);
+		update(computer.getConsole().getLocation().getBlockX(), computer.getConsole().getLocation().getBlockZ());
+	}
+	private void handleUpdate(MapUpdateEvent event) {
+		if (event.getWorld() == world && currentView.get() == event.getScale()) {
+			if (System.currentTimeMillis() - lastRepaint > REPAINT_DELAY) {
+				lastRepaint = System.currentTimeMillis();
+				views[event.getScale()].onUpdate(event.getX(), event.getZ());
+			}
+			else if (lastRepaintTask != -1) {
+				lastRepaintTask = Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+					handleUpdate(event);
+					lastRepaintTask = -1;
+				}, REPAINT_DELAY);
+			}
+		}
 	}
 
-	public void trigger(BlockEvent e) {
-		for (InfiniteMapView view : views)
-			if (view.update(e.getBlock().getX(), e.getBlock().getY()) && currentView.get() == view.scale)
-				repaint();
-	}
-	private boolean update(int x, int y) {
-		boolean flag = false;
-		for (InfiniteMapView view : views)
-			flag = view.update(x, y);
-		return flag;
+	private void update(int x, int z) {
+		MapDataStore.update(world, x, z);
 	}
 
 	@Override
 	public void handleClick(int x, int y, Player player) {
-		player.sendMessage("origin: " + originX + ", " + originZ);
 		for (InfiniteMapView view : views) {
 			view.handleClick(x, y);
-			Position2D pos = transform(x, y, view.scale);
-			player.sendMessage("Updating: " + pos.getX() + ", " + pos.getY() + " (scale: " + view.scale + ")");
-			if (view.update(pos.getX(), pos.getY()) && currentView.get() == view.scale)
-				repaint();
 		}
-	}
-
-	private Position2D transform(int x, int y, int scale) {
-		int ux = originX + (x * (1 << scale)) - (64 * (1 << scale));
-		int uz = originZ + (y * (1 << scale)) - (64 * (1 << scale));
-		return new Position2D(ux, uz);
+		repaint();
 	}
 
 	@Override
 	public void onRemove() {
 		listener.destroy();
+	}
+
+	public void quit() {
+		computer.switchView(1);
+		computer.setComponent(tty, null);
 	}
 
 	@Override
@@ -121,104 +146,133 @@ public class MapComponent extends ConsoleComponent {
 		g.draw(CROSS_MARGIN + wl + 3, CROSS_MARGIN + CROSS_DATA.length + FONT.getHeight() + 1, CROSS_COLOR, "S");
 		g.draw(CROSS_MARGIN + CROSS_DATA[0].length + wl + 1, CROSS_MARGIN + 10, CROSS_COLOR, "E");
 		g.draw(CROSS_MARGIN, CROSS_MARGIN + 10, CROSS_COLOR, "W");
+
+		if (renderBar.getAndSet(false)) {
+			g.drawBackground(0, getHeight() - BAR_HEIGHT, getWidth(), BAR_HEIGHT);
+			for (int x = 0; x < g.getWidth(); x++) {
+				g.draw(x, getHeight() - (2 + BAR_HEIGHT), (byte) 44);
+				g.draw(x, getHeight() - (1 + BAR_HEIGHT), (byte) 47);
+			}
+			int textY = getHeight() - BAR_HEIGHT + FONT.getHeight() - 1;
+			g.drawFormatted(2, textY, INFO);
+			g.drawFormatted(26 + FONT.getWidth(ChatColor.stripColor(INFO)), textY, ChatColor.WHITE
+					+ "scale: " + ChatColor.RED + currentView.get() + ChatColor.WHITE + " pos: " + views[currentView.get()].status());
+		}
+	}
+
+	@Override
+	public void handleInput(String input, String player) {
+		if (input.equalsIgnoreCase("-q") || input.equalsIgnoreCase("q"))
+			quit();
+		try {
+			int scale = Integer.parseInt(input);
+			if (scale >= 0 && scale < views.length) {
+				currentView.set(scale);
+				renderBar.set(true);
+				resetBuffer.set(true);
+				for (InfiniteMapView view : views) {
+					view.view.x = startX;
+					view.view.z = startZ;
+				}
+				repaint();
+			}
+		}
+		catch (NumberFormatException ignored) {}
 	}
 
 	private class InfiniteMapView {
 
-		private static final int MAX_VIEW_SIZE = 16;
-
+		// the screen-space view
 		private Allocation view;
-		private HashMap<Position2D, ChunkMapper.PreparedMapSection> map = new HashMap<>();
+
+		// scale of this view
 		private final int scale;
-		private final int originX, originY;
 
-		public InfiniteMapView(int originX, int originY, int allocationWidth, int allocationHeight, int zoom) {
-			view = new Allocation(originX, originY, allocationWidth, allocationHeight);
-			this.scale = zoom;
-			this.originX = originX;
-			this.originY = originY;
+		private final int sectionSize;
+
+		private final int windowWidth, windowHeight;
+
+		private final MapDataStore store;
+
+		public InfiniteMapView(MapDataStore store, int viewX, int viewZ, int allocationWidth, int allocationHeight) {
+			this.scale = store.scale;
+			view = new Allocation(viewX, viewZ, allocationWidth << scale, allocationHeight << scale);
+			sectionSize = 128 << scale;
+			windowWidth = allocationWidth;
+			windowHeight = allocationHeight;
+			this.store = store;
+
 		}
-		public void collect() {
-			while (map.size() > 16) {
-				Position2D pos = map.keySet().stream()
-						.filter(key -> !(new Allocation(key.getX(), key.getY(), 128, 128).overlap(view)))
-						.findFirst()
-						.orElseGet(() -> null);
-				if (pos != null) {
-					System.out.println("removing section: " + pos.getX() + ", " + pos.getY());
-					map.remove(pos);
-				}
-			}
+
+		public void onUpdate(int x, int y) {
+			if (view.clone().shrink(-128).inside(x, y))
+				repaint();
 		}
-		// view-space coordinates
+
 		public void handleClick(int x, int y) {
-			int uz = view.z + (y * (1 << scale)) - (64 * (1 << scale));
-			int ux = view.x + (x * (1 << scale)) - (64 * (1 << scale));
-			update(ux, uz);
+			// transform into global coordinates
+			int dz = (y << scale) - (view.d / 2);
+			int dx = (x << scale) - (view.w / 2);
+			dz /= 3;
+			dx /= 3;
+			move(view.x + dx, view.z + dz);
 		}
 
-		// global coordinates
-		public ChunkMapper.PreparedMapSection getAt(int x, int y) {
-			Map.Entry<Position2D, ChunkMapper.PreparedMapSection> ret = map.entrySet().stream()
-					.filter(entry -> new Allocation(entry.getKey().getX(),
-							entry.getKey().getY(), 128, 128).inside(new LocalPosition(x, 0, y)))
-					.findFirst()
-					.orElseGet(() -> null);
-			return ret == null ? null : ret.getValue();
-		}
-
-		// global coordinates
-		public Map.Entry<Position2D, ChunkMapper.PreparedMapSection> createAt(int x, int y) {
-			int xo = (x - view.x) >> 7; // divide by 128 and truncate
-			int yo = (y - view.z) >> 7;
-			Position2D corner = new Position2D(view.x + (xo * (128 * (1 << scale))), view.z + (yo * (128 * (1 << scale))));
-			ChunkMapper.PreparedMapSection section = new ChunkMapper.PreparedMapSection();
-			map.put(corner, section);
-			return new AbstractMap.SimpleEntry<>(corner, section);
-		}
-
-		// global coordinates
-		public boolean update(int x, int y) {
-			if (getAt(x, y) == null) {
-				Map.Entry<Position2D, ChunkMapper.PreparedMapSection> entry = createAt(x, y);
-				System.out.println("creating section at: " + entry.getKey().getX() + ", " + entry.getKey().getY());
-				ChunkMapper.updateSection(entry.getValue(), world,
-						entry.getKey().getX(), entry.getKey().getY(),
-						x, y, scale);
-				return true;
-			}
-			AtomicBoolean bool = new AtomicBoolean();
-			map.entrySet().stream()
-					.filter(entry -> new Allocation(entry.getKey().getX(),
-							entry.getKey().getY(), 128, 128).overlap(view))
-					.forEach(entry -> {
-						if (ChunkMapper.updateSection(entry.getValue(), world,
-								entry.getKey().getX(), entry.getKey().getY(),
-								x, y, scale))
-							bool.set(true);
-					});
-			return bool.get();
-		}
-		public ChunkMapper.PreparedMapSection[] viewableSections() {
-			return map.entrySet().stream()
-					.filter(entry -> new Allocation(entry.getKey().getX(),
-							entry.getKey().getY(), 128, 128).overlap(view))
-					.map(Map.Entry::getValue)
-					.toArray(ChunkMapper.PreparedMapSection[]::new);
+		public String status() {
+			return ChatColor.WHITE + "(" + ChatColor.YELLOW + (view.x + (view.w / 2))
+					+ ChatColor.WHITE + ", " + ChatColor.YELLOW + (view.z + (view.d / 2))
+					+ ChatColor.WHITE + ")";
 		}
 
 		public void render(CanvasGraphics g) {
-			map.entrySet().stream()
+			if (resetBuffer.getAndSet(false))
+				g.drawBackground(0, 0, windowWidth, windowHeight);
+			List<Allocation> list = store.map.entrySet().stream()
 					.filter(entry -> new Allocation(entry.getKey().getX(),
-							entry.getKey().getY(), 128, 128).overlap(view))
-					.peek(entry -> System.out.println("rendering at view-space coordinates: "
-							+ (entry.getKey().getX() - view.x) + ", " + (entry.getKey().getY() - view.z)))
-					.forEach(entry -> entry.getValue()
-							.render(g, entry.getKey().getX() - view.x, entry.getKey().getY() - view.z));
+							entry.getKey().getY(), sectionSize, sectionSize).overlap(view))
+					.peek(entry -> render(g, entry.getValue(),
+							(entry.getKey().getX() - view.x) >> scale,
+							(entry.getKey().getY() - view.z) >> scale,
+							(point) -> point.getY() < windowHeight && point.getX() < windowWidth))
+					.map(entry -> new Allocation((entry.getKey().getX() - view.x) >> scale,
+							(entry.getKey().getY() - view.z) >> scale, sectionSize, sectionSize))
+					.collect(Collectors.toList());
+			// this resets the pixels in areas that used to have data, but now
+			// no longer have a map section (which would normally result in
+			// ghosting from the previous frame).
+			for (int i = 0; i < windowWidth; i++) {
+				for (int j = 0; j < windowHeight; j++) {
+					boolean flag = true;
+					for (Allocation alloc : list)
+						if (alloc.inside(i, j))
+							flag = false;
+					if (flag)
+						g.draw(i, j, (byte) 119);
+				}
+			}
+
 		}
 		public void move(int x, int y) {
 			view = new Allocation(x, y, view.w, view.d);
-			collect();
+			renderBar.set(true);
+		}
+
+		public void render(CanvasGraphics g, ChunkMapper.PreparedMapSection section,
+		                   int x, int y, Predicate<Position2D> filter) {
+			for (int i = 0; i < 128; i++) {
+				for (int j = 0; j < 128; j++) {
+					if (i + x >= 0 && j + y >= 0 && g.getHeight() > j + y
+							&& g.getWidth() > i + x && filter.test(new Position2D(i + x, j + y))) {
+						if (section.colors[i + (j * 128)] != 0) {
+							if (g.sample(i + x, j + y) != section.colors[i + (j * 128)]) {
+								g.draw(i + x, j + y, section.colors[i + (j * 128)]);
+							}
+						}
+						else
+							g.draw(i + x, j + y, (byte) 119);
+					}
+				}
+			}
 		}
 	}
 }

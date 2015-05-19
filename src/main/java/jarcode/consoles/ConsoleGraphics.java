@@ -76,7 +76,7 @@ public class ConsoleGraphics implements CanvasGraphics {
 
 	@Override
 	public int getHeight() {
-		return component.getWidth();
+		return component.getHeight();
 	}
 
 	@Override

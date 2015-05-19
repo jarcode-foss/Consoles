@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.interpreter.types;
 
+@SuppressWarnings("unused")
 public class LuaInteraction {
 	private final int x, y;
 	private final String context;

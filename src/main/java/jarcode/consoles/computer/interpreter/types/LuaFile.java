@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.function.BooleanSupplier;
 
+@SuppressWarnings("unused")
 public class LuaFile extends LuaBlock {
 	private final FSFile file;
 	private BooleanSupplier supplier;
