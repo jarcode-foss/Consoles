@@ -18,7 +18,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	static {
 		try {
 			// these field names are sensitive, they have changed recently
-			if (Pkg.is("v1_8_R2")) {
+			if (Pkg.is("v1_8_R2") || Pkg.is("v1_8_R3")) {
 				COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
 				CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
 				COMMAND_RESULT.setAccessible(true);
