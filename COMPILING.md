@@ -1,6 +1,9 @@
 # Compiling Consoles
 
-Maven will handle the majority of the work for you, and running build.sh (for Linux/OSX)
+You will first need to run `BuildTools.jar` at least once on your local machine, as it
+will install entries for spigot in your local repository.
+
+Maven will handle the rest of the work for you; running build.sh (for Linux/OSX)
 or build.bat (Windows) will produce artifacts if the source code compiles.
 
 **note:** you may have to run `chmod a+x build.sh` to change file permissions before
