@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+ * Originally written by <a href="http://github.com/overcaste">overcaste</a>.
+ */
 public class ConstantPoolEntries {
     public static final int UTF8_TAG = 1;
     public static final int INTEGER_TAG = 3;

@@ -9,6 +9,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Maps;
 
+/*
+ * Originally written by <a href="http://github.com/overcaste">overcaste</a>.
+ */
 public class ConstantPoolEntryMethodHandle extends ConstantPoolEntry {
     public enum ReferenceType {
         GET_FIELD(1),

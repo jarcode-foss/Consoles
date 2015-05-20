@@ -1,5 +1,8 @@
 package jarcode.classloading.instrument;
 
+/*
+ * Originally written by <a href="http://github.com/overcaste">overcaste</a>.
+ */
 public class ConstantPoolValueRetriever {
     public static String getNameAndTypeName(ConstantPoolEntry[] constantPool, int index) {
         ConstantPoolEntry entry = constantPool[index];

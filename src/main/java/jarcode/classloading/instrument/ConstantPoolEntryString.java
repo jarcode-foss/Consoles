@@ -4,6 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/*
+ * Originally written by <a href="http://github.com/overcaste">overcaste</a>.
+ */
 public class ConstantPoolEntryString extends ConstantPoolEntry {
     protected final int stringIndex;
 

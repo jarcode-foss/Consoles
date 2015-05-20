@@ -6,6 +6,9 @@ import java.io.IOException;
 
 import com.google.common.base.Charsets;
 
+/*
+ * Originally written by <a href="http://github.com/overcaste">overcaste</a>.
+ */
 public class ConstantPoolEntryUtf8 extends ConstantPoolEntry {
     protected final byte[] data;
 
