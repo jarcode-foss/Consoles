@@ -1,6 +1,6 @@
 ### Prerequisites
 
-- You will need to run `BuildTools.jar` at least once on your local machine, as it will install entries for spigot in your local maven repository.
+- You will need to run `BuildTools.jar` at least once on your local machine, as it will install entries for spigot and craftbukkit in your local maven repository.
 
 - You need a maven installation. BuildTools will download one for itself, you can simply add its maven directory to your system path, or install maven normally (on most Linux distributions, you can run `apt-get install maven2`)
 
