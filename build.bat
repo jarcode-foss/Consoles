@@ -1,2 +1,2 @@
-mvn -Pbukkit
-mvn -Pbungee
+mvn package -Pbukkit
+mvn package -Pbungee
