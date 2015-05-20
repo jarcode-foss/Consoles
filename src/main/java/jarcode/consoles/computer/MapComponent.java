@@ -88,8 +88,10 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 
 		this.world = computer.getConsole().getLocation().getWorld();
 
+		MapDataStore[] stores = MapDataStore.getStores(world);
+
 		for (int t = 0; t < views.length; t++)
-			views[t] = new InfiniteMapView(MapDataStore.levels.get(world.getName())[t],
+			views[t] = new InfiniteMapView(stores[t],
 					startX, startZ, w, h - (BAR_HEIGHT + 2));
 
 		listener.register(MapUpdateEvent.class, this::handleUpdate);

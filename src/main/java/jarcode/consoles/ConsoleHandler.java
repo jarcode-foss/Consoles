@@ -585,7 +585,7 @@ public class ConsoleHandler implements Listener {
 	short allocate(int size) {
 		if (Consoles.DEBUG)
 			Consoles.getInstance().getLogger().info("Allocating " + size + " frames for new console...");
-		short lowest = STARTING_INDEX;
+		short lowest = Consoles.startingId;
 		synchronized (ALLOCATION_LOCK) {
 			while (!fits(lowest, size))
 				lowest++;
@@ -593,7 +593,8 @@ public class ConsoleHandler implements Listener {
 				// update context allocations
 				for (String context : allocations.keySet()) {
 					if (getIndexTable(context).containsKey(t))
-						System.out.println("Warning, overwriting map index allocation for context: " + context);
+						Consoles.getInstance().getLogger().warning("Overwriting map index allocation for context: "
+								+ context);
 					mapIndex(context, t);
 				}
 				defaultAllocation.add(t);

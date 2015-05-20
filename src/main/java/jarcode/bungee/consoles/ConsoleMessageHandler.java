@@ -3,23 +3,23 @@ package jarcode.bungee.consoles;
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.connection.Server;
-import net.md_5.bungee.api.event.PlayerDisconnectEvent;
-import net.md_5.bungee.api.event.PluginMessageEvent;
-import net.md_5.bungee.api.event.ServerConnectedEvent;
+import net.md_5.bungee.api.event.*;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class ConsoleMessageHandler implements Listener {
 
 	private final HashMap<String, Object> commands = new HashMap<>();
 
 	private final List<UUID> connected = new ArrayList<>();
+
+	private HashMap<UUID, Consumer<Boolean>> consumers = new HashMap<>();
 
 	private Plugin plugin;
 
@@ -38,12 +38,23 @@ public class ConsoleMessageHandler implements Listener {
 		if (event.getTag().equals("Console")) {
 			ByteArrayDataInput input = ByteStreams.newDataInput(event.getData());
 			String command = input.readUTF();
-			ProxyServer.getInstance().getLogger().info("received plugin message: " + command);
+			System.out.println("received: " + command);
 			Object cmd = commands.get(command);
 			if (cmd != null && cmd instanceof IncomingHookCommand) {
 				((IncomingHookCommand) cmd).handle(BungeeConsoles.getProxiedPlayer(event.getReceiver()), input);
 			}
 		}
+	}
+	public void isLookingAtConsole(ProxiedPlayer player, Consumer<Boolean> response) {
+		if (consumers.containsKey(player.getUniqueId())) {
+			Consumer<Boolean> consumer = consumers.get(player.getUniqueId());
+			consumers.put(player.getUniqueId(), (bool) -> {
+				consumer.accept(bool);
+				response.accept(bool);
+			});
+		}
+		else consumers.put(player.getUniqueId(), response);
+		execute(player, "check");
 	}
 	@EventHandler
 	@SuppressWarnings("unused")
@@ -55,7 +66,7 @@ public class ConsoleMessageHandler implements Listener {
 	public void onPlayerConnect(final ServerConnectedEvent event) {
 		if (!connected.contains(event.getPlayer().getUniqueId())) {
 			connected.add(event.getPlayer().getUniqueId());
-			execute(event.getPlayer(), "clear");
+			execute(event.getPlayer(), event.getServer(), "clear");
 		}
 	}
 	public boolean execute(ProxiedPlayer player, String command, Object... args) {

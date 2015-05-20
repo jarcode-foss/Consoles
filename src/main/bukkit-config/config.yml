@@ -29,6 +29,11 @@ allow-comptuer-crafting: true
 # The permissions computer.limit.ignore will override this
 computer-limit: 3
 
+# Command prefix when sending commands to a computer. You may want to
+# change this for BungeeCord servers, as it will interrupt commands
+# that may have been designated for a computer.
+command-prefix: /
+
 # ------------------
 # Computer Functions
 # ------------------

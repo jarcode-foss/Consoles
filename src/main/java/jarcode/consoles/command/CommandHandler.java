@@ -3,10 +3,12 @@ package jarcode.consoles.command;
 import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.ComputerHandler;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.server.ServerCommandEvent;
 
@@ -104,9 +106,25 @@ public class CommandHandler implements Listener {
 
 	@EventHandler
 	@SuppressWarnings("unused")
-	void onPreCommand(PlayerCommandPreprocessEvent e) {
+	public void onChat(AsyncPlayerChatEvent e) {
+		if (e.getMessage().startsWith(Consoles.commandPrefix) && !Consoles.commandPrefix.equals("/")) {
+			e.setCancelled(true);
+			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+				ComputerHandler handler = ComputerHandler.getInstance();
+				if (handler != null && ConsoleHandler.getInstance().hittingConsole(e.getPlayer())) {
+					handler.command(e.getMessage().substring(Consoles.commandPrefix.length()), e.getPlayer());
+				}
+			});
+		}
+	}
 
-		if (e.getMessage().startsWith("/") && !e.getMessage().substring(1).trim().isEmpty()) {
+	@EventHandler
+	@SuppressWarnings("unused")
+	public void onPreCommand(PlayerCommandPreprocessEvent e) {
+
+		if (e.getMessage().startsWith("/")
+				&& !e.getMessage().substring(1).trim().isEmpty()
+				&& Consoles.commandPrefix.equals("/")) {
 			ComputerHandler handler = ComputerHandler.getInstance();
 			if (handler != null && ConsoleHandler.getInstance().hittingConsole(e.getPlayer())) {
 				handler.command(e.getMessage().substring(1), e.getPlayer());

@@ -7,6 +7,7 @@ import com.google.common.io.ByteStreams;
 import jarcode.consoles.ManagedConsole;
 import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.Consoles;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -19,22 +20,12 @@ public class ConsoleBungeeHook implements PluginMessageListener, Listener {
 	private final HashMap<String, Object> commands = new HashMap<>();
 	private ConsoleHandler handler;
 
-	private String resetServer = null;
-
-	private boolean sentRequest = false;
-
 	{
 		commands.put("clear", (IncomingHookCommand) (player, input) -> {
 			handler.clearAllocations(player);
 			for (ManagedConsole console : handler.getConsoles())
 				handler.getPainter().updateFor(console, player);
 		});
-	}
-
-	public boolean needsRequestServerAddress() {
-		boolean ret = (resetServer == null && !sentRequest);
-		sentRequest = true;
-		return ret;
 	}
 
 	public ConsoleBungeeHook() {
@@ -56,10 +47,6 @@ public class ConsoleBungeeHook implements PluginMessageListener, Listener {
 				((IncomingHookCommand) cmd).handle(player, input);
 			}
 		}
-	}
-
-	public void update(Player player) {
-		execute(player, "getUpdate");
 	}
 
 	public boolean execute(Player player, String command, Object... args) {

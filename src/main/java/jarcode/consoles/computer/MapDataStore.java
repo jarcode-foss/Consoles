@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MapDataStore {
 
-	public static final Map<String, MapDataStore[]> levels = new HashMap<>();
+	private static final Map<String, MapDataStore[]> levels = new HashMap<>();
 	public static final int LEVEL_COUNT = 4;
 	public static final String MAP_FOLDER = "maps";
 
@@ -150,7 +150,16 @@ public class MapDataStore {
 			new Position2D(0, 0)
 	};
 
+	public static MapDataStore[] getStores(World world) {
+		// initialize for this world
+		if (!levels.containsKey(world.getName())) {
+			init(Consoles.getInstance(), world, 0, 0);
+		}
+		return MapDataStore.levels.get(world.getName());
+	}
+
 	public static void update(World world, int x, int z) {
+		// initialize for this world
 		if (!levels.containsKey(world.getName())) {
 			init(Consoles.getInstance(), world, 0, 0);
 		}

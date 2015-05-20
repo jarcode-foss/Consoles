@@ -33,6 +33,8 @@ public class Consoles extends WrappedPlugin {
 	public static int maxComputers = 3;
 	// starting index for map ID allocations
 	public static short startingId;
+	// command prefix
+	public static String commandPrefix;
 
 	static {
 		System.out.println("Instantiating plugin from: " + Consoles.class.getClassLoader().getClass().getSimpleName());
@@ -78,6 +80,7 @@ public class Consoles extends WrappedPlugin {
 		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", 7000);
 		maxComputers = getConfig().getInt("computer-limit", 3);
 		startingId = (short) getConfig().getInt("starting-map-index", 5000);
+		commandPrefix = getConfig().getString("command-prefix", "/").trim();
 
 		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
