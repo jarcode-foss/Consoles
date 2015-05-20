@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class ConsoleMessageHandler implements Listener {
+
 	private final HashMap<UUID, List<Short>> blacklist = new HashMap<>();
 	private final HashMap<String, Object> commands = new HashMap<>();
 	private final List<UUID> toClear = new ArrayList<>();
@@ -40,9 +41,7 @@ public class ConsoleMessageHandler implements Listener {
 			public void handle(ProxiedPlayer player, Object[] args, ByteArrayDataOutput out) {
 				List<Short> arr = (List<Short>) args[0];
 				out.writeInt(arr.size());
-				for (short i : arr) {
-					out.write(i);
-				}
+				arr.forEach(out::writeShort);
 			}
 		});
 		commands.put("clear", (OutgoingHookCommand) (player, args, out) -> {});

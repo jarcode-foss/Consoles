@@ -14,6 +14,9 @@ import java.util.function.Supplier;
 
 public class Consoles extends WrappedPlugin {
 
+	// only use if testing builds locally, this will print
+	// debug information for Lua programs and various other
+	// tasks
 	public static final boolean DEBUG = false;
 
 	private static Consoles instance;

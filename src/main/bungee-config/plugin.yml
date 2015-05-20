@@ -1,3 +1,4 @@
  name: BungeeConsoles
  author: Jarcode
+ version: ${project.version}
  main: jarcode.bungee.consoles.BungeeConsoles

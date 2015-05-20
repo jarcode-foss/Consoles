@@ -1,5 +1,5 @@
  name: Consoles
  load: STARTUP
- version: 1.10d-alpha
+ version: ${project.version}
  author: Jarcode
  main: jarcode.consoles.Consoles
