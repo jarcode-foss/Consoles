@@ -2,7 +2,7 @@ package jarcode.consoles;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import jarcode.consoles.bungee.ConsoleBungeeHook;
+import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.PacketUtils;
@@ -45,8 +45,6 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unused")
 public class ConsoleHandler implements Listener {
 
-	// allow 20 index space for whatever
-	private static final short STARTING_INDEX = 20;
 	private static final ConsoleHandler INSTANCE = new ConsoleHandler();
 
 	private static final Field PACKET_LIST;
@@ -163,8 +161,6 @@ public class ConsoleHandler implements Listener {
 		synchronized (ALLOCATION_LOCK) {
 			if (!getIndexTable(context).containsKey(global))
 				return -1;
-			if (local)
-				return getIndexTable(context).get(global);
 			else return grabIndex(context, global);
 		}
 	}
@@ -193,15 +189,6 @@ public class ConsoleHandler implements Listener {
 				}
 			}
 		}
-		if (!local) {
-			short[] arr = new short[target.size()];
-			int i = 0;
-			for (short s : target.values()) {
-				arr[i] = s;
-				i++;
-			}
-			hook.forwardIds(context, arr);
-		}
 		target.clear();
 		for (Map.Entry<Short, Short> entry : old.entrySet()) {
 			target.put(entry.getKey(), entry.getValue());
@@ -222,29 +209,18 @@ public class ConsoleHandler implements Listener {
 		Map<Short, Short> target = getIndexTable(context);
 		if (target.containsKey(global)) return target.get(global);
 		short result;
-		for (short t = STARTING_INDEX;; t++) {
+		for (short t = Consoles.startingId;; t++) {
 			if (!target.containsValue(t)) {
 				target.put(global, t);
 				result = t;
 				break;
 			}
 		}
-		if (!local)
-			hook.forwardIds(context, result);
 		return result;
 	}
 	private BiMap<Short, Short> getIndexTable(String context) {
 		if (!allocations.containsKey(context)) {
 			BiMap<Short, Short> target = createTable();
-			if (!local) {
-				short[] arr = new short[target.size()];
-				int i = 0;
-				for (short s : target.values()) {
-					arr[i] = s;
-					i++;
-				}
-				hook.forwardIds(context, arr);
-			}
 			allocations.put(context, target);
 			return target;
 		}
@@ -272,7 +248,8 @@ public class ConsoleHandler implements Listener {
 	public void removeMaps(PlayerJoinEvent e) {
 		Inventory inv = e.getPlayer().getInventory();
 		for (int t = 0; t < inv.getSize(); t++) {
-			if (inv.getItem(t).getType() == Material.MAP || inv.getItem(t).getType() == Material.EMPTY_MAP)
+			if (inv.getItem(t) != null && (inv.getItem(t).getType() == Material.MAP
+					|| inv.getItem(t).getType() == Material.EMPTY_MAP))
 				inv.setItem(t, null);
 		}
 	}
@@ -347,24 +324,16 @@ public class ConsoleHandler implements Listener {
 			doLater(() -> getPainter().updateFor(console, player, false, true), 5L);
 		}
 	}
-	public void blacklist(Player player, short[] ids) {
+	public void replaceWithBlacklist(Player player, short[] ids) {
 		if (!Thread.holdsLock(ALLOCATION_LOCK)) synchronized (ALLOCATION_LOCK) {
-			blacklist(player, ids);
+			replaceWithBlacklist(player, ids);
 		}
 		BiMap<Short, Short> target = HashBiMap.create();
-
-		List<Short> toMap = new ArrayList<>();
 
 		short n = -1;
 		for (short id : ids) {
 			for (; ; n--) {
 				if (!target.containsKey(n)) {
-					// a blacklisted id is already in use, remap it
-					if (target.containsValue(id)) {
-						short key = target.inverse().get(id);
-						toMap.add(key);
-						target.remove(key);
-					}
 					target.put(n, id);
 					break;
 				}
@@ -374,9 +343,6 @@ public class ConsoleHandler implements Listener {
 		for (short s : defaultAllocation) {
 			mapIndex(player.getName(), s);
 		}
-		for (short s : toMap) {
-			mapIndex(player.getName(), s);
-		}
 	}
 	private void doLater(Runnable runnable) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);
@@ -384,6 +350,15 @@ public class ConsoleHandler implements Listener {
 	private void doLater(Runnable runnable, long delay) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable, delay);
 	}
+
+	@EventHandler
+	public void onPlayerLogin(PlayerLoginEvent e) {
+		// if this isn't a standalone server, we need to allocate new IDs if the player already has
+		// allocated maps.
+		if (!local && allocations.containsKey(e.getPlayer().getName()))
+			allocateNew(e.getPlayer().getName());
+	}
+
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		PacketUtils.registerOutListener(PacketPlayOutEntityMetadata.class, e.getPlayer(),
@@ -451,6 +426,7 @@ public class ConsoleHandler implements Listener {
 	// remove all the allocated maps for the player
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent e) {
+		// only remove if this is a standalone server
 		if (local)
 			clearAllocations(e.getPlayer());
 	}
@@ -507,8 +483,15 @@ public class ConsoleHandler implements Listener {
 	}
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEntityEvent e) {
-		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked()))
+		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked())) {
+			if (Consoles.DEBUG) {
+				ItemFrame frame = (ItemFrame) e.getRightClicked();
+				short serverId = frame.getItem().getDurability();
+				short local = translateIndex(e.getPlayer().getName(), serverId);
+				e.getPlayer().sendMessage("local map index: " + local);
+			}
 			e.setCancelled(true);
+		}
 		clickEvent(e.getPlayer());
 	}
 	@EventHandler

@@ -1,7 +1,7 @@
 package jarcode.consoles;
 
 import jarcode.classloading.loader.WrappedPlugin;
-import jarcode.consoles.bungee.ConsoleBungeeHook;
+import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.MapDataStore;
@@ -17,7 +17,7 @@ public class Consoles extends WrappedPlugin {
 	// only use if testing builds locally, this will print
 	// debug information for Lua programs and various other
 	// tasks
-	public static final boolean DEBUG = false;
+	public static final boolean DEBUG = true;
 
 	private static Consoles instance;
 
@@ -29,7 +29,10 @@ public class Consoles extends WrappedPlugin {
 	public static boolean allowCrafting = true;
 	// maximum time that a program is allowed to run before being interrupted
 	public static int maxTimeWithoutInterrupt = 7000;
+	// self-explanatory
 	public static int maxComputers = 3;
+	// starting index for map ID allocations
+	public static short startingId;
 
 	static {
 		System.out.println("Instantiating plugin from: " + Consoles.class.getClassLoader().getClass().getSimpleName());
@@ -66,12 +69,16 @@ public class Consoles extends WrappedPlugin {
 		Lua.killAll = false; // if this plugin was reloaded
 		MapDataStore.init(this);
 		saveDefaultConfig();
+
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
+
 		componentRenderingEnabled = getConfig().getBoolean("custom-components", false);
 		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", true);
 		allowCrafting = getConfig().getBoolean("allow-computer-crafting", true);
 		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", 7000);
 		maxComputers = getConfig().getInt("computer-limit", 3);
+		startingId = (short) getConfig().getInt("starting-map-index", 5000);
+
 		ConsoleHandler.getInstance().local = !forward;
 		if (DEBUG)
 			try {

@@ -1,4 +1,4 @@
-package jarcode.consoles.bungee;
+package jarcode.consoles.messaging;
 
 import com.google.common.io.ByteArrayDataOutput;
 import org.bukkit.entity.Player;

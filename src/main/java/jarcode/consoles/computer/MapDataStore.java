@@ -151,6 +151,9 @@ public class MapDataStore {
 	};
 
 	public static void update(World world, int x, int z) {
+		if (!levels.containsKey(world.getName())) {
+			init(Consoles.getInstance(), world, 0, 0);
+		}
 		for (int t = 0; t < LEVEL_COUNT; t++)
 			MapDataStore.levels.get(world.getName())[t].update(x, z);
 	}

@@ -176,10 +176,6 @@ public class ComputerData {
 	private void writeMetadata(OutputStream out) throws IOException {
 		DataOutputStream data = new DataOutputStream(out);
 		byte[] arr = meta.toBytes();
-		if (Consoles.DEBUG) {
-			Consoles.getInstance().getLogger().info("[DEBUG] Writing " + arr.length + " byte metadata file...");
-			Consoles.getInstance().getLogger().info("[DEBUG] str: " + new String(arr));
-		}
 		data.writeInt(arr.length);
 		data.write(arr);
 		out.close();

@@ -9,8 +9,26 @@ import net.md_5.bungee.api.plugin.Plugin;
  * Plugin for handling per-player sets of map IDs across a network of servers
  */
 public class BungeeConsoles extends Plugin {
+
+	private static BungeeConsoles instance = null;
+
+	{
+		instance = this;
+	}
+
+	public ConsoleMessageHandler handler;
+
+	public static BungeeConsoles getInstance() {
+		return instance;
+	}
+
 	public void onEnable() {
-		getProxy().getPluginManager().registerListener(this, new ConsoleMessageHandler(this));
+		handler = new ConsoleMessageHandler(this);
+		getProxy().getPluginManager().registerListener(this, handler);
+	}
+
+	public ConsoleMessageHandler getMessageHandler() {
+		return handler;
 	}
 
 	public static ProxiedPlayer getProxiedPlayer(Connection connection) {
