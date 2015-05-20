@@ -1,0 +1,2 @@
+mvn -Pbukkit
+mvn -Pbungee
