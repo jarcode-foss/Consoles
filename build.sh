@@ -5,8 +5,8 @@ mvn package -Pbungee
 cd target
 cd bukkit-final/
 for FILENAME in *; do mv $FILENAME consoles.jar; done
-cd ..
-cd bungee-final/
+zip ../Consoles.zip consoles.jar
+cd ../bungee-final/
 for FILENAME in *; do mv $FILENAME bungee-consoles.jar; done
-cd ..
-zip Consoles.zip bukkit-final/* bungee-final/*
+zip ../Consoles.zip bungee-consoles.jar
+cd ../..
