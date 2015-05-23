@@ -4,6 +4,7 @@ import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.ConsoleListener;
 import jarcode.consoles.Pkg;
 import net.minecraft.server.v1_8_R3.*;
+import org.bukkit.command.CommandSender;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -18,7 +19,7 @@ listen for changes and events from the command block.
  */
 public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
-	private static final Field COMMAND_RESULT, CHAT_COMPONENT;
+	private static final Field COMMAND_RESULT, CHAT_COMPONENT, SENDER;
 
 	private static final String[] OVERRIDE_COMMANDS = {
 			"link"
@@ -32,8 +33,10 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			if (Pkg.is("v1_8_R2") || Pkg.is("v1_8_R3")) {
 				COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
 				CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
+				SENDER = CommandBlockListenerAbstract.class.getDeclaredField("sender");
 				COMMAND_RESULT.setAccessible(true);
 				CHAT_COMPONENT.setAccessible(true);
+				SENDER.setAccessible(true);
 			}
 			else throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
 		}
@@ -60,6 +63,16 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		}
 	}
 
+	private CommandSender getSender(CommandBlockListenerAbstract inst) {
+		try {
+			return (CommandSender) SENDER.get(inst);
+		}
+		catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
 	CommandBlockListenerAbstract underlying;
 	// this is a cheat to make this act like an inner class when we get this$0 via reflection later
 	@SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -67,6 +80,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	CommandBlockListenerWrapper(CommandBlockListenerAbstract underlying, TileEntityCommand command) {
 		this.underlying = underlying;
+		this.sender = getSender(underlying);
 		this.this$0 = command;
 	}
 
@@ -120,7 +134,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	public void a(World world) {
 		if (consoleListener != null) {
-			sendMessage(new ChatComponentText(consoleListener.execute(this.sender, getCommand())));
+			sendMessage(new ChatComponentText(consoleListener.execute(getSender(underlying), getCommand())));
 			setResult(0);
 			return;
 		}
@@ -138,7 +152,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			minecraftserver.getCommandHandler();
 			try {
 				setChatComponent(null);
-				setResult(executeCommand(this, this.sender, getCommand()));
+				setResult(executeCommand(this, getSender(underlying), getCommand()));
 			} catch (Throwable var6) {
 				var6.printStackTrace();
 			}
@@ -162,7 +176,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		}
 		try {
 			Method method = MinecraftServer.class.getMethod(name);
-			return (Boolean) method.invoke(this);
+			return (Boolean) method.invoke(MinecraftServer.getServer());
 		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}

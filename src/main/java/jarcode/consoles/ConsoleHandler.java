@@ -55,7 +55,7 @@ This handles a bunch of things:
 @SuppressWarnings("unused")
 public class ConsoleHandler implements Listener {
 
-	private static final ConsoleHandler INSTANCE = new ConsoleHandler();
+	private static final ConsoleHandler INSTANCE;
 
 	private static final Field PACKET_LIST;
 	private static final Field PACKET_ENTITY_ID;
@@ -88,6 +88,7 @@ public class ConsoleHandler implements Listener {
 	}
 
 	static {
+		INSTANCE = new ConsoleHandler();
 		INSTANCE.paintThread.start();
 	}
 
