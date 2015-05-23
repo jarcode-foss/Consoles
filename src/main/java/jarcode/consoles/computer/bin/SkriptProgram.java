@@ -32,7 +32,8 @@ public class SkriptProgram extends FSProvidedProgram {
 	public void run(String str, Computer computer) throws Exception {
 		String[] args = splitArguments(str);
 		if (args.length <= 1 || str.isEmpty()) {
-			println("skript [FILE] [IDENTIFIER]");
+			print("skript [FILE] [IDENTIFIER]");
+			return;
 		}
 		str = args[0];
 		if (!FSBlock.allowedBlockName(args[1])) {

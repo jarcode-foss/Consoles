@@ -62,10 +62,7 @@ public class ConsoleDialog extends ConsoleContainer {
 	}
 
 	public void setText(String text) {
-		if (!text.startsWith("\u00A7"))
-			this.text = ChatColor.BLACK + text;
-		else
-			this.text = text;
+		this.text = text;
 	}
 	@Override
 	public void onClick(int x, int y, Player player) {}
@@ -97,9 +94,11 @@ public class ConsoleDialog extends ConsoleContainer {
 			}
 		}
 		int count = 0;
+		byte color = 119;
 		for (String str : text.split("\n")) {
 			int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(str));
-			g.drawFormatted(x + (getWidth() / 2) - (w / 2), y + 8 + (count * (MinecraftFont.Font.getHeight() + 1)), str);
+			color = g.drawFormatted(x + (getWidth() / 2) - (w / 2),
+					y + 8 + (count * (MinecraftFont.Font.getHeight() + 1)), color, str);
 			count++;
 		}
 

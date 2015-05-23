@@ -15,7 +15,7 @@ public interface ScriptInterface {
 
 	static ScriptInterface HOOK = new ScriptInterface() {
 
-		private ScriptInterface underlying;
+		private ScriptInterface underlying = new ScriptInterface() {};
 
 		{
 			FUNCTIONS[0] = (Consumer<ScriptInterface>) (inst) -> underlying = inst;
