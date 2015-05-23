@@ -5,6 +5,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
 import jarcode.consoles.api.*;
 import jarcode.consoles.util.LocalPosition;
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.util.Region;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
@@ -24,6 +25,13 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/*
+
+This is the bulk of how Consoles work. This class contains background
+rendering, entity spawning and tracking, regions/locations, and the start
+of the process for repainting.
+
+ */
 public abstract class ConsoleRenderer implements Canvas {
 
 	private int width;

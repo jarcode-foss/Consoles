@@ -5,6 +5,11 @@ import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
 
+/*
+
+Scheduler for running async tasks. Better than Bukkit's deprecated async crap.
+
+ */
 public class SyncTaskScheduler implements Runnable {
 
 	private final Object TASK_LOCK = new Object();

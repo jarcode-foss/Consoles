@@ -2,6 +2,7 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.*;
 import jarcode.consoles.computer.interpreter.Lua;
+import jarcode.consoles.util.Position2D;
 import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.minecraft.server.v1_8_R3.NBTTagList;
 import org.bukkit.Bukkit;

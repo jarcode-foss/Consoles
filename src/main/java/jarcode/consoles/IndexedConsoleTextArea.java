@@ -5,6 +5,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapFont;
@@ -15,6 +16,12 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+/*
+
+A more complex version of the text area component that has indexed lines.
+
+ */
 
 public class IndexedConsoleTextArea extends ConsoleComponent implements WritableComponent {
 

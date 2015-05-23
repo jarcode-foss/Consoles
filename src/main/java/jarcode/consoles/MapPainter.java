@@ -10,6 +10,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/*
+
+The class that handles tasks and requests for repainting and updates
+
+ */
 public class MapPainter implements Runnable {
 
 	private final Object LOCK = new Object();

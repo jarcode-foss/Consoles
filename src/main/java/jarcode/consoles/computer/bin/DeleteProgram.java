@@ -1,7 +1,7 @@
 package jarcode.consoles.computer.bin;
 
 import jarcode.consoles.ConsoleButton;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import org.bukkit.ChatColor;

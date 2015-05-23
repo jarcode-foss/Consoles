@@ -6,6 +6,13 @@ import org.bukkit.map.MinecraftFont;
 
 import java.lang.reflect.Field;
 
+/*
+
+Almost all consoles should be a managed console. This class allows for console
+registration/removal (although, the ConsoleRenderer class is also dependant on
+the management from ConsoleHandler - this is an organization oddity)
+
+ */
 public class ManagedConsole extends ConsoleRenderer {
 
 	private static final String SUPPORTED_CHARACTERS = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

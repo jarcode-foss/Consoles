@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
-// immutable
+// immutable, except for the termination state.
 public class ProgramInstance implements Runnable {
 
 	public final InputStream stdin;

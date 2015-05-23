@@ -9,6 +9,15 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/*
+
+For our ConsoleFeed, this is what handles the prompt for running
+programs.
+
+If you want to take this and turn it into a mini SH/Bash emulator,
+go ahead.
+
+ */
 public class ProgramCreator implements ConsoleFeed.FeedCreator {
 
 	private String result = null;

@@ -1,5 +1,10 @@
 package jarcode.consoles;
 
+/*
+
+Prepared/rendered image that is ready to be displayed on an image component.
+
+ */
 public class PreparedMapImage {
 
 	protected byte[][] data;

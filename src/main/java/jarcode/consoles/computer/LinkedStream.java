@@ -6,6 +6,15 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+
+Input stream that can produce output streams that write to it.
+
+This needs to be optimized into an n-dimensional array, or something. Having
+the ability to re-allocate memory at specific addressed is something I really
+miss about programming in C.
+
+ */
 public class LinkedStream extends InputStream {
 
 	byte[] buffer = new byte[0];

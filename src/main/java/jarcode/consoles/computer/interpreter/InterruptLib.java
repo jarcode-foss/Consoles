@@ -6,6 +6,11 @@ import org.luaj.vm2.lib.DebugLib;
 
 import java.util.function.BooleanSupplier;
 
+/*
+
+This handles termination for Lua programs (as a library)
+
+ */
 public class InterruptLib extends DebugLib {
 
 	private BooleanSupplier supplier;

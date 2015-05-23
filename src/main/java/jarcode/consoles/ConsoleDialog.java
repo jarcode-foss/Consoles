@@ -2,6 +2,7 @@ package jarcode.consoles;
 
 import jarcode.consoles.api.CanvasComponent;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.map.MinecraftFont;
@@ -9,6 +10,11 @@ import org.bukkit.map.MinecraftFont;
 import java.util.AbstractMap;
 import java.util.Map;
 
+/*
+
+A dialog that can be instantiated with components and text, sizing itself accordingly.
+
+ */
 public class ConsoleDialog extends ConsoleContainer {
 
 	private static final int MARGIN = 5;

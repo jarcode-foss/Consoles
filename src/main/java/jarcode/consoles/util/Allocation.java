@@ -1,5 +1,11 @@
 package jarcode.consoles.util;
 
+/*
+
+This is a square area, represented by a 2-dimensional point, width, and height
+(all integral values).
+
+ */
 public class Allocation {
 	public int x, z, w, d;
 	public Allocation(int x, int z, int w, int d) {

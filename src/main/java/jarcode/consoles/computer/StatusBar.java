@@ -5,6 +5,11 @@ import jarcode.consoles.ConsoleRenderer;
 import jarcode.consoles.MonospacedMinecraftFont;
 import jarcode.consoles.api.CanvasGraphics;
 
+/*
+
+Status bar (the top text thingy) for a computer.
+
+ */
 public class StatusBar extends ConsoleComponent {
 
 	static final int HEIGHT = 16;

@@ -10,6 +10,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+/*
+
+Wrapper class for the NMS command block listener that we use to
+listen for changes and events from the command block.
+
+ */
 public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	private static final Field COMMAND_RESULT, CHAT_COMPONENT;

@@ -1,7 +1,7 @@
 package jarcode.consoles.api;
 import jarcode.consoles.ConsoleComponent;
 import jarcode.consoles.ConsoleRenderer;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.entity.Player;
 
 /**

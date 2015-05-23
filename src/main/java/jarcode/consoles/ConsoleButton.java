@@ -11,6 +11,11 @@ import org.bukkit.map.MinecraftFont;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+
+A clickable, listenable button that can be added to containers and canvases.
+
+ */
 public class ConsoleButton extends ConsoleComponent
 		implements ListenableComponent<ConsoleButton, ButtonEvent> {
 	

@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.util;
 
 import java.util.Objects;
 

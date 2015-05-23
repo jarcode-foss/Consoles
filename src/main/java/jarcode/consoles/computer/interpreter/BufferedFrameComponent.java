@@ -12,6 +12,11 @@ import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+/*
+
+Component used to render content/actions from Lua code.
+
+ */
 public class BufferedFrameComponent extends ConsoleComponent implements InputComponent {
 
 	private CopyOnWriteArrayList<LuaInteraction> interactions = new CopyOnWriteArrayList<>();

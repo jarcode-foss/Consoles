@@ -21,6 +21,11 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+/*
+
+This is for loading from the /lua resource folder.
+
+ */
 public class LuaDefaults {
 	public static final HashMap<String, String> SCRIPTS = new HashMap<>();
 

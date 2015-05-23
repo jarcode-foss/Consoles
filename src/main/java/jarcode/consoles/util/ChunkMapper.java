@@ -3,13 +3,7 @@ package jarcode.consoles.util;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multisets;
-import jarcode.consoles.Position2D;
-import jarcode.consoles.api.CanvasGraphics;
 import net.minecraft.server.v1_8_R3.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
 
 public class ChunkMapper {
 

@@ -1,11 +1,22 @@
 package jarcode.consoles;
 
+import jarcode.consoles.util.Position2D;
 import org.bukkit.Bukkit;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.List;
 
+/*
+
+An extension of a normal text area, this has significant changes:
+
+- Reads input from an input stream in a separate thread
+- Writes to either a FeedCreator, or the current output stream (if active)
+
+This class is relatively abstract, while this is the superclass of Terminal,
+you can use this for steaming any I/O.
+
+ */
 @SuppressWarnings("unused")
 public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 

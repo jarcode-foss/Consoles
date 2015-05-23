@@ -3,7 +3,7 @@ package jarcode.consoles.computer;
 import jarcode.consoles.ConsoleComponent;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.InputComponent;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.event.bukkit.MapUpdateEvent;
 import jarcode.consoles.util.Allocation;

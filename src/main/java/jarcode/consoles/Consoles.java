@@ -1,8 +1,6 @@
 package jarcode.consoles;
 
 import jarcode.classloading.loader.WrappedPlugin;
-import jarcode.consoles.computer.skript.ScriptInterface;
-import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
@@ -10,12 +8,16 @@ import jarcode.consoles.computer.MapDataStore;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
-import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.Plugin;
 
 import java.util.function.Supplier;
 
+/*
+
+The actual Consoles plugin. Nothing much here, just registration for
+events, static stuff, and configuration reading.
+
+ */
 public class Consoles extends WrappedPlugin {
 
 	// only use if testing builds locally, this will print
@@ -41,7 +43,6 @@ public class Consoles extends WrappedPlugin {
 	public static String commandPrefix;
 
 	static {
-		System.out.println("Instantiating plugin from: " + Consoles.class.getClassLoader().getClass().getSimpleName());
 		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
 			Thread.dumpStack();
 			System.exit(0);

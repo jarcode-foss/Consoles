@@ -1,11 +1,21 @@
 package jarcode.consoles;
 
 import jarcode.consoles.api.*;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+
+Abstract container that passed events to its child components. Classes that
+implement this container will need to expose the positions that the child coordinates
+belong to using `getUnderlingComponentCoordinates`, this allows events to be
+passed through the container, without restricting the implementation to any
+layout.
+
+ */
 public abstract class ConsoleContainer extends ConsoleComponent implements CanvasContainer {
 
 	protected static int maxHeightOf(ConsoleComponent[] list) {

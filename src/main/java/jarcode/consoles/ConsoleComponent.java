@@ -6,6 +6,11 @@ import jarcode.consoles.util.CommandBlockUtils;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 
+/*
+
+Base console component for rendering!
+
+ */
 public abstract class ConsoleComponent implements CanvasComponent, CanvasPainter {
 	private byte bg = -1;
 	private int w, h;

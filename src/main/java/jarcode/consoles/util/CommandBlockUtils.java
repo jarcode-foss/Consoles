@@ -9,6 +9,11 @@ import org.bukkit.craftbukkit.v1_8_R3.block.CraftCommandBlock;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+/*
+
+Util class for hacking at command blocks.
+
+ */
 public class CommandBlockUtils {
 
 	public static final Field COMMAND_LISTENER;

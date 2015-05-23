@@ -2,6 +2,11 @@ package jarcode.consoles.util;
 
 import org.bukkit.Location;
 
+/*
+
+Represents a 3D region
+
+ */
 public class Region {
 	// private boolean printed = false;
 	private final int x;

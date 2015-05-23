@@ -1,6 +1,6 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.map.MapFont;
 
 /**

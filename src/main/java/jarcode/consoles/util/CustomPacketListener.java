@@ -4,6 +4,12 @@ import net.minecraft.server.v1_8_R3.*;
 
 import java.util.function.Predicate;
 
+/*
+
+A very odd way of listening for incoming packets. It works just fine, and
+is relatively non-intrusive.
+
+ */
 @SuppressWarnings("unchecked")
 public class CustomPacketListener<T extends Packet> implements PacketListenerPlayIn {
 

@@ -1,6 +1,6 @@
 package jarcode.consoles.computer.devices;
 
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.LinkedStream;
 import jarcode.consoles.computer.filesystem.FSFile;

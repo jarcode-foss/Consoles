@@ -10,7 +10,29 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-// This is meant to break a map
+/*
+
+This class breaks maps horribly! You might wonder why I'm doing this.
+
+Well, here's some things that would happen if I didn't write this:
+
+-   The minecraft server's renderer will continue to run and render crap to its
+	own buffers. This is a waste of server resources.
+
+-   The minecraft server will send its own packets to client, conflicting with mine.
+
+-   The minecraft server's static map IDs that constantly increment with screw with
+	my dynamic map IDs that are different for each client. Map data will overlap on
+	the clients, screwing things up.
+
+So, this class basically introduces its own dummy map items, renderers, and trackers
+into the server.
+
+I may look at actually hacking this (and craftbukkit) so that plugins that use the
+Bukkit API end up actually going through my API to render maps, but that would require
+some serious changes to the backend for this plugin (as it is purely based on canvases).
+
+ */
 public class MapInjector extends WorldMap {
 
 	private static final Field PERSISTENT_COLLECTION_MAP;

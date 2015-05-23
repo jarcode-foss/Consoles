@@ -8,6 +8,12 @@ import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 
+/*
+
+This class is for a single 128x128 map, it handles the actual sending of packets
+and update triggers.
+
+ */
 public class ConsoleMapRenderer {
 
 	// we ignore a decent amount of fields there because we can leave them as their defaults (0).

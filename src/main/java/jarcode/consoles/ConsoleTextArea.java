@@ -2,6 +2,7 @@ package jarcode.consoles;
 
 import com.google.common.base.Joiner;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
@@ -13,6 +14,12 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/*
+
+Basic text area that renders text to a square area. This component has
+full word wrap, and can be written to.
+
+ */
 public class ConsoleTextArea extends ConsoleComponent implements WritableComponent {
 
 	private static final int MARGIN = 2;

@@ -8,6 +8,7 @@ import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
+import jarcode.consoles.util.Position2D;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;

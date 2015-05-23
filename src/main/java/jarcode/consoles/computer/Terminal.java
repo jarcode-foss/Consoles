@@ -9,13 +9,21 @@ import org.bukkit.entity.Player;
 import java.util.Random;
 import java.util.function.Consumer;
 
+/*
+
+Terminal component for a computer.
+
+ */
 public class Terminal extends ConsoleFeed implements InputComponent {
 
+
+	// All my glorious nerd jokes! Feel free to add your own.
 	private static final String[] JOKES = {
 			"\"Some software money can't buy. For everything else, there's Microsoft.\"",
 			"\"Those who do not understand UNIX are condemned to reinvent it, poorly.\" - Henry Spencer",
 			"\"There is no place like ~\"",
 			"\"Thou shalt not kill -9\"",
+			// The below one is possibly inappropriate for kids, I will change if requested.
 			"\"Software is like sex: it's better when it's free\" - Linus Torvalds",
 			"\"Never trust an operating system you don't have sources for.\"",
 			"\"Put a straw in your mouth and put your hands in your pockets. Type by hitting the " +
@@ -38,6 +46,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 			"\"I know a great IPv6 joke, but I don't think you're ready for it.\"",
 			"\"Q: What's the best way to accelerate a Mac? A: 9.8m/s^2\"",
 			"\"VPNs. The printers of the networking world.\"",
+			// Someone might complain about this joke. I don't care.
 			"\"Men communicate in TCP. Women in UDP.\"",
 			"\"Check the log file at /dev/null\"",
 			"\"This mod was a complete waste of my time.\" - Jarcode",

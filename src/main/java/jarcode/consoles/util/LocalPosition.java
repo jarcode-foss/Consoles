@@ -3,6 +3,12 @@ package jarcode.consoles.util;
 import org.bukkit.Location;
 import org.bukkit.World;
 
+/*
+
+A block location that is not associated with a world, usually used
+to represent a non-global position.
+
+ */
 public class LocalPosition {
 	public int x, y, z;
 	public LocalPosition(Location location) {

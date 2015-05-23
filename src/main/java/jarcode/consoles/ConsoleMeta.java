@@ -12,6 +12,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
+/*
+
+This class represents metadata that can apply to any console
+
+ */
 public class ConsoleMeta {
 
 	public Location location;

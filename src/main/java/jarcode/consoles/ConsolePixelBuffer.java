@@ -11,6 +11,14 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
 
+/*
+
+The single buffer that exists for every console. This is a somewhat complex class.
+
+This buffer will handle some events/triggers, and contains the data for every
+context (player).
+
+ */
 public class ConsolePixelBuffer {
 
 	// painting width and height. I doubt this will change.

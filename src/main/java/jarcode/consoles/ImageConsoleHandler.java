@@ -18,6 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/*
+
+Handler class for managing, loading, and saving image consoles.
+
+ */
 public class ImageConsoleHandler {
 
 	private static ImageConsoleHandler instance;

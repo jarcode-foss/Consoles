@@ -1,7 +1,7 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.Consoles;
-import jarcode.consoles.Position2D;
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.event.bukkit.MapUpdateEvent;
 import jarcode.consoles.util.Allocation;
 import jarcode.consoles.util.ChunkMapper;

@@ -8,6 +8,12 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 
+/*
+
+Component that can render a large variety of image formats. JPEG images
+have an odd bug sometimes, where everything is sampled as a pink-ish color.
+
+ */
 public class ImageComponent extends ConsoleComponent {
 
 	public static final int[] MAPPINGS = new int[144];

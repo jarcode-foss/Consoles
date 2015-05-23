@@ -14,18 +14,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/*
+
+The bulk of the edit program, contains almost everything as an extension
+of the indexed text area, all as a component.
+
+This class contains some of the most confusing code I have ever written.
+I am terribly sorry for anyone else who has to work with this.
+
+ */
 public class EditorComponent extends IndexedConsoleTextArea implements InputComponent {
 
+	// The editable content of this editor. Used to rebuild the component.
 	private String content;
+
+	// The top viewable line
 	private int top = 1;
+	// cursor color (text)
 	private byte cursorColorPrimary = (byte) 118;
+	// secondary cursor color (bg)
 	private byte cursorColorSecondary = (byte) 32;
 
+	// The row that is currently selected (cursor)
 	private volatile int row = 1;
+	// The index of the character on the current row that is selected (cursor)
 	private volatile int character = 1;
 
+	// The computer this editor belongs to
 	private Computer computer;
+	// The file being edited
 	private FSFile file;
+	// The screen session this is operating in
 	private int tty;
 
 	public EditorComponent(int w, int h, Computer computer, FSFile file, int tty) {
@@ -46,6 +65,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	public void print(String text) {
 		super.print(text);
 	}
+
 	public void setCursor(int row, int character) {
 		this.row = row < 1 ? this.row : row;
 		this.character = character < 1 ? this.character : character;
@@ -58,13 +78,19 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	public void rebuild() {
 		setContent(content);
 	}
+
 	// deletes characters at the cursor
 	public void delete(int amt) {
 		int[] i = {0, 0};
 		List<String> list = new ArrayList<>();
 		section(content, list::add, () -> {}, "\n", false);
 		content = list.stream()
+				// sorry for this terrible, cryptic code. I don't know
+				// what I was thinking when I wrote this.
 				.map(in -> {
+					// most of this is for catching edge cases when deleting characters,
+					// keeping the cursor position valid and performing changes on the
+					// text.
 					if (i[0] != row - 1) {
 						i[0]++;
 						return in;
@@ -99,6 +125,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			character = 1;
 		setText(content, top);
 	}
+
 	// inserts text at the cursor
 	public void insert(String str) {
 		if (content.isEmpty()) {
@@ -111,6 +138,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		section(content, list::add, () -> {}, "\n", false);
 		content = list.stream()
 				.map(in -> {
+					// again, catching a few edge cases
 					if (i[0] != row - 1) {
 						i[0]++;
 						return in;
@@ -139,6 +167,8 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		}
 		setText(content, top);
 	}
+
+	// sets the text content of this editor
 	public void setContent(String content) {
 		this.content = content;
 		setText(content, top);

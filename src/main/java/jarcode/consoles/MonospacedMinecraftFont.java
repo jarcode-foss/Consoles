@@ -2,6 +2,11 @@ package jarcode.consoles;
 
 import org.bukkit.map.MapFont;
 
+/*
+
+A modified version of the minecraft font to have fixed-width characters.
+
+ */
 public class MonospacedMinecraftFont extends MapFont {
 	public static final String FONT_CHARACTERS = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\'abcdefghijklmnopqrstuvwxyz{|}~\u007fÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜø£Ø×ƑáíóúñÑªº¿®¬½¼¡«»";
 

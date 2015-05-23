@@ -6,10 +6,7 @@ import jarcode.consoles.computer.skript.ScriptInterface;
 import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.computer.ComputerHandler;
-import jarcode.consoles.util.CommandBlockUtils;
-import jarcode.consoles.util.LocalPosition;
-import jarcode.consoles.util.PacketUtils;
-import jarcode.consoles.util.Region;
+import jarcode.consoles.util.*;
 import net.minecraft.server.v1_8_R3.*;
 import net.minecraft.server.v1_8_R3.DataWatcher.WatchableObject;
 import net.minecraft.server.v1_8_R3.World;
@@ -53,7 +50,6 @@ This handles a bunch of things:
 - a good portion of misc events
 - client <-> server frame ID translation and packet listeners
 - plugin hooks
-- command block injection
 
  */
 @SuppressWarnings("unused")

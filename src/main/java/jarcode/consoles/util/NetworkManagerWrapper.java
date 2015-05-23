@@ -17,14 +17,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Predicate;
 
-// This is a wrapper for a client's network manager
-// This is a much safer alternative than using instrumentation to
-// get information about packet destinations (ProtocolLib)
-//
-// However, I don't know if this will screw ProtocolLib up. If it
-// does, good. It's terrible.
-//
-// We can also effectively listen to any method in this class
+/*
+
+My way of doing packet listening. It is much simpler than protocolLib,
+and slightly safer, but less version compatible. This isn't an issue, because
+of the unique way Consoles handles multi-version support.
+
+I went through the effort of writing all of this to also allow for packet
+listening straight through whatever thread it was being sent from, and so
+that I would not have any plugin dependencies.
+
+ */
 public class NetworkManagerWrapper extends NetworkManager {
 
 	private static final Method CHANNEL_READ_0;

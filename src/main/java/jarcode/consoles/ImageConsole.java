@@ -1,5 +1,6 @@
 package jarcode.consoles;
 
+import jarcode.consoles.util.Position2D;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -7,6 +8,12 @@ import org.bukkit.block.BlockFace;
 import java.io.IOException;
 import java.net.URL;
 
+/*
+
+A wrapper class for a Console that instantiates a console with components
+and programming necessary to render an image onto the canvas
+
+ */
 public class ImageConsole {
 
 	protected URL url;

@@ -3,10 +3,18 @@ package jarcode.consoles;
 import jarcode.consoles.api.CanvasComponent;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.api.WrappedComponent;
+import jarcode.consoles.util.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
 
+/*
+
+Implementation of CanvasGraphics, used to represent the context a component is being
+painted in, and contains all of the utility methods for painting directly to the
+pixel buffer for a context (player).
+
+ */
 public class ConsoleGraphics implements CanvasGraphics {
 
 	private final ConsoleRenderer renderer;
