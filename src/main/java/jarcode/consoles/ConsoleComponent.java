@@ -2,6 +2,7 @@ package jarcode.consoles;
 
 import jarcode.consoles.api.CanvasComponent;
 import jarcode.consoles.api.CanvasPainter;
+import jarcode.consoles.util.CommandBlockUtils;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 
@@ -55,7 +56,7 @@ public abstract class ConsoleComponent implements CanvasComponent, CanvasPainter
 	}
 	public final void link(CommandBlock block) {
 		if (this instanceof WritableComponent) {
-			ConsoleHandler.registerListener(block, ((WritableComponent) this).createListener());
+			CommandBlockUtils.registerListener(block, ((WritableComponent) this).createListener());
 		}
 		else throw new IllegalArgumentException("Component must implement " + WritableComponent.class.getSimpleName());
 	}

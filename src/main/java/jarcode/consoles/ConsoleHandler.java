@@ -6,6 +6,7 @@ import jarcode.consoles.computer.skript.ScriptInterface;
 import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.computer.ComputerHandler;
+import jarcode.consoles.util.CommandBlockUtils;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.PacketUtils;
 import jarcode.consoles.util.Region;
@@ -17,7 +18,6 @@ import org.bukkit.Material;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.block.CraftCommandBlock;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftItemFrame;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
@@ -37,7 +37,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -64,7 +63,6 @@ public class ConsoleHandler implements Listener {
 
 	private static final Field PACKET_LIST;
 	private static final Field PACKET_ENTITY_ID;
-	private static final Field COMMAND_LISTENER;
 
 	private static final HashMap<String, BiConsumer<Plugin, Logger>> HOOK_INITIALIZERS = new HashMap<>();
 
@@ -87,9 +85,6 @@ public class ConsoleHandler implements Listener {
 			PACKET_LIST.setAccessible(true);
 			PACKET_ENTITY_ID = PacketPlayOutEntityMetadata.class.getDeclaredField("a");
 			PACKET_ENTITY_ID.setAccessible(true);
-			COMMAND_LISTENER = TileEntityCommand.class.getDeclaredField("a");
-			COMMAND_LISTENER.setAccessible(true);
-			overrideFinal(COMMAND_LISTENER);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -112,50 +107,7 @@ public class ConsoleHandler implements Listener {
 	public static ConsoleHandler getInstance() {
 		return INSTANCE;
 	}
-	public static boolean isRegistered(CommandBlock block) {
-		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
-		CommandBlockListenerAbstract obj = entity.getCommandBlock();
-		return obj instanceof CommandBlockListenerWrapper && ((CommandBlockListenerWrapper) obj).listening();
-	}
-	public static boolean registerListener(CommandBlock block, ConsoleListener listener) {
-		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
-		CommandBlockListenerAbstract obj = entity.getCommandBlock();
-		if (obj instanceof CommandBlockListenerWrapper && !isRegistered(block)) {
-			((CommandBlockListenerWrapper) obj).setConsoleListener(listener);
-			return true;
-		}
-		else return false;
-	}
-	public static boolean wrap(CommandBlock block) {
-		try {
-			TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
-			CommandBlockListenerAbstract obj = entity.getCommandBlock();
-			if (!(obj instanceof CommandBlockListenerWrapper)) {
-				COMMAND_LISTENER.set(entity, new CommandBlockListenerWrapper(obj, entity));
-				return true;
-			}
-			else return false;
-		}
-		catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		return false;
-	}
-	public static boolean restoreCommandBlock(CommandBlock block) {
-		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
-		Object obj = entity.getCommandBlock();
-		if (obj instanceof CommandBlockListenerWrapper) {
-			((CommandBlockListenerWrapper) obj).setConsoleListener(null);
-			return true;
-		}
-		else return false;
-	}
-	private static void overrideFinal(Field field) throws NoSuchFieldException, IllegalAccessException {
-		Field modifiersField = Field.class.getDeclaredField("modifiers");
-		modifiersField.setAccessible(true);
-		// remove the final flag on the security int/bytes
-		modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-	}
+
 	// thread-safe array list
 	CopyOnWriteArrayList<ManagedConsole> consoles = new CopyOnWriteArrayList<>();
 	// we lock allocation code because it has to be accessed from the painting thread to send packets
@@ -279,7 +231,7 @@ public class ConsoleHandler implements Listener {
 	@EventHandler
 	public void wrapCommandBlocks(PlayerInteractEvent e) {
 		if (e.getClickedBlock() != null && e.getClickedBlock().getState() instanceof CommandBlock) {
-			wrap((CommandBlock) e.getClickedBlock().getState());
+			CommandBlockUtils.wrap((CommandBlock) e.getClickedBlock().getState());
 		}
 	}
 	@EventHandler

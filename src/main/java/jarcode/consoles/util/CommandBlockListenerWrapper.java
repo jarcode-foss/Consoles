@@ -1,5 +1,8 @@
-package jarcode.consoles;
+package jarcode.consoles.util;
 
+import jarcode.consoles.ConsoleHandler;
+import jarcode.consoles.ConsoleListener;
+import jarcode.consoles.Pkg;
 import net.minecraft.server.v1_8_R3.*;
 
 import java.lang.reflect.Field;
@@ -11,7 +14,9 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	private static final Field COMMAND_RESULT, CHAT_COMPONENT;
 
-	private static final String[] OVERRIDEN_COMMANDS = {"link"};
+	private static final String[] OVERRIDE_COMMANDS = {
+			"link"
+	};
 
 	private ConsoleListener consoleListener;
 
@@ -73,7 +78,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			command = command.substring(1);
 		}
 		command = command.split(" ")[0];
-		return Arrays.asList(OVERRIDEN_COMMANDS).contains(command);
+		return Arrays.asList(OVERRIDE_COMMANDS).contains(command);
 	}
 
 	// -- override methods --

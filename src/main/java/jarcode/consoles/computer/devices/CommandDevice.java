@@ -1,9 +1,9 @@
 package jarcode.consoles.computer.devices;
 
-import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.ConsoleListener;
 import jarcode.consoles.computer.LinkedStream;
 import jarcode.consoles.computer.filesystem.FSFile;
+import jarcode.consoles.util.CommandBlockUtils;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.CommandSender;
 
@@ -25,8 +25,8 @@ public class CommandDevice extends FSFile {
 		// device id
 		super((byte) 0x03);
 		synchronized (LOCK) {
-			if (!ConsoleHandler.isRegistered(block)) {
-				ConsoleHandler.registerListener(block, new ConsoleListener() {
+			if (!CommandBlockUtils.isRegistered(block)) {
+				CommandBlockUtils.registerListener(block, new ConsoleListener() {
 					@Override
 					public String execute(CommandSender sender, String text) {
 						synchronized (LOCK) {
@@ -91,7 +91,7 @@ public class CommandDevice extends FSFile {
 	@Override
 	public void release() {
 		synchronized (LOCK) {
-			ConsoleHandler.restoreCommandBlock(block);
+			CommandBlockUtils.restoreCommandBlock(block);
 		}
 	}
 
