@@ -16,10 +16,10 @@ public class ConsoleDialog extends ConsoleContainer {
 	// Safe way of using dialogs
 	public static Map.Entry<Position2D, ConsoleDialog> create(ConsoleRenderer renderer, String text, ConsoleComponent... children) {
 		int w = totalWidthOf(children, MARGIN) + 6;
-		int f = MinecraftFont.Font.getWidth(ChatColor.stripColor(text)) + 6;
+		int f = largestTextWidth(text) + 6;
 		if (f > w)
 			w = f;
-		int h = maxHeightOf(children) + 21;
+		int h = maxHeightOf(children) + 14 + (text.split("\n").length * (MinecraftFont.Font.getHeight() + 1));
 		int x = (renderer.getWidth() / 2) - (w / 2);
 		int y = (renderer.getHeight() / 2) - (h / 2);
 		ConsoleDialog dialog = new ConsoleDialog(w, h, renderer);
@@ -29,6 +29,16 @@ public class ConsoleDialog extends ConsoleContainer {
 			dialog.add(component);
 		}
 		return new AbstractMap.SimpleEntry<>(new Position2D(x, y), dialog);
+	}
+
+	private static int largestTextWidth(String text) {
+		int l = 0;
+		for (String str : text.split("\n")) {
+			int f = MinecraftFont.Font.getWidth(ChatColor.stripColor(str)) + 6;
+			if (f > l)
+				l = f;
+		}
+		return l;
 	}
 
 	public static ConsoleDialog show(ConsoleRenderer renderer, String text, ConsoleComponent... children) {
@@ -80,16 +90,18 @@ public class ConsoleDialog extends ConsoleContainer {
 				g.draw(i, j, (byte) 48);
 			}
 		}
-		int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(text));
-		g.drawFormatted(x + (getWidth() / 2) - (w / 2), y + 8, text);
-		for (int i = x + 4; i < x + getWidth() - 8; i++) {
-			g.draw(i, y + 17, (byte) 24);
+		int count = 0;
+		for (String str : text.split("\n")) {
+			int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(str));
+			g.drawFormatted(x + (getWidth() / 2) - (w / 2), y + 8 + (count * (MinecraftFont.Font.getHeight() + 1)), str);
+			count++;
 		}
-		w = totalContainedWidth(MARGIN);
+
+		int wd = totalContainedWidth(MARGIN);
 		int at = 0;
 		for (ConsoleComponent component : contained) {
 			component.paint(g.subInstance(component,
-					new Position2D(x + at + (getWidth() / 2) - (w / 2), y + getHeight() - (maxContainedHeight() + 3))),
+					new Position2D(x + at + (getWidth() / 2) - (wd / 2), y + getHeight() - (maxContainedHeight() + 3))),
 					context);
 			at += component.getWidth() + MARGIN;
 		}

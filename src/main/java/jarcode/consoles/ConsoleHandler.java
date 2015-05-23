@@ -2,6 +2,8 @@ package jarcode.consoles;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import jarcode.consoles.computer.skript.ScriptInterface;
+import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.util.LocalPosition;
@@ -32,6 +34,7 @@ import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -40,8 +43,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/*
+
+This handles a bunch of things:
+
+- a good portion of misc events
+- client <-> server frame ID translation and packet listeners
+- plugin hooks
+- command block injection
+
+ */
 @SuppressWarnings("unused")
 public class ConsoleHandler implements Listener {
 
@@ -50,6 +65,21 @@ public class ConsoleHandler implements Listener {
 	private static final Field PACKET_LIST;
 	private static final Field PACKET_ENTITY_ID;
 	private static final Field COMMAND_LISTENER;
+
+	private static final HashMap<String, BiConsumer<Plugin, Logger>> HOOK_INITIALIZERS = new HashMap<>();
+
+	static {
+		HOOK_INITIALIZERS.put("Skript", (plugin, logger) -> {
+			if (plugin != null) {
+				try {
+					ScriptInterface.set(new ScriptUploader(plugin));
+				} catch (ScriptInterface.FailedHookException e) {
+					logger.warning("Failed to hook into Skript plugin!");
+					e.printStackTrace();
+				}
+			}
+		});
+	}
 
 	static {
 		try {
@@ -144,13 +174,21 @@ public class ConsoleHandler implements Listener {
 	private ConsoleBungeeHook hook;
 
 	public boolean local = true;
+
 	{
 		paintThread.setDaemon(true);
 		paintThread.setName("Console Painting Thread");
 	}
 
 	public ConsoleHandler() {
+
 		((CraftServer) Bukkit.getServer()).getServer().getPropertyManager().setProperty("enable-command-block", true);
+
+		HOOK_INITIALIZERS.entrySet().forEach((entry) -> {
+			Plugin plugin = Bukkit.getPluginManager().getPlugin(entry.getKey());
+			if (plugin != null)
+				entry.getValue().accept(plugin, Consoles.getInstance().getLogger());
+		});
 	}
 
 	public void setHook(ConsoleBungeeHook hook) {

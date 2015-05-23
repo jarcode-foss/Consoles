@@ -326,7 +326,7 @@ public class InterpretedProgram implements Program {
 				if (terminal != null)
 					terminal.clear();
 				return true;
-			});
+			}, this::terminated);
 		}
 		catch (InterruptedException e) {
 			if (Consoles.DEBUG)

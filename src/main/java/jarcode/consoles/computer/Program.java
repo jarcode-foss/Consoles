@@ -8,10 +8,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 
+/*
+
+These are a set of methods to be used for programs, be interpreted or provided. This is
+an interface full of default methods (instead of an abstract class), because FSProvidedProgram
+needs to inherit from FSBlock.
+
+ */
 public interface Program {
 
 	public default String[] splitArguments(String input) {
@@ -56,24 +61,42 @@ public interface Program {
 		return args.toArray(new String[args.size()]);
 	}
 	// huehuehuehuehuehue
-	@SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "unchecked", "SpellCheckingInspection"})
-	public default <T> T schedule(Supplier<T> supplier) throws InterruptedException {
+	@SuppressWarnings("unchecked")
+	public default <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean available = new AtomicBoolean(false);
-		final Object LOCK = new Object();
 		final Object[] result = {null};
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			result[0] = supplier.get();
 			available.set(true);
-			synchronized (LOCK) {
-				LOCK.notify();
-			}
 		});
 		while (!available.get()) {
-			synchronized (LOCK) {
-				LOCK.wait();
-			}
+			if (terminated.getAsBoolean())
+				break;
+			Thread.sleep(40);
 		}
 		return (T) result[0];
+	}
+	public default void main(Consumer<Runnable> task, BooleanSupplier terminated) throws InterruptedException {
+		AtomicBoolean resumed = new AtomicBoolean(false);
+		Runnable reset = () -> resumed.set(true);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> task.accept(reset));
+		while (!resumed.get()) {
+			if (terminated.getAsBoolean())
+				break;
+			Thread.sleep(40);
+		}
+	}
+	public default void schedule(Runnable runnable, BooleanSupplier terminated) throws InterruptedException {
+		AtomicBoolean available = new AtomicBoolean(false);
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			runnable.run();
+			available.set(true);
+		});
+		while (!available.get()) {
+			if (terminated.getAsBoolean())
+				break;
+			Thread.sleep(40);
+		}
 	}
 	public default void schedule(Runnable runnable) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);

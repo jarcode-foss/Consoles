@@ -21,7 +21,7 @@ public class HostnameProgram extends FSProvidedProgram {
 					return str.toLowerCase();
 				}
 				else return null;
-			});
+			}, this::terminated);
 			if (hostname != null)
 				print("hostname changed to: '" + hostname + '\'');
 			else

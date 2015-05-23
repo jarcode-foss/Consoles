@@ -1,6 +1,8 @@
 package jarcode.consoles;
 
 import jarcode.classloading.loader.WrappedPlugin;
+import jarcode.consoles.computer.skript.ScriptInterface;
+import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;
@@ -8,7 +10,9 @@ import jarcode.consoles.computer.MapDataStore;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
 
 import java.util.function.Supplier;
 
@@ -68,6 +72,7 @@ public class Consoles extends WrappedPlugin {
 				// experimental, computers
 				CommandComputer.class
 		);
+
 		Lua.killAll = false; // if this plugin was reloaded
 		MapDataStore.init(this);
 		saveDefaultConfig();
