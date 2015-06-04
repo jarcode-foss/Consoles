@@ -1,3 +1,3 @@
 mvn clean
-mvn package -Pbukkit
-mvn package -Pbungee
+mvn package -Pbukkit --quiet
+mvn package -Pbungee --quiet

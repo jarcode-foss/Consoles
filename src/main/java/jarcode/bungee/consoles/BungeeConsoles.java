@@ -10,7 +10,7 @@ import net.md_5.bungee.api.plugin.Plugin;
  */
 public class BungeeConsoles extends Plugin {
 
-	private static final BungeeConsoles instance = null;
+	private static BungeeConsoles instance = null;
 
 	{
 		instance = this;

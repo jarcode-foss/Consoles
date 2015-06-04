@@ -59,6 +59,7 @@ public final class WrappedClassLoader extends ClassLoader {
 
 	private final ClassModifier[] modifiers;
 
+	@SuppressWarnings("unchecked")
 	public WrappedClassLoader(InputStream in, WrappedPluginLoader loader, PluginDescriptionFile description,
 	                          File dataFolder, File file, ClassModifier... modifiers)
 			throws InvalidPluginException, MalformedURLException {

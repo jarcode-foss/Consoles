@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 rm target/Consoles.zip
 mvn clean
-mvn package -Pbukkit
-mvn package -Pbungee
+mvn package -Pbukkit --quiet
+mvn package -Pbungee --quiet
 cd target
 cd bukkit-final/
 for FILENAME in *; do mv ${FILENAME} consoles.jar; done
