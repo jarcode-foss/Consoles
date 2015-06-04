@@ -65,8 +65,7 @@ public class Allocation {
 	}
 
 	private class Range {
-		int final v1;
-		int final v2;
+		final int v1, v2;
 
 		public Range(int v1, int v2) {
 			this.v1 = v1;
