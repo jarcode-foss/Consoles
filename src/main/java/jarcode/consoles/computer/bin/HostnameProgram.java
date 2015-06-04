@@ -4,6 +4,8 @@ import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 @Manual(
 		author = "Jarcode",
 		version = "1.2",

@@ -6,12 +6,13 @@ import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import org.bukkit.ChatColor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+
+import static jarcode.consoles.computer.ProgramUtils.*;
 
 @Manual(
 		author = "Jarcode",

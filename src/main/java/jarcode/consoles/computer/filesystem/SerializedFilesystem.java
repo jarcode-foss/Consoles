@@ -1,6 +1,5 @@
 package jarcode.consoles.computer.filesystem;
 
-import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 
 import java.io.*;

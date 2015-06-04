@@ -4,8 +4,8 @@ import jarcode.consoles.ConsoleButton;
 import org.bukkit.entity.Player;
 
 public class ButtonEvent extends ConsoleEvent<ConsoleButton> {
-	private boolean on;
-	private Player player;
+	private final boolean on;
+	private final Player player;
 	public ButtonEvent(ConsoleButton context, boolean on, Player player) {
 		super(context);
 		this.on = on;

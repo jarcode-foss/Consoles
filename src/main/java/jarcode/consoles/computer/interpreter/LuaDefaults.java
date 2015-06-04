@@ -4,7 +4,6 @@ import jarcode.classloading.loader.WrappedPlugin;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.boot.Kernel;
-import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import org.apache.commons.io.IOUtils;
 

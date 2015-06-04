@@ -7,6 +7,8 @@ import jarcode.consoles.computer.filesystem.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 @Manual(
 		author = "Jarcode",
 		version = "1.12",

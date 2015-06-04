@@ -4,10 +4,7 @@ import jarcode.consoles.ConsoleComponent;
 import jarcode.consoles.InputComponent;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
-import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.FSFile;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +13,7 @@ import java.nio.charset.Charset;
 // This driver, when running, forwards command block input to the active terminal.
 public class CommandBlockDriver extends Driver {
 
-	private InputStream in;
+	private final InputStream in;
 
 	public CommandBlockDriver(FSFile device, Computer computer) {
 		super(device, computer);

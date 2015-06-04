@@ -17,7 +17,6 @@ import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.function.Consumer;
 
 // this is a really stripped-down version of a class loader I normally use in private code,
 // so if you're cringing at my wheel-reinventing, this normally used custom class loaders

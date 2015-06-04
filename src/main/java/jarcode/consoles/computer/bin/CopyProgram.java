@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 
 @Manual(
 		author = "Jarcode",

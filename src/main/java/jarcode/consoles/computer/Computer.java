@@ -44,15 +44,15 @@ public abstract class Computer implements Runnable {
 
 	private String hostname;
 
-	private ManagedConsole console;
+	private final ManagedConsole console;
 
 	private FSFolder root = new FSFolder();
 
-	private ConsoleComponent[] feeds = new ConsoleComponent[8];
+	private final ConsoleComponent[] feeds = new ConsoleComponent[8];
 
 	private int componentIndex = -1;
 
-	private UUID owner;
+	private final UUID owner;
 
 	private Kernel kernel;
 
@@ -60,10 +60,10 @@ public abstract class Computer implements Runnable {
 
 	private StatusBar bar;
 
-	private List<BiConsumer<String, String>> listeners = new CopyOnWriteArrayList<>();
-	private List<BiConsumer<String, Position2D>> interactListeners = new CopyOnWriteArrayList<>();
+	private final List<BiConsumer<String, String>> listeners = new CopyOnWriteArrayList<>();
+	private final List<BiConsumer<String, Position2D>> interactListeners = new CopyOnWriteArrayList<>();
 
-	private Map<String, Consumer<String>> messageListeners = new ConcurrentHashMap<>();
+	private final Map<String, Consumer<String>> messageListeners = new ConcurrentHashMap<>();
 
 	public Computer(String hostname, UUID owner, ManagedConsole console) {
 		this.hostname = hostname;

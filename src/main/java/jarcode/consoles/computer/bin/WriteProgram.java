@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 @Manual(
 		author = "Jarcode",
 		version = "2.1",

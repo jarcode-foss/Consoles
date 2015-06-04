@@ -19,7 +19,7 @@ Component used to render content/actions from Lua code.
  */
 public class BufferedFrameComponent extends ConsoleComponent implements InputComponent {
 
-	private CopyOnWriteArrayList<LuaInteraction> interactions = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<LuaInteraction> interactions = new CopyOnWriteArrayList<>();
 	private final Object STR_LOCK = new Object();
 	private StringBuilder input = new StringBuilder();
 	private final CopyOnWriteArrayList<Consumer<CanvasGraphics>> ops = new CopyOnWriteArrayList<>();

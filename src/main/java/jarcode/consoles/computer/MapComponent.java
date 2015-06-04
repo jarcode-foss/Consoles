@@ -208,7 +208,7 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 		}
 
 		public void onUpdate(int x, int y) {
-			if (view.clone().shrink(-128).inside(x, y))
+			if (view.copy().shrink(-128).inside(x, y))
 				repaint();
 		}
 

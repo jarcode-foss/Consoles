@@ -13,8 +13,6 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Random;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 // this is for testing
 public class CommandMapTest extends CommandBase {

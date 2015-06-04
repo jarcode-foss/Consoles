@@ -5,10 +5,11 @@ import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import jarcode.consoles.computer.filesystem.FSStoredFile;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+
+import static jarcode.consoles.computer.ProgramUtils.*;
 
 @Manual(
 		author = "Jarcode",

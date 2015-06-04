@@ -26,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 /*
 
 This class handles the creation of the LuaVM and provides a large
@@ -33,7 +35,7 @@ amount of base Lua function bindings.
 
  */
 @SuppressWarnings("unused")
-public class InterpretedProgram implements Program {
+public class InterpretedProgram {
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
 	

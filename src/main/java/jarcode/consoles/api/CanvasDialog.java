@@ -12,8 +12,8 @@ import org.bukkit.entity.Player;
 public final class CanvasDialog implements CanvasComponent, CanvasPainter, WrappedComponent, RootComponent {
 
 	private ConsoleDialog underlying = null;
-	private String text;
-	private CanvasComponent[] children;
+	private final String text;
+	private final CanvasComponent[] children;
 
 	/**
 	 * Creates a dialog component. The component is not actually created until

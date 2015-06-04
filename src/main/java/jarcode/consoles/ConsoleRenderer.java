@@ -130,25 +130,25 @@ public abstract class ConsoleRenderer implements Canvas {
 					case NORTH:
 						d = EnumDirection.NORTH;
 						xm = (width - length) - 1;
-						bounds = new Region(local, local.clone().add(width - 1, height - 1, 0));
+						bounds = new Region(local, local.copy().add(width - 1, height - 1, 0));
 						vertical = false;
 						break;
 					case SOUTH:
 						d = EnumDirection.SOUTH;
 						xm = length;
-						bounds = new Region(local, local.clone().add(width - 1, height - 1, 0));
+						bounds = new Region(local, local.copy().add(width - 1, height - 1, 0));
 						vertical = false;
 						break;
 					case EAST:
 						d = EnumDirection.EAST;
 						zm = (width - length) - 1;
-						bounds = new Region(local, local.clone().add(0, height - 1, width - 1));
+						bounds = new Region(local, local.copy().add(0, height - 1, width - 1));
 						vertical = true;
 						break;
 					case WEST:
 						d = EnumDirection.WEST;
 						zm = length;
-						bounds = new Region(local, local.clone().add(0, height - 1, width - 1));
+						bounds = new Region(local, local.copy().add(0, height - 1, width - 1));
 						vertical = true;
 						break;
 					default: throw new IllegalArgumentException("Direction must be north, west, east or south");

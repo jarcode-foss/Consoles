@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CommandBuilder {
-	private String name;
-	private ArrayList<String> aliases = new ArrayList<>();
+	private final String name;
+	private final ArrayList<String> aliases = new ArrayList<>();
 	private Command command;
 	private String node;
 	private String desc;

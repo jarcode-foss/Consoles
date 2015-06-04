@@ -22,7 +22,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 
 	public static final FeedEncoder UTF_ENCODER = new FeedEncoder() {
 
-		Charset charset = Charset.forName("UTF-8");
+		final Charset charset = Charset.forName("UTF-8");
 
 		@Override
 		public String get(byte[] b) {

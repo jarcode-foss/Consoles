@@ -17,9 +17,9 @@ an interface full of default methods (instead of an abstract class), because FSP
 needs to inherit from FSBlock.
 
  */
-public interface Program {
+public class ProgramUtils {
 
-	public default String[] splitArguments(String input) {
+	public static String[] splitArguments(String input) {
 		char[] arr = input.toCharArray();
 		boolean quote = false;
 		List<String> args = new ArrayList<>();
@@ -62,7 +62,7 @@ public interface Program {
 	}
 	// huehuehuehuehuehue
 	@SuppressWarnings("unchecked")
-	public default <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) throws InterruptedException {
+	public static <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean available = new AtomicBoolean(false);
 		final Object[] result = {null};
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
@@ -76,7 +76,7 @@ public interface Program {
 		}
 		return (T) result[0];
 	}
-	public default void main(Consumer<Runnable> task, BooleanSupplier terminated) throws InterruptedException {
+	public static void main(Consumer<Runnable> task, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean resumed = new AtomicBoolean(false);
 		Runnable reset = () -> resumed.set(true);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> task.accept(reset));
@@ -86,7 +86,7 @@ public interface Program {
 			Thread.sleep(40);
 		}
 	}
-	public default void schedule(Runnable runnable, BooleanSupplier terminated) throws InterruptedException {
+	public static void schedule(Runnable runnable, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean available = new AtomicBoolean(false);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			runnable.run();
@@ -98,18 +98,18 @@ public interface Program {
 			Thread.sleep(40);
 		}
 	}
-	public default void schedule(Runnable runnable) {
+	public static void schedule(Runnable runnable) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);
 	}
-	public default String[] parseFlags(String[] args, BiConsumer<Character, String> consumer, Function<Character, Boolean> hasData) {
+	public static String[] parseFlags(String[] args, BiConsumer<Character, String> consumer, Function<Character, Boolean> hasData) {
 		FlagMappings mappings = mapFlags(args, hasData);
 		mappings.map.entrySet().stream().forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));
 		return mappings.parsed;
 	}
-	public default FlagMappings mapFlags(String[] args) {
+	public static FlagMappings mapFlags(String[] args) {
 		return mapFlags(args, (c) -> true);
 	}
-	public default FlagMappings mapFlags(String[] args, Function<Character, Boolean> hasData) {
+	public static FlagMappings mapFlags(String[] args, Function<Character, Boolean> hasData) {
 		HashMap<Character, String> map = new HashMap<>();
 		List<String> parsed = new ArrayList<>();
 		Character flag = null;
@@ -170,8 +170,8 @@ public interface Program {
 		return new FlagMappings(map, parsed.toArray(new String[parsed.size()]));
 	}
 	public static final class FlagMappings {
-		public HashMap<Character, String> map;
-		public String[] parsed;
+		public final HashMap<Character, String> map;
+		public final String[] parsed;
 		private FlagMappings(HashMap<Character, String> map, String[] parsed) {
 			this.map = map;
 			this.parsed = parsed;

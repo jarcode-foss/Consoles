@@ -10,6 +10,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.Validate;
+import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.Warning;
 import org.bukkit.command.Command;
@@ -22,8 +23,6 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.*;
 
 import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -294,7 +293,9 @@ public abstract class WrappedPlugin extends PluginBase {
 			DataSourceConfig ds = db.getDataSourceConfig();
 
 			ds.setUrl(replaceDatabaseString(ds.getUrl()));
-			dataFolder.mkdirs();
+			if (!dataFolder.mkdirs()) {
+				Bukkit.getLogger().warning("Failed to make data folder for plugin!");
+			}
 
 			ClassLoader previous = Thread.currentThread().getContextClassLoader();
 

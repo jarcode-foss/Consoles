@@ -1,17 +1,12 @@
 package jarcode.consoles.computer.filesystem;
 
 import jarcode.consoles.computer.Computer;
-import jarcode.consoles.computer.Program;
 import jarcode.consoles.computer.ProgramInstance;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 // Program with normal Java functionality to it. Make sure these are safe!
 // These are special kinds of files in the computer's filesystem, too.
@@ -20,7 +15,7 @@ import java.util.function.Function;
 // and used on creation.
 
 @SuppressWarnings("SpellCheckingInspection")
-public abstract class FSProvidedProgram extends FSBlock implements Program {
+public abstract class FSProvidedProgram extends FSBlock {
 
 	private static final byte ID = 0x02;
 

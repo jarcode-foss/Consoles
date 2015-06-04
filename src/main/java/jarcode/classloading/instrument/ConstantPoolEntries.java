@@ -46,8 +46,7 @@ public class ConstantPoolEntries {
     public static ConstantPoolEntry readEntry(DataInputStream din) throws IOException {
 	    int tag = din.readUnsignedByte();
 	    ConstantPoolEntry.Factory b = factories.get(tag);
-	    if (b == null)
-		    System.out.println("invalid tag: " + tag);
+	    assert b != null;
 	    b.read(tag, din);
 	    return b.build();
     }

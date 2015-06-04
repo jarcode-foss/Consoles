@@ -11,7 +11,7 @@ import java.util.function.BooleanSupplier;
 @SuppressWarnings("unused")
 public class LuaFile extends LuaBlock {
 	private final FSFile file;
-	private BooleanSupplier supplier;
+	private final BooleanSupplier supplier;
 	public LuaFile(FSFile file, String path, String cd, BooleanSupplier supplier, Computer computer) {
 		super(file, path, cd, computer);
 		this.file = file;

@@ -13,9 +13,9 @@ Base console component for rendering!
  */
 public abstract class ConsoleComponent implements CanvasComponent, CanvasPainter {
 	private byte bg = -1;
-	private int w, h;
+	private final int w, h;
 	private boolean enabled;
-	private ConsoleRenderer renderer;
+	private final ConsoleRenderer renderer;
 	private boolean contained = false;
 	public ConsoleComponent(int w, int h, ConsoleRenderer renderer) {
 		this.w = w;

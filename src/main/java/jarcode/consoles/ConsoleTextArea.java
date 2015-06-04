@@ -110,7 +110,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 							} else builder.append(arr[t]);
 						}
 						else builder.append(arr[t]);
-					};
+					}
 					// add sectioned
 					printContent(builder.toString());
 					stack.add("");

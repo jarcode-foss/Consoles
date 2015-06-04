@@ -27,8 +27,7 @@ public class LocalPosition {
 		this.z += z;
 		return this;
 	}
-	@Override
-	public LocalPosition clone() {
+	public LocalPosition copy() {
 		return new LocalPosition(x, y, z);
 	}
 	public Location global(World world) {

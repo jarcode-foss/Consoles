@@ -16,6 +16,8 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 @Manual(
 		author = "Jarcode",
 		version = "1.0",

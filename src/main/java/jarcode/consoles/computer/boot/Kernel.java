@@ -3,7 +3,6 @@ package jarcode.consoles.computer.boot;
 import com.google.common.collect.HashBiMap;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
-import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.bin.*;
 import jarcode.consoles.computer.devices.NullDevice;

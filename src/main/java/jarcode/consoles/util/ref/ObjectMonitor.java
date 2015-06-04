@@ -15,7 +15,7 @@ import java.util.function.Function;
 // sure that the JVM is cleaning them up - helpful for finding memory leaks
 // without asking server owners to use JVisualVM to monitor it themselves,
 // I can just add a threshold and dump thread call stacks automatically :)
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "MismatchedQueryAndUpdateOfCollection"})
 public class ObjectMonitor {
 	private final ReferenceQueue<MonitoredObject> queue = new ReferenceQueue<>();
 	private final ReferenceQueue<Object> objectQueue = new ReferenceQueue<>();

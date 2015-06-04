@@ -4,7 +4,7 @@ import jarcode.consoles.ConsoleComponent;
 
 public class ConsoleEvent<T extends ConsoleComponent> {
 
-	private T context;
+	private final T context;
 
 	public ConsoleEvent(T context) {
 		this.context = context;

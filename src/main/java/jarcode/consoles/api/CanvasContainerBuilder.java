@@ -17,11 +17,12 @@ import java.util.function.Function;
  */
 public class CanvasContainerBuilder {
 
-	List<Consumer<CanvasComponent>> adders = new ArrayList<>();
-	List<CanvasComponent> toAdd = new ArrayList<>();
+	final List<Consumer<CanvasComponent>> adders = new ArrayList<>();
+	final List<CanvasComponent> toAdd = new ArrayList<>();
 
-	Canvas canvas;
-	int width, height;
+	final Canvas canvas;
+	final int width;
+	final int height;
 	Byte background = null;
 	boolean enabled = true;
 	List<CanvasPainter> painters = new ArrayList<>();

@@ -18,7 +18,7 @@ public class CommandDevice extends FSFile {
 
 	public CommandBlock block;
 	private final Object LOCK = new Object();
-	private List<OutputStream> outputs = new ArrayList<>();
+	private final List<OutputStream> outputs = new ArrayList<>();
 
 	// Setup the device
 	public CommandDevice(CommandBlock block) {

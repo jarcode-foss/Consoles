@@ -1,14 +1,8 @@
 package jarcode.consoles.api;
 
 import jarcode.consoles.*;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Player;
-
-import java.util.Random;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Represents a console in the game world

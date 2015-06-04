@@ -14,13 +14,14 @@ import java.util.function.Consumer;
  */
 public class CanvasComponentBuilder {
 
-	Canvas canvas;
-	int width, height;
+	final Canvas canvas;
+	final int width;
+	final int height;
 	Byte background = null;
 	boolean enabled = true;
-	List<CanvasPainter> painters = new ArrayList<>();
-	List<CanvasInteractListener> listeners = new ArrayList<>();
-	List<Consumer<CanvasComponent>> constructors = new ArrayList<>();
+	final List<CanvasPainter> painters = new ArrayList<>();
+	final List<CanvasInteractListener> listeners = new ArrayList<>();
+	final List<Consumer<CanvasComponent>> constructors = new ArrayList<>();
 	BooleanSupplier enabledSupplier = null;
 	Consumer<Boolean> enabledConsumer = null;
 

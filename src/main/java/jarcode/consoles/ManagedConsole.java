@@ -2,9 +2,6 @@ package jarcode.consoles;
 
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.map.MinecraftFont;
-
-import java.lang.reflect.Field;
 
 /*
 

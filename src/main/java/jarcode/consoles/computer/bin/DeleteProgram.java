@@ -7,6 +7,8 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import static jarcode.consoles.computer.ProgramUtils.*;
+
 @Manual(
 		author = "Jarcode",
 		version = "1.3",

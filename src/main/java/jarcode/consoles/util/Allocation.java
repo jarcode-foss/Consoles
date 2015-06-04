@@ -60,14 +60,13 @@ public class Allocation {
 		return this;
 	}
 
-	@Override
-	public Allocation clone() {
+	public Allocation copy() {
 		return new Allocation(x, z, w, d);
 	}
 
 	private class Range {
-		int v1;
-		int v2;
+		int final v1;
+		int final v2;
 
 		public Range(int v1, int v2) {
 			this.v1 = v1;

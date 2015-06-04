@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 
 // This driver, when running, forwards command block input to the active terminal.
 public class PlayerCommandDriver extends Driver {

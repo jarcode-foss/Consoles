@@ -73,7 +73,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	}
 
 
-	CommandBlockListenerAbstract underlying;
+	final CommandBlockListenerAbstract underlying;
 	// this is a cheat to make this act like an inner class when we get this$0 via reflection later
 	@SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
 	private final TileEntityCommand this$0;
