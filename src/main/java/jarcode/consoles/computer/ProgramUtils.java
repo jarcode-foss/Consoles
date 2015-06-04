@@ -13,8 +13,7 @@ import java.util.function.*;
 /*
 
 These are a set of methods to be used for programs, be interpreted or provided. This is
-an interface full of default methods (instead of an abstract class), because FSProvidedProgram
-needs to inherit from FSBlock.
+a class full of methods meant to be statically imported.
 
  */
 public class ProgramUtils {
