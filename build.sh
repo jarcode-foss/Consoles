@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 rm target/Consoles.zip
 mvn clean --quiet
-mvn package -Pbukkit -Dmaven.test.skip=true --quiet
-mvn package -Pbungee -Dmaven.test.skip=true --quiet
+mvn package -Pbukkit -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
+mvn package -Pbungee -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
 cd target
 cd bukkit-final/
 for FILENAME in *; do mv ${FILENAME} consoles.jar; done
