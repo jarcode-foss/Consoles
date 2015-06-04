@@ -2,7 +2,6 @@ package jarcode.consoles.util;
 
 import jarcode.consoles.ConsoleHandler;
 import jarcode.consoles.ConsoleListener;
-import jarcode.consoles.Pkg;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.command.CommandSender;
 
@@ -10,6 +9,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+
+import static jarcode.consoles.Pkg.*;
 
 /*
 
@@ -30,15 +31,14 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	static {
 		try {
 			// these field names are sensitive, they have changed recently
-			if (Pkg.is("v1_8_R2") || Pkg.is("v1_8_R3")) {
-				COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
-				CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
-				SENDER = CommandBlockListenerAbstract.class.getDeclaredField("sender");
-				COMMAND_RESULT.setAccessible(true);
-				CHAT_COMPONENT.setAccessible(true);
-				SENDER.setAccessible(true);
-			}
-			else throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
+			verify(v1_8_R2, v1_8_R3);
+
+			COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
+			CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
+			SENDER = CommandBlockListenerAbstract.class.getDeclaredField("sender");
+			COMMAND_RESULT.setAccessible(true);
+			CHAT_COMPONENT.setAccessible(true);
+			SENDER.setAccessible(true);
 		}
 		catch (Throwable e) {
 			throw new RuntimeException(e);
@@ -164,16 +164,13 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	// I'm not sure what this method is for, but it's a check when handling vanilla commands
 	// in the minecraft server. It changed in the last version, so I'm just adding this fix.
 	public boolean underlyingCheck() {
-		String name;
-		switch (Pkg.VERSION) {
-			case "v1_8_R2":
-				name = "N";
-				break;
-			case "v1_8_R3":
-				name = "O";
-				break;
-			default: throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
-		}
+		String name = null;
+		verify();
+		if (version(v1_8_R2))
+			name = "N";
+		if (version(v1_8_R3))
+			name = "O";
+		assert name != null;
 		try {
 			Method method = MinecraftServer.class.getMethod(name);
 			return (Boolean) method.invoke(MinecraftServer.getServer());

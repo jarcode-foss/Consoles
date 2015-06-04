@@ -4,7 +4,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import jarcode.consoles.Pkg;
 import jarcode.consoles.util.unsafe.UnsafeTools;
 import net.minecraft.server.v1_8_R3.*;
 
@@ -16,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Predicate;
+
+import static jarcode.consoles.Pkg.*;
 
 /*
 
@@ -36,16 +37,15 @@ public class NetworkManagerWrapper extends NetworkManager {
 
 	static {
 		try {
-			if (Pkg.is("v1_8_R2") || Pkg.is("v1_8_R3")) {
-				CHANNEL_READ_0 = NetworkManager.class
-						.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
-				CHANNEL_READ_0.setAccessible(true);
-				HANDLE_LISTENER = NetworkManager.class.getDeclaredMethod("a", ChannelHandlerContext.class, Packet.class);
-				HANDLE_LISTENER.setAccessible(true);
-				PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("h");
-				PROTOCOL_DIRECTION.setAccessible(true);
-			}
-			else throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
+			verify(v1_8_R2, v1_8_R3);
+
+			CHANNEL_READ_0 = NetworkManager.class
+					.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
+			CHANNEL_READ_0.setAccessible(true);
+			HANDLE_LISTENER = NetworkManager.class.getDeclaredMethod("a", ChannelHandlerContext.class, Packet.class);
+			HANDLE_LISTENER.setAccessible(true);
+			PROTOCOL_DIRECTION = NetworkManager.class.getDeclaredField("h");
+			PROTOCOL_DIRECTION.setAccessible(true);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -84,26 +84,16 @@ public class NetworkManagerWrapper extends NetworkManager {
 	}
 
 	// multi-version support
-	private static String channelFieldName() {
-		String name;
-		switch (Pkg.VERSION) {
-			case "v1_8_R3":
-				name = "channel";
-				break;
-			case "v1_8_R2":
-				name = "k";
-				break;
-			default:
-				throw new RuntimeException("Unsupported server version: " + Pkg.VERSION);
-		}
-		return name;
+	private static Field channelField() throws NoSuchFieldException {
+		return findField(NetworkManager.class, new Object[][] {
+				{v1_8_R3, "channel"},
+				{v1_8_R2, "k"}
+		});
 	}
 
 	private static void replaceChannel(NetworkManager from, NetworkManager to) {
-		String name = channelFieldName();
-		Field field;
 		try {
-			field = NetworkManager.class.getDeclaredField(name);
+			Field field = channelField();
 			field.set(to, field.get(from));
 		} catch (NoSuchFieldException | IllegalAccessException ex) {
 			throw new RuntimeException(ex);
@@ -111,11 +101,8 @@ public class NetworkManagerWrapper extends NetworkManager {
 	}
 
 	private static Object getProtocol(NetworkManager from) {
-		String name = channelFieldName();
-		Field field;
 		try {
-			field = NetworkManager.class.getDeclaredField(name);
-			return ((Channel) field.get(from)).attr(c).get();
+			return ((Channel) channelField().get(from)).attr(c).get();
 		} catch (NoSuchFieldException | IllegalAccessException ex) {
 			throw new RuntimeException(ex);
 		}
