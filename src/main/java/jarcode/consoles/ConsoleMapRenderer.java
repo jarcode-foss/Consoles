@@ -47,7 +47,7 @@ public class ConsoleMapRenderer {
 	// so we can use the pixel buffer's sections directly.
 	private static PacketPlayOutMap createUpdatePacket(byte[] data, int id) {
 		if (data == null) return null;
-		PacketPlayOutMap map = new PacketPlayOutMap();
+		PacketPlayOutMap map = ConsoleHandler.getInstance().newMapPacket();
 		try {
 			// map damage value
 			MAP_ID.set(map, id);

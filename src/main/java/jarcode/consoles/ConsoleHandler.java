@@ -120,6 +120,9 @@ public class ConsoleHandler implements Listener {
 
 	public boolean commandBlocksEnabled = ((CraftServer) Bukkit.getServer()).getServer().getEnableCommandBlock();
 
+	// tracked map packets (these are not blocked!)
+	private List<PacketPlayOutMap> packets = new ArrayList<>();
+
 	private ConsoleBungeeHook hook;
 
 	public boolean local = true;
@@ -350,6 +353,26 @@ public class ConsoleHandler implements Listener {
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		PacketUtils.registerOutListener(PacketPlayOutEntityMetadata.class, e.getPlayer(),
 				packet -> handleMetadataPacket(packet, e.getPlayer().getName()));
+		PacketUtils.registerOutListener(PacketPlayOutMap.class, e.getPlayer(), this::handleMapPacket);
+	}
+
+	public PacketPlayOutMap newMapPacket() {
+		PacketPlayOutMap packet = new PacketPlayOutMap();
+		packets.add(packet);
+		return packet;
+	}
+
+	// we're going to block all map packets other than the ones we send. This is
+	// a last stand defence against other plugins that may send map packets manually.
+
+	// Most packets should be blocked by our fake map items and trackers, so this
+	// won't do much in normal servers.
+	private boolean handleMapPacket(PacketPlayOutMap packet) {
+		if (packets.contains(packet)) {
+			packets.remove(packet);
+			return true;
+		}
+		else return false;
 	}
 	// this baby translates map IDs in outgoing packets according to the player
 	@SuppressWarnings("unchecked")
