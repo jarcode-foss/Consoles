@@ -7,10 +7,7 @@ import org.bukkit.Server;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.PluginDescriptionFile;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -32,6 +29,7 @@ into the JVM as classes need to be resolved.
 public final class WrappedClassLoader extends ClassLoader {
 
 	private static final HashMap<String, Class<?>> LOOKUP_TABLE = new HashMap<>();
+
 	static {
 		map(WrappedPlugin.class);
 		map(WrappedPluginLoader.class);
@@ -42,8 +40,8 @@ public final class WrappedClassLoader extends ClassLoader {
 		LOOKUP_TABLE.put(type.getName(), type);
 	}
 
-	// These are UNLOADED classes, which are removed as soon as they are loaded to conserve memory
-	private Map<String, byte[]> classes = new HashMap<>();
+	// These are mappings from the qualified java class name to the path of the class in the jar
+	private Map<String, String> classMap = new HashMap<>();
 	// Loaded classes by this class loader
 	private Map<String, Class> loaded = new HashMap<>();
 
@@ -74,16 +72,12 @@ public final class WrappedClassLoader extends ClassLoader {
 			JarInputStream inputStream = new JarInputStream(in);
 			ZipEntry entry;
 			String entryName;
+			// build our class entry list
 			while ((entry = inputStream.getNextEntry()) != null) {
-
 				entryName = entry.getName();
-
 				if (entryName.endsWith(".class")) {
-
-					byte[] classBytes = IOUtils.toByteArray(inputStream);
-					inputStream.closeEntry();
 					String transformedName = className(entryName);
-					classes.put(transformedName, classBytes);
+					classMap.put(transformedName, entryName);
 				}
 			}
 			inputStream.close();
@@ -120,6 +114,37 @@ public final class WrappedClassLoader extends ClassLoader {
 		}
 	}
 
+	// used to extract a class from the given path in the jar
+	private byte[] extract(String path) {
+		JarInputStream inputStream = null;
+		try {
+			inputStream = new JarInputStream(new FileInputStream(file));
+			ZipEntry entry;
+			while ((entry = inputStream.getNextEntry()) != null) {
+
+				if (entry.getName().equals(path)) {
+					byte[] classBytes;
+					try {
+						classBytes = IOUtils.toByteArray(inputStream);
+					}
+					finally {
+						inputStream.closeEntry();
+					}
+					return classBytes;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally {
+			if (inputStream != null)
+				try {
+					inputStream.close();
+				} catch (IOException ignored) {}
+		}
+		return null;
+	}
+
 	// We have to do this so that the default plugin class loader will query
 	// this class loader before trying to load classes itself.
 	private void injectParents() throws InvalidPluginException {
@@ -138,6 +163,7 @@ public final class WrappedClassLoader extends ClassLoader {
 		}
 	}
 
+	// magic used to transform the path of a class in the jar to a qualified class name.
 	private String className(String raw) {
 		String transformedName = raw.replaceAll("\\\\", ".").replaceAll("/", ".");
 		if (transformedName.endsWith(".class"))
@@ -158,16 +184,6 @@ public final class WrappedClassLoader extends ClassLoader {
 		return builder.toString();
 	}
 
-	private byte[] readClass(InputStream stream) throws IOException {
-		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-		while(true){
-			int i = stream.read();
-			if(i == -1) break;
-			byteStream.write(i);
-		}
-		return byteStream.toByteArray();
-	}
-
 	public Class loadClass(String name) throws ClassNotFoundException {
 		try {
 			// prioritize classes under this loader
@@ -181,41 +197,26 @@ public final class WrappedClassLoader extends ClassLoader {
 	}
 	public InputStream getResourceAsStream(String str) {
 		String name = className(str);
-		if (loaded.containsKey(name) || classes.containsKey(name)) {
+		if (loaded.containsKey(name) || classMap.containsKey(name)) {
 			return null;
 		}
 		else return super.getResourceAsStream(str);
 	}
-	private boolean isAnon(String transformedName) {
-		String split[] = transformedName.split("\\$");
-		for (int t = 1; t < split.length; t++) {
-			if (StringUtils.isNumeric(split[t])) {
-				return true;
-			}
-		}
-		return false;
-	}
 
-	private boolean hasAnonClasses(String transformedName) {
-		for (String name : classes.keySet()) {
-			if (name.startsWith(transformedName)
-					&& isAnon(name.substring(transformedName.length(), name.length()))) {
-				return true;
-			}
-		}
-		return false;
-	}
 	@Override
 	public Class findClass(String name) throws ClassNotFoundException{
 		return findClass(name, true);
 	}
+
 	private Class findClass(String name, boolean rm) throws ClassNotFoundException {
 		try {
 			if (loaded.containsKey(name)) {
 				return loaded.get(name);
 			}
-			if (!classes.containsKey(name)) throw new ClassNotFoundException();
-			byte[] classBytes = classes.get(name);
+
+			if (!classMap.containsKey(name)) throw new ClassNotFoundException();
+
+			byte[] classBytes = extract(classMap.get(name));
 			Class type;
 
 			for (ClassModifier modifier : modifiers)
@@ -226,7 +227,7 @@ public final class WrappedClassLoader extends ClassLoader {
 			loaded.put(name, type);
 			loader.setClass(name, type);
 			if (rm && !loadingAll)
-				classes.remove(name);
+				classMap.remove(name);
 			return type;
 		}
 		catch (NullPointerException e) {
@@ -235,7 +236,7 @@ public final class WrappedClassLoader extends ClassLoader {
 	}
 	public void loadAllClasses() {
 		loadingAll = true;
-		for (String key : classes.keySet()) {
+		for (String key : classMap.keySet()) {
 			try {
 				findClass(key, false);
 			}
@@ -244,10 +245,10 @@ public final class WrappedClassLoader extends ClassLoader {
 				e.printStackTrace();
 			}
 		}
-		classes.clear();
+		classMap.clear();
 	}
 	public void unload() {
-		classes.clear();
+		classMap.clear();
 		loaded.clear();
 	}
 	void initialize(WrappedPlugin plugin) {
@@ -260,9 +261,10 @@ public final class WrappedClassLoader extends ClassLoader {
 	public List<String> getClassPaths() {
 		ArrayList<String> list = new ArrayList<>();
 		list.addAll(loaded.keySet());
-		list.addAll(classes.keySet());
+		list.addAll(classMap.keySet());
 		return list;
 	}
+	
 	public Set<String> getLoadedClasses() {
 		return loaded.keySet();
 	}

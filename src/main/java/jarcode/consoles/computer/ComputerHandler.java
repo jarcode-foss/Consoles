@@ -196,7 +196,17 @@ public class ComputerHandler implements Listener {
 		}, computer);
 		return chests.toArray(new Chest[chests.size()]);
 	}
-
+	public boolean[] findInputs(Computer computer) {
+		List<Boolean> list = new ArrayList<>();
+		iterateBehind(block -> {
+			if (block.getType().isSolid() && block.getType() != Material.REDSTONE_BLOCK)
+				list.add(block.isBlockPowered() || block.isBlockIndirectlyPowered());
+		}, computer);
+		boolean[] arr = new boolean[list.size()];
+		for (int t = 0; t < list.size(); t++)
+			arr[t] = list.get(t);
+		return arr;
+	}
 	// I commit a few crimes here, but it's a simple way of fixing the threading issues
 	// with the lua calls.
 	@SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})

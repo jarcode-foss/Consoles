@@ -423,6 +423,7 @@ public class InterpretedProgram {
 		return ComputerHandler.getInstance().findChests(computer).length;
 	}
 	private LuaValue lua$getChest(int index) {
+		schedule();
 		Chest[] chests = ComputerHandler.getInstance().findChests(computer);
 		if (index > chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index]);

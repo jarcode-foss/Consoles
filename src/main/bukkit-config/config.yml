@@ -22,6 +22,10 @@ starting-map-index: 5000
 #     Computers
 # ------------------
 
+# Enable comptuers. If disabled, all computer-related computer functionality
+# will be disabled. Useful if you only want to use Consoles for its API.
+enable-computers: true
+
 # Enable the crafting of computers
 allow-comptuer-crafting: true
 

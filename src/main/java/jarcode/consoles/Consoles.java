@@ -39,6 +39,8 @@ public class Consoles extends WrappedPlugin {
 	public static int maxComputers = 3;
 	// starting index for map ID allocations
 	public static short startingId;
+	// whether computers are enabled or not
+	public static boolean computersEnabled = true;
 	// command prefix
 	public static String commandPrefix;
 
@@ -69,11 +71,6 @@ public class Consoles extends WrappedPlugin {
 
 	@Override
 	public void onEnable() {
-		commandHandler = new CommandHandler(
-				CommandConsole.class, CommandImage.class,
-				// experimental, computers
-				CommandComputer.class
-		);
 
 		Lua.killAll = false; // if this plugin was reloaded
 		MapDataStore.init(this);
@@ -88,18 +85,29 @@ public class Consoles extends WrappedPlugin {
 		maxComputers = getConfig().getInt("computer-limit", 3);
 		startingId = (short) getConfig().getInt("starting-map-index", 5000);
 		commandPrefix = getConfig().getString("command-prefix", "/").trim();
+		computersEnabled = getConfig().getBoolean("computers-enabled", true);
+		allowCrafting = allowCrafting && computersEnabled;
 
 		ConsoleHandler.getInstance().local = !forward;
-		if (DEBUG)
+
+		commandHandler = new CommandHandler(
+				CommandConsole.class, CommandImage.class
+		);
+
+		register(
+				ConsoleHandler::getInstance, ConsoleBungeeHook::new, SyncTaskScheduler::create,
+				this::getCommandHandler, ImageConsoleHandler::new
+		);
+
+		if (computersEnabled) {
+			register(ComputerHandler::new);
 			try {
-				commandHandler.addCommand(CommandMapTest.class);
+				commandHandler.addCommand(CommandComputer.class);
 			} catch (IllegalAccessException | InstantiationException e) {
 				e.printStackTrace();
 			}
-		register(
-				ConsoleHandler::getInstance, ConsoleBungeeHook::new, SyncTaskScheduler::create,
-				this::getCommandHandler, ImageConsoleHandler::new, ComputerHandler::new
-		);
+		}
+
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
 	}
