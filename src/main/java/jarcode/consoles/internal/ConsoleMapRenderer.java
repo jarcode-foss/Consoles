@@ -46,7 +46,7 @@ public class ConsoleMapRenderer {
 	// faster way of creating maps
 	// we avoid copying a buffer when creating the packet using reflection,
 	// so we can use the pixel buffer's sections directly.
-	private static PacketPlayOutMap createUpdatePacket(byte[] data, int id) {
+	public static PacketPlayOutMap createUpdatePacket(byte[] data, int id) {
 		if (data == null) return null;
 		PacketPlayOutMap map = ConsoleHandler.getInstance().newMapPacket();
 		try {

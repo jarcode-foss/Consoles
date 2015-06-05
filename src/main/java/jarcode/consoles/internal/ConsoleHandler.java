@@ -593,7 +593,7 @@ public class ConsoleHandler implements Listener {
 	}
 	// this allocates a block of indexes for the maps to use,
 	// and updates all the allocation mappings for active contexts.
-	short allocate(int size) {
+	public short allocate(int size) {
 		if (Consoles.DEBUG)
 			Consoles.getInstance().getLogger().info("Allocating " + size + " frames for new console...");
 		short lowest = Consoles.startingId;
