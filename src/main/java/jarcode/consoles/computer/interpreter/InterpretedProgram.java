@@ -83,7 +83,7 @@ public class InterpretedProgram {
 			this.computer = computer;
 			this.instance = instance;
 			this.args = str;
-			pool = new FuncPool(Thread.currentThread(), computer);
+			pool = new FuncPool(Thread.currentThread(), this);
 			map();
 			if (file == null) {
 				print("null file");
