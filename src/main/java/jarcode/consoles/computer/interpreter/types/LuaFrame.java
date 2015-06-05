@@ -18,29 +18,42 @@ public class LuaFrame {
 	protected List<Consumer<CanvasGraphics>> operations = new ArrayList<>();
 	private Computer computer;
 	private int id;
+	private Runnable remove;
+	private boolean removed = false;
 
-	public LuaFrame(int id, Computer computer) {
+	public LuaFrame(int id, Computer computer, Runnable remove) {
 		this.computer = computer;
 		this.id = id;
+		this.remove = remove;
+	}
+	public void remove() {
+		if (removed) return;
+		removed = true;
+		remove.run();
 	}
 	public int id() {
+		if (removed) return -1;
 		return id;
 	}
 	public void set(Integer x, Integer y, Integer c) {
+		if (removed) return;
 		if (x >= 0 && y >= 0 && getHeight() > y && getWidth() > x)
 			operations.add((g) -> g.draw(x, y, convert(c)));
 	}
 	public int len(String text) {
+		if (removed) return -1;
 		text = ChatColor.translateAlternateColorCodes('&', text);
 		return FONT.getWidth(ChatColor.stripColor(text).replace("\u00A7", "&"));
 	}
 	public void write(Integer x, Integer y, String text) {
+		if (removed) return;
 		text = ChatColor.translateAlternateColorCodes('&', text);
 		text = text.replace("\n", "");
 		final String t = text;
 		operations.add((g) -> g.drawFormatted(x, y, t));
 	}
 	public void box(Integer x, Integer y, Integer w, Integer h, Integer c) {
+		if (removed) return;
 		byte converted = convert(c);
 		operations.add((g) -> {
 			for (int t = x; t < x + w; t++) {
@@ -51,6 +64,7 @@ public class LuaFrame {
 		});
 	}
 	public void fill(Integer c) {
+		if (removed) return;
 		byte converted = convert(c);
 		operations.add((g) -> {
 			for (int t = 0; t < g.getWidth(); t++) {
@@ -61,9 +75,11 @@ public class LuaFrame {
 		});
 	}
 	public int getWidth() {
+		if (removed) return -1;
 		return computer.getViewWidth();
 	}
 	public int getHeight() {
+		if (removed) return -1;
 		return computer.getViewHeight();
 	}
 	private byte convert(Integer c) {

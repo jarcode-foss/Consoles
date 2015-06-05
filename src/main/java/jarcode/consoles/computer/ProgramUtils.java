@@ -2,6 +2,7 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.Consoles;
 import org.bukkit.Bukkit;
+import org.luaj.vm2.LuaError;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,6 +69,21 @@ public class ProgramUtils {
 	}
 
 	/**
+	 * Sleeps for the given time, halting the current thread. Throws a LuaError instead of an
+	 * interrupted exception when interrupted.
+	 *
+	 * @param ms the time (in milliseconds) to sleep for
+	 */
+	public static void sleep(long ms) {
+		try {
+			Thread.sleep(ms);
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
+		}
+	}
+
+	/**
 	 * Schedules a task to be ran in the main thread and halts the Lua program until the
 	 * task is complete. Used for bukkit API calls and NMS code access.
 	 *
@@ -75,20 +91,24 @@ public class ProgramUtils {
 	 * @param terminated a supplier to determine if the program or task should be terminated.
 	 * @param <T> the type to return after the task is complete
 	 * @return the result of the task
-	 * @throws InterruptedException
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) throws InterruptedException {
+	public static <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) {
 		AtomicBoolean available = new AtomicBoolean(false);
 		final Object[] result = {null};
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			result[0] = supplier.get();
 			available.set(true);
 		});
-		while (!available.get()) {
-			if (terminated.getAsBoolean())
-				break;
-			Thread.sleep(40);
+		try {
+			while (!available.get()) {
+				if (terminated.getAsBoolean())
+					break;
+				Thread.sleep(40);
+			}
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
 		}
 		return (T) result[0];
 	}
@@ -99,16 +119,20 @@ public class ProgramUtils {
 	 * @param task a reference to the task to execute.
 	 * @param terminated whether the program or task has been terminated
 	 * @see jarcode.consoles.computer.ProgramUtils#schedule(java.util.function.Supplier, java.util.function.BooleanSupplier)
-	 * @throws InterruptedException
 	 */
-	public static void main(Consumer<Runnable> task, BooleanSupplier terminated) throws InterruptedException {
+	public static void main(Consumer<Runnable> task, BooleanSupplier terminated) {
 		AtomicBoolean resumed = new AtomicBoolean(false);
 		Runnable reset = () -> resumed.set(true);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> task.accept(reset));
-		while (!resumed.get()) {
-			if (terminated.getAsBoolean())
-				break;
-			Thread.sleep(40);
+		try {
+			while (!resumed.get()) {
+				if (terminated.getAsBoolean())
+					break;
+				Thread.sleep(40);
+			}
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
 		}
 	}
 
@@ -118,18 +142,22 @@ public class ProgramUtils {
 	 * @param runnable the task to execute.
 	 * @param terminated whether the program or task has been terminated
 	 * @see jarcode.consoles.computer.ProgramUtils#schedule(java.util.function.Supplier, java.util.function.BooleanSupplier)
-	 * @throws InterruptedException
 	 */
-	public static void schedule(Runnable runnable, BooleanSupplier terminated) throws InterruptedException {
+	public static void schedule(Runnable runnable, BooleanSupplier terminated) {
 		AtomicBoolean available = new AtomicBoolean(false);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			runnable.run();
 			available.set(true);
 		});
-		while (!available.get()) {
-			if (terminated.getAsBoolean())
-				break;
-			Thread.sleep(40);
+		try {
+			while (!available.get()) {
+				if (terminated.getAsBoolean())
+					break;
+				Thread.sleep(40);
+			}
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
 		}
 	}
 

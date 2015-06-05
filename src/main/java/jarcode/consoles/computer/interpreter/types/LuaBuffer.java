@@ -23,7 +23,7 @@ public class LuaBuffer {
 	}
 
 	public void update(Integer id) {
-		LuaFrame frame = program.framePool.remove(id);
+		LuaFrame frame = program.framePool.get(id);
 		if (System.currentTimeMillis() - lastUpdate >= MIN_UPDATE_TIME) {
 			lastUpdate = System.currentTimeMillis();
 		}
@@ -39,6 +39,7 @@ public class LuaBuffer {
 		}
 		update.run();
 		if (frame != null) {
+			frame.remove();
 			component.setOperations(frame.operations);
 			frame.operations.clear();
 		}

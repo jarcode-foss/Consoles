@@ -203,47 +203,6 @@ public class InterpretedProgram {
 			}
 		}
 	}
-	public void lua$removeRestrictions() {
-
-		if (!restricted) return;
-
-		AtomicBoolean state = new AtomicBoolean(false);
-
-		ConsoleButton allow = new ConsoleButton(computer.getConsole(), "Verify");
-		allow.setBorder((byte) 114);
-		ConsoleButton exit = new ConsoleButton(computer.getConsole(), "Exit");
-
-		Position2D pos = computer.dialog("The current program needs the permission "
-				+ ChatColor.RED + "computer.admin" + ChatColor.BLACK + " to continue", allow, exit);
-
-		exit.addEventListener(event -> {
-			computer.getConsole().removeComponent(pos);
-			instance.terminate();
-			state.set(true);
-		});
-		allow.addEventListener(event -> {
-			computer.getConsole().removeComponent(pos);
-			if (event.getPlayer().hasPermission("computer.admin")) {
-
-				restricted = false;
-				Lua.libraries.values().stream()
-						.filter((lib) -> lib.isRestricted)
-						.forEach(globals::load);
-			}
-			else {
-				print("\nlua: insufficient permissions");
-				instance.terminate();
-			}
-			state.set(true);
-		});
-		try {
-			while (!state.get() && !terminated())
-				Thread.sleep(80);
-		}
-		catch (InterruptedException e) {
-			throw new LuaError(e);
-		}
-	}
 	private int findFrameId() {
 		int i = 0;
 		while(framePool.containsKey(i))
@@ -317,6 +276,46 @@ public class InterpretedProgram {
 	private String err(String str) {
 		return "\t" + ChatColor.RED + str;
 	}
+	public void lua$removeRestrictions() {
+		if (!restricted) return;
+
+		AtomicBoolean state = new AtomicBoolean(false);
+
+		ConsoleButton allow = new ConsoleButton(computer.getConsole(), "Verify");
+		allow.setBorder((byte) 114);
+		ConsoleButton exit = new ConsoleButton(computer.getConsole(), "Exit");
+
+		Position2D pos = computer.dialog("The current program needs the permission "
+				+ ChatColor.RED + "computer.admin" + ChatColor.BLACK + " to continue", allow, exit);
+
+		exit.addEventListener(event -> {
+			computer.getConsole().removeComponent(pos);
+			instance.terminate();
+			state.set(true);
+		});
+		allow.addEventListener(event -> {
+			computer.getConsole().removeComponent(pos);
+			if (event.getPlayer().hasPermission("computer.admin")) {
+
+				restricted = false;
+				Lua.libraries.values().stream()
+						.filter((lib) -> lib.isRestricted)
+						.forEach(globals::load);
+			}
+			else {
+				print("\nlua: insufficient permissions");
+				instance.terminate();
+			}
+			state.set(true);
+		});
+		try {
+			while (!state.get() && !terminated())
+				Thread.sleep(80);
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
+		}
+	}
 	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 	private String lua$read() {
 		final String[] result = {null};
@@ -341,11 +340,13 @@ public class InterpretedProgram {
 		return computer.getHostname();
 	}
 	private LuaComputer lua$findComputer(String hostname) {
+		sleep(40);
 		Computer computer = ComputerHandler.getInstance().find(hostname);
 		if (computer == null) return null;
 		else return new LuaComputer(computer);
 	}
 	private LuaChannel lua$registerChannel(String channel) {
+		sleep(40);
 		if (!computer.isChannelRegistered(channel)) {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
 				computer.unregisterMessageListener(channel);
@@ -361,14 +362,17 @@ public class InterpretedProgram {
 		return new LuaArray(size);
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
+		sleep(20);
 		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
 	}
 	private String[] lua$soundList() {
+		sleep(20);
 		return Arrays.asList(Sound.values()).stream()
 				.map(Enum::name)
 				.toArray(String[]::new);
 	}
 	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
+		sleep(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
 				.findFirst().orElseGet(() -> null);
@@ -380,21 +384,13 @@ public class InterpretedProgram {
 						(float) v1.checkdouble(), (float) v2.checkdouble()));
 	}
 	private Boolean lua$clear() {
-		try {
-			// this is to prevent spam & waiting for the last thing in the buffer to write
-			Thread.sleep(50);
-			return schedule(() -> {
-				Terminal terminal = computer.getTerminal(this);
-				if (terminal != null)
-					terminal.clear();
-				return true;
-			}, this::terminated);
-		}
-		catch (InterruptedException e) {
-			if (Consoles.DEBUG)
-				e.printStackTrace();
-			return false;
-		}
+		sleep(50);
+		return schedule(() -> {
+			Terminal terminal = computer.getTerminal(this);
+			if (terminal != null)
+				terminal.clear();
+			return true;
+		}, this::terminated);
 	}
 	private String lua$programDir() {
 		String[] arr = this.path.split("/");
@@ -406,6 +402,7 @@ public class InterpretedProgram {
 		return path;
 	}
 	private LuaValue lua$require(String path) {
+		sleep(10);
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
@@ -436,6 +433,7 @@ public class InterpretedProgram {
 		return value.call();
 	}
 	private LuaBuffer lua_screenBuffer(Integer index) {
+		sleep(20);
 		index--;
 		if (!computer.screenAvailable(index)) return null;
 		allocatedSessions.add(index);
@@ -458,31 +456,37 @@ public class InterpretedProgram {
 		return args;
 	}
 	private LuaFolder lua$resolveFolder(String path) {
+		sleep(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFile lua$resolveFile(String path) {
+		sleep(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFrame lua_screenFrame() {
+		if (framePool.size() > 128) return null;
 		int id = findFrameId();
-		LuaFrame frame = new LuaFrame(id, computer);
+		LuaFrame frame = new LuaFrame(id, computer, () -> framePool.remove(id));
 		framePool.put(id, frame);
 		return frame;
 	}
 	private int lua$chestList() {
+		sleep(40);
 		return ComputerHandler.findChests(computer).length;
 	}
 	private LuaValue lua$getChest(int index) throws InterruptedException {
+		sleep(40);
 		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
 		if (index > chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index], this::terminated);
 		return CoerceJavaToLua.coerce(lua);
 	}
 	private LuaFile lua$touch(String path) {
+		sleep(10);
 		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
 		return file != null ? new LuaFile(file, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
@@ -505,6 +509,7 @@ public class InterpretedProgram {
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private LuaFolder lua$mkdir(String path) {
+		sleep(10);
 		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
 		return folder != null ? new LuaFolder(folder, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;

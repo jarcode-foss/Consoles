@@ -220,22 +220,14 @@ public class ComputerHandler implements Listener {
 	public static boolean lua_redstoneInput(Integer index) {
 		Computer computer = Lua.context();
 		boolean[] inputs;
-		try {
-			inputs = schedule(() -> findInputs(computer), Lua::terminated);
-		} catch (InterruptedException e) {
-			throw new LuaError(e);
-		}
+		inputs = schedule(() -> findInputs(computer), Lua::terminated);
 		return inputs.length > index && index >= 0 && inputs[index];
 	}
 
 	public static int lua_redstoneInputLength() {
 		Computer computer = Lua.context();
 		boolean[] inputs;
-		try {
-			inputs = schedule(() -> findInputs(computer), Lua::terminated);
-		} catch (InterruptedException e) {
-			throw new LuaError(e);
-		}
+		inputs = schedule(() -> findInputs(computer), Lua::terminated);
 		return inputs.length;
 	}
 
