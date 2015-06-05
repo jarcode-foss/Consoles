@@ -9,6 +9,10 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.types.*;
+import jarcode.consoles.event.ButtonEvent;
+import jarcode.consoles.event.ConsoleEventListener;
+import jarcode.consoles.internal.ConsoleButton;
+import jarcode.consoles.util.Position2D;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -55,6 +59,8 @@ public class InterpretedProgram {
 	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
 	private List<String> registeredChannels = new ArrayList<>();
+
+	private boolean restricted = true;
 
 	public InterpretedProgram(FSFile file, String path) {
 		this.file = file;
@@ -113,7 +119,9 @@ public class InterpretedProgram {
 			globals.load(new StringLib());
 			globals.load(new EmbeddedMathLib());
 			globals.load(interruptLib);
-			Lua.libraries.values().forEach(globals::load);
+			Lua.libraries.values().stream()
+					.filter((lib) -> !lib.isRestricted)
+					.forEach(globals::load);
 			LoadState.install(globals);
 			LuaC.install(globals);
 
@@ -188,6 +196,47 @@ public class InterpretedProgram {
 			for (int i : allocatedSessions) {
 				computer.setComponent(i, null);
 			}
+		}
+	}
+	public void lua$removeRestrictions() {
+
+		if (!restricted) return;
+
+		AtomicBoolean state = new AtomicBoolean(false);
+
+		ConsoleButton allow = new ConsoleButton(computer.getConsole(), "Verify");
+		allow.setBorder((byte) 114);
+		ConsoleButton exit = new ConsoleButton(computer.getConsole(), "Exit");
+
+		Position2D pos = computer.dialog("The current program needs the permission "
+				+ ChatColor.RED + "computer.admin" + ChatColor.BLACK + " to continue", allow, exit);
+
+		exit.addEventListener(event -> {
+			computer.getConsole().removeComponent(pos);
+			instance.terminate();
+			state.set(true);
+		});
+		allow.addEventListener(event -> {
+			computer.getConsole().removeComponent(pos);
+			if (event.getPlayer().hasPermission("computer.admin")) {
+
+				restricted = false;
+				Lua.libraries.values().stream()
+						.filter((lib) -> lib.isRestricted)
+						.forEach(globals::load);
+			}
+			else {
+				print("\nlua: insufficient permissions");
+				instance.terminate();
+			}
+			state.set(true);
+		});
+		try {
+			while (!state.get() && !terminated())
+				Thread.sleep(80);
+		}
+		catch (InterruptedException e) {
+			throw new LuaError(e);
 		}
 	}
 	private int findFrameId() {

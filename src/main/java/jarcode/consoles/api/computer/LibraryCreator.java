@@ -1,5 +1,6 @@
 package jarcode.consoles.api.computer;
 
+import jarcode.consoles.computer.interpreter.ComputerLibrary;
 import jarcode.consoles.computer.interpreter.Lua;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
@@ -21,8 +22,8 @@ public class LibraryCreator {
 	 * @see {@link jarcode.consoles.api.computer.LibraryCreator#link(java.lang.Class type,
 	 * java.lang.Object instance, java.lang.String name)}
 	 */
-	public static void link(Object instance, String name) {
-		link(instance.getClass(), instance, name);
+	public static void link(Object instance, String name, boolean isRestricted) {
+		link(instance.getClass(), instance, name, isRestricted);
 	}
 	/**
 	 * Links a Java class (and its instance) as a library that is meant to be visible
@@ -33,20 +34,20 @@ public class LibraryCreator {
 	 * @param instance the instance of the class to use
 	 * @param name the name of the library
 	 */
-	public static void link(Class<?> type, Object instance, String name) {
-		Library library = new Library(name, methods(type, instance));
+	public static void link(Class<?> type, Object instance, String name, boolean isRestricted) {
+		ComputerLibrary library = new ComputerLibrary(name, methods(type, instance), isRestricted);
 		Lua.libraries.put(name, library);
 	}
-	private static NamedFunction[] methods(Class<?> type, Object inst) {
+	private static ComputerLibrary.NamedFunction[] methods(Class<?> type, Object inst) {
 		Method[] java = type.getMethods();
-		NamedFunction[] lua = new NamedFunction[java.length];
+		ComputerLibrary.NamedFunction[] lua = new ComputerLibrary.NamedFunction[java.length];
 		for (int t = 0; t < java.length; t++)
 			lua[t] = toLua(java[t], inst);
 		return lua;
 	}
-	private static NamedFunction toLua(Method m, final Object inst) {
+	private static ComputerLibrary.NamedFunction toLua(Method m, final Object inst) {
 		Class[] types = m.getParameterTypes();
-		NamedFunction function = new NamedFunction() {
+		ComputerLibrary.NamedFunction function = new ComputerLibrary.NamedFunction() {
 			@Override
 			public LuaValue call() {
 				try {
@@ -98,29 +99,5 @@ public class LibraryCreator {
 		}
 		else function.setName(m.getName());
 		return function;
-	}
-	private static class NamedFunction extends LibFunction {
-		String mappedName;
-		private void setName(String name) {
-			this.mappedName = name;
-		}
-	}
-	private static class Library extends TwoArgFunction {
-		private String name;
-		private NamedFunction[] functions;
-		public Library(String name, NamedFunction[] functions) {
-			this.name = name;
-			this.functions = functions;
-		}
-		@Override
-		public LuaValue call(LuaValue ignored, LuaValue global) {
-			LuaTable table = new LuaTable(0, 30);
-			global.set(name, table);
-			for (NamedFunction function : functions) {
-				table.set(function.mappedName, function);
-			}
-			global.get("package").get("loaded").set(name, table);
-			return table;
-		}
 	}
 }

@@ -24,7 +24,7 @@ public class Lua {
 
 	public static boolean killAll = false;
 
-	public static Map<String, LibFunction> libraries = new ConcurrentHashMap<>();
+	public static Map<String, ComputerLibrary> libraries = new ConcurrentHashMap<>();
 	public static Map<String, LibFunction> staticFunctions = new ConcurrentHashMap<>();
 	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
 
