@@ -16,11 +16,21 @@ public class NetLibrary {
 		HttpURLConnection con = buildConnection(url);
 
 		int response = con.getResponseCode();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-		String data = IOUtils.toString(reader);
-		reader.close();
+		String data = "";
+		HTTPResponse res = new HTTPResponse(response);
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			data = IOUtils.toString(reader);
+			reader.close();
+		}
+		catch (IOException e) {
+			res.exception = e.getClass().getSimpleName() + ": " + e.getMessage();
+		}
+		finally {
+			res.data = data;
+		}
 
-		return new HTTPResponse(data, response);
+		return res;
 	}
 	private HttpURLConnection buildConnection(String url) throws IOException {
 
@@ -44,19 +54,28 @@ public class NetLibrary {
 		out.close();
 
 		int response = con.getResponseCode();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-		String data = IOUtils.toString(reader);
-		reader.close();
-
-		return new HTTPResponse(data, response);
+		HTTPResponse res = new HTTPResponse(response);
+		String data = "";
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			data = IOUtils.toString(reader);
+			reader.close();
+		}
+		catch (IOException e) {
+			res.exception = e.getClass().getSimpleName() + ": " + e.getMessage();
+		}
+		finally {
+			res.data = data;
+		}
+		return res;
 	}
 	public class HTTPResponse {
 
 		private final int response;
-		private final String data;
+		private String data;
+		private String exception = null;
 
-		public HTTPResponse(String data, int response) {
-			this.data = data;
+		public HTTPResponse(int response) {
 			this.response = response;
 		}
 
@@ -66,6 +85,10 @@ public class NetLibrary {
 
 		public int getResponse() {
 			return response;
+		}
+
+		public String getException() {
+			return exception;
 		}
 	}
 }
