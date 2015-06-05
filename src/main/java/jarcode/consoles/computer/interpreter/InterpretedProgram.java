@@ -8,6 +8,7 @@ import jarcode.consoles.computer.bin.TouchProgram;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import jarcode.consoles.computer.interpreter.types.*;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
@@ -40,6 +41,10 @@ amount of base Lua function bindings.
  */
 @SuppressWarnings("unused")
 public class InterpretedProgram {
+
+	static {
+		Libraries.init();
+	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
 	

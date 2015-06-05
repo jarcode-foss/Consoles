@@ -3,10 +3,7 @@ package jarcode.consoles.api.computer;
 import jarcode.consoles.computer.interpreter.ComputerLibrary;
 import jarcode.consoles.computer.interpreter.Lua;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.LibFunction;
-import org.luaj.vm2.lib.TwoArgFunction;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

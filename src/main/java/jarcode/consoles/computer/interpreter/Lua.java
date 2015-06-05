@@ -2,6 +2,7 @@ package jarcode.consoles.computer.interpreter;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
+import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import net.jodah.typetools.TypeResolver;
 import org.bukkit.Bukkit;
 import org.luaj.vm2.*;
