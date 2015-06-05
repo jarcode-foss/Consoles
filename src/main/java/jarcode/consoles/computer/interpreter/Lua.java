@@ -203,10 +203,22 @@ public class Lua {
 	// retrieves the computer that the current program is being executed in
 	// used in static Java methods that are meant to be visible to lua
 	public static Computer context() {
-		Computer computer = pools.get(Thread.currentThread()).getComputer();
-		if (computer == null)
+		return findPool().getComputer();
+	}
+
+	public static InterpretedProgram program() {
+		return findPool().getProgram();
+	}
+
+	public static boolean terminated() {
+		return findPool().getProgram().terminated();
+	}
+
+	private static FuncPool findPool() {
+		FuncPool pool = pools.get(Thread.currentThread());
+		if (pool == null)
 			throw new IllegalAccessError("Tried to access lua bindings outside of program thread");
-		else return computer;
+		else return pool;
 	}
 	public static Class[] resolveArgTypes(Object func, Class<?> type, boolean shift) {
 		Class<?>[] arr = TypeResolver.resolveRawArguments(type, func.getClass());

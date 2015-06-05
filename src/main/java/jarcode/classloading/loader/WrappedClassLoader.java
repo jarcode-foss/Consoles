@@ -213,9 +213,7 @@ public final class WrappedClassLoader extends ClassLoader {
 			if (loaded.containsKey(name)) {
 				return loaded.get(name);
 			}
-
 			if (!classMap.containsKey(name)) throw new ClassNotFoundException();
-
 			byte[] classBytes = extract(classMap.get(name));
 			Class type;
 
@@ -264,7 +262,6 @@ public final class WrappedClassLoader extends ClassLoader {
 		list.addAll(classMap.keySet());
 		return list;
 	}
-	
 	public Set<String> getLoadedClasses() {
 		return loaded.keySet();
 	}

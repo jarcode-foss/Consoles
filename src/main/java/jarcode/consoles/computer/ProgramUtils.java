@@ -18,6 +18,13 @@ a class full of methods meant to be statically imported.
  */
 public class ProgramUtils {
 
+	/**
+	 * Splits the program argument string into an array of arguments. Handles string
+	 * encapsulation.
+	 *
+	 * @param input the string to parse
+	 * @return an array of arguments
+	 */
 	public static String[] splitArguments(String input) {
 		char[] arr = input.toCharArray();
 		boolean quote = false;
@@ -59,7 +66,17 @@ public class ProgramUtils {
 		}
 		return args.toArray(new String[args.size()]);
 	}
-	// huehuehuehuehuehue
+
+	/**
+	 * Schedules a task to be ran in the main thread and halts the Lua program until the
+	 * task is complete. Used for bukkit API calls and NMS code access.
+	 *
+	 * @param supplier the task to run, returning a value of some sort.
+	 * @param terminated a supplier to determine if the program or task should be terminated.
+	 * @param <T> the type to return after the task is complete
+	 * @return the result of the task
+	 * @throws InterruptedException
+	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T schedule(Supplier<T> supplier, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean available = new AtomicBoolean(false);
@@ -75,6 +92,15 @@ public class ProgramUtils {
 		}
 		return (T) result[0];
 	}
+
+	/**
+	 * Task schedule method, used without a return type.
+	 *
+	 * @param task a reference to the task to execute.
+	 * @param terminated whether the program or task has been terminated
+	 * @see jarcode.consoles.computer.ProgramUtils#schedule(java.util.function.Supplier, java.util.function.BooleanSupplier)
+	 * @throws InterruptedException
+	 */
 	public static void main(Consumer<Runnable> task, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean resumed = new AtomicBoolean(false);
 		Runnable reset = () -> resumed.set(true);
@@ -85,6 +111,15 @@ public class ProgramUtils {
 			Thread.sleep(40);
 		}
 	}
+
+	/**
+	 * Task schedule method, used without a return type.
+	 *
+	 * @param runnable the task to execute.
+	 * @param terminated whether the program or task has been terminated
+	 * @see jarcode.consoles.computer.ProgramUtils#schedule(java.util.function.Supplier, java.util.function.BooleanSupplier)
+	 * @throws InterruptedException
+	 */
 	public static void schedule(Runnable runnable, BooleanSupplier terminated) throws InterruptedException {
 		AtomicBoolean available = new AtomicBoolean(false);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
@@ -97,9 +132,24 @@ public class ProgramUtils {
 			Thread.sleep(40);
 		}
 	}
+
+	/**
+	 * Executes the given task in the main thread.
+	 *
+	 * @param runnable the task to execute.
+	 */
 	public static void schedule(Runnable runnable) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), runnable);
 	}
+
+	/**
+	 * Parses flags from an array of program arguments.
+	 *
+	 * @param args the arguments to parse
+	 * @param consumer the handler for flags that occur in the arguments
+	 * @param hasData function for whether the given flag requires extra data
+	 * @return the parsed flags
+	 */
 	public static String[] parseFlags(String[] args, BiConsumer<Character, String> consumer, Function<Character, Boolean> hasData) {
 		FlagMappings mappings = mapFlags(args, hasData);
 		mappings.map.entrySet().stream().forEach(entry -> consumer.accept(entry.getKey(), entry.getValue()));

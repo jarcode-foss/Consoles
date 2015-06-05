@@ -420,13 +420,12 @@ public class InterpretedProgram {
 		return frame;
 	}
 	private int lua$chestList() {
-		return ComputerHandler.getInstance().findChests(computer).length;
+		return ComputerHandler.findChests(computer).length;
 	}
-	private LuaValue lua$getChest(int index) {
-		schedule();
-		Chest[] chests = ComputerHandler.getInstance().findChests(computer);
+	private LuaValue lua$getChest(int index) throws InterruptedException {
+		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
 		if (index > chests.length || index < 0) return LuaValue.NIL;
-		LuaChest lua = new LuaChest(chests[index]);
+		LuaChest lua = new LuaChest(chests[index], this::terminated);
 		return CoerceJavaToLua.coerce(lua);
 	}
 	private LuaFile lua$touch(String path) {

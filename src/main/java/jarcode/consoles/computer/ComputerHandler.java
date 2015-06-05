@@ -27,6 +27,7 @@ import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.luaj.vm2.LuaError;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -36,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static jarcode.consoles.computer.ProgramUtils.*;
 
 public class ComputerHandler implements Listener {
 
@@ -47,6 +50,8 @@ public class ComputerHandler implements Listener {
 	static {
 		Lua.map(ComputerHandler::lua_redstone, "redstone");
 		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
+		Lua.map(ComputerHandler::lua_redstoneInputLength, "redstoneInputLength");
+		Lua.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
 	}
 
 	static {
@@ -141,7 +146,7 @@ public class ComputerHandler implements Listener {
 	}
 
 	// iterates over blocks behind the computer
-	private void iterateBehind(Consumer<Block> consumer, Computer computer) {
+	private static void iterateBehind(Consumer<Block> consumer, Computer computer) {
 		ManagedConsole console = computer.getConsole();
 		BlockFace f = console.getDirection();
 		Location at = console.getLocation();
@@ -182,7 +187,7 @@ public class ComputerHandler implements Listener {
 
 	// finds all chests behind the computer
 	@SuppressWarnings("SuspiciousMethodCalls")
-	public Chest[] findChests(Computer computer) {
+	public static Chest[] findChests(Computer computer) {
 		List<Chest> chests = new ArrayList<>();
 		iterateBehind((block) -> {
 			if (block.getType() == Material.CHEST && block.getState() instanceof Chest) {
@@ -196,7 +201,7 @@ public class ComputerHandler implements Listener {
 		}, computer);
 		return chests.toArray(new Chest[chests.size()]);
 	}
-	public boolean[] findInputs(Computer computer) {
+	public static boolean[] findInputs(Computer computer) {
 		List<Boolean> list = new ArrayList<>();
 		iterateBehind(block -> {
 			if (block.getType().isSolid() && block.getType() != Material.REDSTONE_BLOCK)
@@ -207,8 +212,29 @@ public class ComputerHandler implements Listener {
 			arr[t] = list.get(t);
 		return arr;
 	}
-	// I commit a few crimes here, but it's a simple way of fixing the threading issues
-	// with the lua calls.
+
+	public static boolean lua_redstoneInput(Integer index) {
+		Computer computer = Lua.context();
+		boolean[] inputs;
+		try {
+			inputs = schedule(() -> findInputs(computer), Lua::terminated);
+		} catch (InterruptedException e) {
+			throw new LuaError(e);
+		}
+		return !(inputs.length >= index || index < 0) && inputs[index];
+	}
+
+	public static int lua_redstoneInputLength() {
+		Computer computer = Lua.context();
+		boolean[] inputs;
+		try {
+			inputs = schedule(() -> findInputs(computer), Lua::terminated);
+		} catch (InterruptedException e) {
+			throw new LuaError(e);
+		}
+		return inputs.length;
+	}
+
 	@SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
 	public static boolean lua_redstone(Integer index, Boolean on) {
 		Computer computer = Lua.context();
