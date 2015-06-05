@@ -47,6 +47,15 @@ public class InternalHooks {
 	}
 
 	/**
+	 * Frees a global map ID.
+	 *
+	 * @param global the map ID to free.
+	 */
+	public static void free(short global) {
+		ConsoleHandler.getInstance().free(global, 1);
+	}
+
+	/**
 	 * Translates a global map ID to the client ID for a given player
 	 *
 	 * @param player the player to translate for

@@ -613,6 +613,16 @@ public class ConsoleHandler implements Listener {
 		}
 		return lowest;
 	}
+	public void free(short index, int size) {
+		synchronized (ALLOCATION_LOCK) {
+			for (short t = index; t < index + size; t++) {
+				for (Map<Short, Short> map : allocations.values()) {
+					map.remove(t);
+				}
+				defaultAllocation.remove(Short.valueOf(t));
+			}
+		}
+	}
 	private boolean fits(short i, int size) {
 		for (short index : defaultAllocation) {
 			if (index >= i && index < i + size) return false;
