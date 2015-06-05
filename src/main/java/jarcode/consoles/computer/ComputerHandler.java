@@ -15,6 +15,7 @@ import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R3.block.CraftBlock;
 import org.bukkit.craftbukkit.v1_8_R3.command.VanillaCommandWrapper;
 import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
@@ -208,7 +209,7 @@ public class ComputerHandler implements Listener {
 		List<Boolean> list = new ArrayList<>();
 		iterateBehind(block -> {
 			if (block.getType().isSolid() && block.getType() != Material.REDSTONE_BLOCK)
-				list.add(block.isBlockPowered() || block.isBlockIndirectlyPowered());
+				list.add(block.isBlockPowered());
 		}, computer);
 		boolean[] arr = new boolean[list.size()];
 		for (int t = 0; t < list.size(); t++)
@@ -224,7 +225,7 @@ public class ComputerHandler implements Listener {
 		} catch (InterruptedException e) {
 			throw new LuaError(e);
 		}
-		return !(inputs.length >= index || index < 0) && inputs[index];
+		return inputs.length > index && index >= 0 && inputs[index];
 	}
 
 	public static int lua_redstoneInputLength() {
