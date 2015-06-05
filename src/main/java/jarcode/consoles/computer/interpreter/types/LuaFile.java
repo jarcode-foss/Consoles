@@ -23,7 +23,7 @@ public class LuaFile extends LuaBlock {
 			return true;
 		}
 		catch (IOException e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 		}
 		return false;
@@ -34,7 +34,7 @@ public class LuaFile extends LuaBlock {
 			return true;
 		}
 		catch (IOException e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 		}
 		return false;
@@ -54,7 +54,7 @@ public class LuaFile extends LuaBlock {
 			}
 			out.toByteArray();
 		} catch (IOException e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 		}
 		return null;
@@ -75,7 +75,7 @@ public class LuaFile extends LuaBlock {
 			}
 			return new String(out.toByteArray(), charset);
 		} catch (IOException e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 		}
 		return null;

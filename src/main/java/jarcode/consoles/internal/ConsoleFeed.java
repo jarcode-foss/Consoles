@@ -193,7 +193,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 		catch (Exception e) {
 			synchronized (LOCK) {
-				if (Consoles.DEBUG)
+				if (Consoles.debug)
 					e.printStackTrace();
 				exception = e;
 			}

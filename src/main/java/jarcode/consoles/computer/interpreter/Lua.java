@@ -342,7 +342,7 @@ public class Lua {
 					.toArray(LuaValue[]::new));
 		}
 		else {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				Consoles.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
 			return CoerceJavaToLua.coerce(java);
 		}

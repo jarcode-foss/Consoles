@@ -22,11 +22,6 @@ events, static stuff, and configuration reading.
  */
 public class Consoles extends WrappedPlugin {
 
-	// only use if testing builds locally, this will print
-	// debug information for Lua programs and various other
-	// tasks
-	public static final boolean DEBUG = false;
-
 	private static Consoles instance;
 
 	// whether to enable the basic frame rendering for computers
@@ -45,6 +40,8 @@ public class Consoles extends WrappedPlugin {
 	public static boolean computersEnabled = true;
 	// command prefix
 	public static String commandPrefix;
+	// debug mode
+	public static boolean debug = false;
 
 	static {
 		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
@@ -88,6 +85,7 @@ public class Consoles extends WrappedPlugin {
 		startingId = (short) getConfig().getInt("starting-map-index", 5000);
 		commandPrefix = getConfig().getString("command-prefix", "/").trim();
 		computersEnabled = getConfig().getBoolean("computers-enabled", true);
+		debug = getConfig().getBoolean("debug-mode", false);
 		allowCrafting = allowCrafting && computersEnabled;
 
 		ConsoleHandler.getInstance().local = !forward;

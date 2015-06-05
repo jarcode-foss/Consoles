@@ -105,13 +105,13 @@ public class WGetProgram extends FSProvidedProgram {
 			}
 		}
 		catch (MalformedURLException e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 			print("wget: " + args[0] + ": malformed URL");
 			return;
 		}
 		catch (Throwable e) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 			print("wget: " + args[0] + ": failed to download, " + e.getClass().getSimpleName());
 			return;

@@ -77,7 +77,7 @@ public class ProgramInstance implements Runnable {
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				e.printStackTrace();
 		}
 		finally {

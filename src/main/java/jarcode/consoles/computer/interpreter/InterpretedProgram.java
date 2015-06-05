@@ -150,7 +150,7 @@ public class InterpretedProgram {
 			try {
 				chunk = globals.load(raw);
 			} catch (LuaError err) {
-				if (Consoles.DEBUG)
+				if (Consoles.debug)
 					err.printStackTrace();
 				println("lua:" + ChatColor.RED + " compile error");
 				String msg = Arrays.asList(err.getMessage().split("\n")).stream()
@@ -213,7 +213,7 @@ public class InterpretedProgram {
 		return computer;
 	}
 	private void handleLuaError(LuaError err) {
-		if (Consoles.DEBUG)
+		if (Consoles.debug)
 			Consoles.getInstance().getLogger().severe("\n" + ExceptionUtils.getFullStackTrace(err));
 		String errorBreakdown = err.getMessage();
 		boolean inst;
@@ -425,7 +425,7 @@ public class InterpretedProgram {
 			value = globals.load(text);
 		}
 		catch (LuaError err) {
-			if (Consoles.DEBUG)
+			if (Consoles.debug)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " failed to compile '" + path + "'");
 			return null;

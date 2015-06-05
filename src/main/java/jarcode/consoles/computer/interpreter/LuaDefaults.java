@@ -41,7 +41,7 @@ public class LuaDefaults {
 					String content = IOUtils.readLines(stream).stream().collect(Collectors.joining("\n"));
 					stream.close();
 					String formatted = entry.getName().substring(4, entry.getName().length() - 4);
-					if (Consoles.DEBUG)
+					if (Consoles.debug)
 						Consoles.getInstance().getLogger().info("[DEBUG] Loaded: " + formatted);
 					SCRIPTS.put(formatted, content);
 				}

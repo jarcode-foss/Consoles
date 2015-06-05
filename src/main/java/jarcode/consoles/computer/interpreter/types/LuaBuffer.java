@@ -33,7 +33,7 @@ public class LuaBuffer {
 				update(id);
 			}
 			catch (InterruptedException e) {
-				if (Consoles.DEBUG)
+				if (Consoles.debug)
 					e.printStackTrace();
 			}
 		}

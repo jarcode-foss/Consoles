@@ -258,7 +258,7 @@ public class Kernel extends FSProvidedProgram {
 									terminal.println(ChatColor.RED + "KERNEL: failed to load driver for /dev/"
 											+ name + ChatColor.WHITE + " (" + e.getClass().getSimpleName() + ")");
 									terminal.println(ChatColor.RED + "KERNEL: Uninstalling driver type.");
-									if (Consoles.DEBUG)
+									if (Consoles.debug)
 										e.printStackTrace();
 									driverMappings.remove(match);
 								}

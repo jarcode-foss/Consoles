@@ -282,9 +282,6 @@ public class ConsoleHandler implements Listener {
 							if (!world.addEntity(nms)) {
 								Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
 										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
-							} else if (Consoles.DEBUG) {
-								Consoles.getInstance().getLogger().info("Spawned item frame: "
-										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
 							}
 						});
 			}
@@ -292,15 +289,11 @@ public class ConsoleHandler implements Listener {
 	}
 	@EventHandler
 	public void onPlayerWorldChange(PlayerChangedWorldEvent e) {
-		if (Consoles.DEBUG)
-			Consoles.getInstance().getLogger().info("World changed: " + e.getPlayer().getName());
 		shiftMapValues(e.getPlayer());
 	}
 	// dimension change on respawn bug
 	@EventHandler
 	public void onPlayerRespawn(final PlayerRespawnEvent e) {
-		if (Consoles.DEBUG)
-			Consoles.getInstance().getLogger().info("Player respawned: " + e.getPlayer().getName());
 		shiftMapValues(e.getPlayer());
 	}
 	// here's the ultimate fix for the static map bug that's been annoying me:
@@ -495,12 +488,6 @@ public class ConsoleHandler implements Listener {
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEntityEvent e) {
 		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked())) {
-			if (Consoles.DEBUG) {
-				ItemFrame frame = (ItemFrame) e.getRightClicked();
-				short serverId = frame.getItem().getDurability();
-				short local = translateIndex(e.getPlayer().getName(), serverId);
-				e.getPlayer().sendMessage("local map index: " + local);
-			}
 			e.setCancelled(true);
 		}
 		clickEvent(e.getPlayer());
@@ -594,8 +581,6 @@ public class ConsoleHandler implements Listener {
 	// this allocates a block of indexes for the maps to use,
 	// and updates all the allocation mappings for active contexts.
 	public short allocate(int size) {
-		if (Consoles.DEBUG)
-			Consoles.getInstance().getLogger().info("Allocating " + size + " frames for new console...");
 		short lowest = Consoles.startingId;
 		synchronized (ALLOCATION_LOCK) {
 			while (!fits(lowest, size))
