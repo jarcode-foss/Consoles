@@ -1,6 +1,6 @@
 package jarcode.consoles.event;
 
-import jarcode.consoles.ConsoleComponent;
+import jarcode.consoles.internal.ConsoleComponent;
 
 public class ConsoleEvent<T extends ConsoleComponent> {
 

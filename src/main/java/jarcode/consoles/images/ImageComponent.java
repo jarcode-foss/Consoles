@@ -1,5 +1,7 @@
-package jarcode.consoles;
+package jarcode.consoles.images;
 
+import jarcode.consoles.internal.ConsoleComponent;
+import jarcode.consoles.internal.ConsoleRenderer;
 import jarcode.consoles.api.CanvasGraphics;
 
 import javax.imageio.ImageIO;

@@ -1,7 +1,8 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.skript.ScriptInterface;
 import jarcode.consoles.computer.skript.ScriptUploader;
 import jarcode.consoles.messaging.ConsoleBungeeHook;

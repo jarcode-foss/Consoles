@@ -1,6 +1,6 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.ConsoleRenderer;
+import jarcode.consoles.internal.ConsoleRenderer;
 
 /**
  * Represents a component that is not actually created until it has a

@@ -4,8 +4,8 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
-import jarcode.consoles.ManagedConsole;
-import jarcode.consoles.ConsoleHandler;
+import jarcode.consoles.internal.ManagedConsole;
+import jarcode.consoles.internal.ConsoleHandler;
 import jarcode.consoles.Consoles;
 
 import org.bukkit.Bukkit;

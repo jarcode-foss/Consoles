@@ -1,5 +1,6 @@
-package jarcode.consoles;
+package jarcode.consoles.images;
 
+import jarcode.consoles.internal.ManagedConsole;
 import jarcode.consoles.util.Position2D;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.Location;

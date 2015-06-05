@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

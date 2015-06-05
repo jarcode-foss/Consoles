@@ -1,6 +1,6 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.ConsoleRenderer;
+import jarcode.consoles.internal.ConsoleRenderer;
 
 /**
  * Represents a component that handles placement in the root container (console) itself

@@ -1,5 +1,6 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;

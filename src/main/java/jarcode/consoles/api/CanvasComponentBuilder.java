@@ -1,7 +1,7 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.ConsoleComponent;
-import jarcode.consoles.ConsoleRenderer;
+import jarcode.consoles.internal.ConsoleComponent;
+import jarcode.consoles.internal.ConsoleRenderer;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;

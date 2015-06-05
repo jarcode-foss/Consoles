@@ -1,8 +1,10 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.*;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.computer.filesystem.FSFile;
+import jarcode.consoles.internal.ConsoleGraphics;
+import jarcode.consoles.internal.IndexedConsoleTextArea;
+import jarcode.consoles.internal.InputComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 

@@ -1,6 +1,6 @@
 package jarcode.consoles.computer.devices;
 
-import jarcode.consoles.ConsoleMessageListener;
+import jarcode.consoles.internal.ConsoleMessageListener;
 import jarcode.consoles.computer.LinkedStream;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.util.CommandBlockUtils;

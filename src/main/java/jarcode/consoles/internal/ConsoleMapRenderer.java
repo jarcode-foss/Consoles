@@ -1,5 +1,6 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.util.MapInjector;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;

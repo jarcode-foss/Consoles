@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;

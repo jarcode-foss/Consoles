@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import jarcode.consoles.event.ConsoleEvent;
 import jarcode.consoles.event.ConsoleEventListener;

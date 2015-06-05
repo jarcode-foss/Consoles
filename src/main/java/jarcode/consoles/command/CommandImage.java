@@ -1,7 +1,7 @@
 package jarcode.consoles.command;
 
-import jarcode.consoles.ImageConsole;
-import jarcode.consoles.ImageConsoleHandler;
+import jarcode.consoles.images.ImageConsole;
+import jarcode.consoles.images.ImageConsoleHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;

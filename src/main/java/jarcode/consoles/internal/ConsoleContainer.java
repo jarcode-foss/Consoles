@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import jarcode.consoles.api.*;
 import jarcode.consoles.util.Position2D;
@@ -9,7 +9,7 @@ import java.util.List;
 
 /*
 
-Abstract container that passed events to its child components. Classes that
+Abstract container that passes events to its child components. Classes that
 implement this container will need to expose the positions that the child coordinates
 belong to using `getUnderlingComponentCoordinates`, this allows events to be
 passed through the container, without restricting the implementation to any

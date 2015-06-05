@@ -1,6 +1,6 @@
 package jarcode.consoles.util;
 
-import jarcode.consoles.ConsoleMessageListener;
+import jarcode.consoles.internal.ConsoleMessageListener;
 import net.minecraft.server.v1_8_R3.CommandBlockListenerAbstract;
 import net.minecraft.server.v1_8_R3.TileEntityCommand;
 import org.bukkit.block.CommandBlock;

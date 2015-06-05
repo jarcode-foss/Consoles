@@ -1,10 +1,11 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import jarcode.consoles.api.CanvasGraphics;
+import jarcode.consoles.util.MonospacedMinecraftFont;
 import jarcode.consoles.util.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

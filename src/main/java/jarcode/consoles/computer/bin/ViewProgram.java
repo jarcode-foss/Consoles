@@ -1,6 +1,6 @@
 package jarcode.consoles.computer.bin;
 
-import jarcode.consoles.IndexedConsoleTextArea;
+import jarcode.consoles.internal.IndexedConsoleTextArea;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;

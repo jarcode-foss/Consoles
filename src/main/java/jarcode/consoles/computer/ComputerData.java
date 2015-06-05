@@ -2,7 +2,7 @@ package jarcode.consoles.computer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jarcode.consoles.ConsoleMeta;
+import jarcode.consoles.internal.ConsoleMeta;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.filesystem.SerializedFilesystem;
 import jarcode.consoles.util.LocalPosition;

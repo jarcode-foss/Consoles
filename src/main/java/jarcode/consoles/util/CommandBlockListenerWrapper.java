@@ -1,7 +1,7 @@
 package jarcode.consoles.util;
 
-import jarcode.consoles.ConsoleHandler;
-import jarcode.consoles.ConsoleMessageListener;
+import jarcode.consoles.internal.ConsoleHandler;
+import jarcode.consoles.internal.ConsoleMessageListener;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.command.CommandSender;
 

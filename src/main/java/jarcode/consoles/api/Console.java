@@ -1,6 +1,6 @@
 package jarcode.consoles.api;
 
-import jarcode.consoles.*;
+import jarcode.consoles.internal.ManagedConsole;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
@@ -18,7 +18,7 @@ public class Console {
 	/**
 	 * Wraps an internal console
 	 *
-	 * @param console the {@link jarcode.consoles.ManagedConsole} to wrap
+	 * @param console the {@link jarcode.consoles.internal.ManagedConsole} to wrap
 	 * @return the wrapped console
 	 */
 	public static Console wrap(ManagedConsole console) {

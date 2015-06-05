@@ -1,6 +1,6 @@
 package jarcode.consoles.event;
 
-import jarcode.consoles.ConsoleButton;
+import jarcode.consoles.internal.ConsoleButton;
 import org.bukkit.entity.Player;
 
 public class ButtonEvent extends ConsoleEvent<ConsoleButton> {

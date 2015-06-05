@@ -1,6 +1,8 @@
 package jarcode.consoles;
 
 import jarcode.classloading.loader.WrappedPlugin;
+import jarcode.consoles.images.ImageConsoleHandler;
+import jarcode.consoles.internal.ConsoleHandler;
 import jarcode.consoles.messaging.ConsoleBungeeHook;
 import jarcode.consoles.command.*;
 import jarcode.consoles.computer.ComputerHandler;

@@ -1,6 +1,6 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.ManagedConsole;
+import jarcode.consoles.internal.ManagedConsole;
 
 import java.util.UUID;
 

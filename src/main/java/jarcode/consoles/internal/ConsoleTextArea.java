@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import com.google.common.base.Joiner;
 import jarcode.consoles.api.CanvasGraphics;

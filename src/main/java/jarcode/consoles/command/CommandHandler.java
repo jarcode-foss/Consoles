@@ -1,6 +1,6 @@
 package jarcode.consoles.command;
 
-import jarcode.consoles.ConsoleHandler;
+import jarcode.consoles.internal.ConsoleHandler;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.ComputerHandler;
 import org.bukkit.Bukkit;

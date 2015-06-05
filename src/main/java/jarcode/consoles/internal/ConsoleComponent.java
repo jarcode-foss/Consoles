@@ -1,4 +1,4 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import jarcode.consoles.api.CanvasComponent;
 import jarcode.consoles.api.CanvasPainter;

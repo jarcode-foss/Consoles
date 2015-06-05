@@ -1,7 +1,7 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.ConsoleFeed;
-import jarcode.consoles.InputComponent;
+import jarcode.consoles.internal.ConsoleFeed;
+import jarcode.consoles.internal.InputComponent;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

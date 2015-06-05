@@ -1,5 +1,7 @@
-package jarcode.consoles;
+package jarcode.consoles.images;
 
+import jarcode.consoles.internal.ConsoleMeta;
+import jarcode.consoles.Consoles;
 import jarcode.consoles.util.gson.LocationTypeAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

@@ -1,7 +1,7 @@
 package jarcode.consoles.command;
 
-import jarcode.consoles.ManagedConsole;
-import jarcode.consoles.ConsoleHandler;
+import jarcode.consoles.internal.ManagedConsole;
+import jarcode.consoles.internal.ConsoleHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 

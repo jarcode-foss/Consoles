@@ -1,8 +1,9 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+import jarcode.consoles.Consoles;
 import jarcode.consoles.api.*;
 import jarcode.consoles.util.LocalPosition;
 import jarcode.consoles.util.Position2D;

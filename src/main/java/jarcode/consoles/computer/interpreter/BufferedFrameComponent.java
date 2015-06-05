@@ -1,7 +1,7 @@
 package jarcode.consoles.computer.interpreter;
 
-import jarcode.consoles.ConsoleComponent;
-import jarcode.consoles.InputComponent;
+import jarcode.consoles.internal.ConsoleComponent;
+import jarcode.consoles.internal.InputComponent;
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.types.LuaInteraction;

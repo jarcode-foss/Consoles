@@ -1,5 +1,6 @@
-package jarcode.consoles;
+package jarcode.consoles.internal;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.util.Position2D;
 import org.bukkit.Bukkit;
 

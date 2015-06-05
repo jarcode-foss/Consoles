@@ -1,7 +1,7 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.ConsoleComponent;
-import jarcode.consoles.ConsoleRenderer;
+import jarcode.consoles.internal.ConsoleComponent;
+import jarcode.consoles.internal.ConsoleRenderer;
 import jarcode.consoles.api.CanvasGraphics;
 
 /*
