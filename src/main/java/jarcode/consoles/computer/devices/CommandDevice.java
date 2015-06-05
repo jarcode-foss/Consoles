@@ -1,6 +1,6 @@
 package jarcode.consoles.computer.devices;
 
-import jarcode.consoles.ConsoleListener;
+import jarcode.consoles.ConsoleMessageListener;
 import jarcode.consoles.computer.LinkedStream;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.util.CommandBlockUtils;
@@ -26,7 +26,7 @@ public class CommandDevice extends FSFile {
 		super((byte) 0x03);
 		synchronized (LOCK) {
 			if (!CommandBlockUtils.isRegistered(block)) {
-				CommandBlockUtils.registerListener(block, new ConsoleListener() {
+				CommandBlockUtils.registerListener(block, new ConsoleMessageListener() {
 					@Override
 					public String execute(CommandSender sender, String text) {
 						synchronized (LOCK) {

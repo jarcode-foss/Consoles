@@ -1,6 +1,6 @@
 package jarcode.consoles.util;
 
-import jarcode.consoles.ConsoleListener;
+import jarcode.consoles.ConsoleMessageListener;
 import net.minecraft.server.v1_8_R3.CommandBlockListenerAbstract;
 import net.minecraft.server.v1_8_R3.TileEntityCommand;
 import org.bukkit.block.CommandBlock;
@@ -35,7 +35,7 @@ public class CommandBlockUtils {
 		return obj instanceof CommandBlockListenerWrapper && ((CommandBlockListenerWrapper) obj).listening();
 	}
 
-	public static boolean registerListener(CommandBlock block, ConsoleListener listener) {
+	public static boolean registerListener(CommandBlock block, ConsoleMessageListener listener) {
 		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 		CommandBlockListenerAbstract obj = entity.getCommandBlock();
 		if (obj instanceof CommandBlockListenerWrapper && !isRegistered(block)) {

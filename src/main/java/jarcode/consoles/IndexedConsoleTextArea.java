@@ -246,7 +246,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 
 	@Override
-	public ConsoleListener createListener() {
+	public ConsoleMessageListener createListener() {
 		return (sender, text) -> {
 			println(ChatColor.translateAlternateColorCodes('&', text));
 			repaint();

@@ -1,7 +1,7 @@
 package jarcode.consoles.util;
 
 import jarcode.consoles.ConsoleHandler;
-import jarcode.consoles.ConsoleListener;
+import jarcode.consoles.ConsoleMessageListener;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.command.CommandSender;
 
@@ -26,7 +26,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			"link"
 	};
 
-	private ConsoleListener consoleListener;
+	private ConsoleMessageListener consoleListener;
 
 	static {
 		try {
@@ -84,7 +84,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		this.this$0 = command;
 	}
 
-	public void setConsoleListener(ConsoleListener listener) {
+	public void setConsoleListener(ConsoleMessageListener listener) {
 		consoleListener = listener;
 	}
 

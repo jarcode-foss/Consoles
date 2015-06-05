@@ -151,7 +151,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	}
 
 	@Override
-	public ConsoleListener createListener() {
+	public ConsoleMessageListener createListener() {
 		return (sender, text) -> {
 			write(text);
 			return "Sent to console";

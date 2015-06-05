@@ -170,7 +170,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		stack.add("");
 	}
 	@Override
-	public ConsoleListener createListener() {
+	public ConsoleMessageListener createListener() {
 		return (sender, text) -> {
 			println(ChatColor.translateAlternateColorCodes('&', text));
 			repaint();
