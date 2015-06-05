@@ -225,8 +225,9 @@ public class InterpretedProgram {
 			}
 			else if (err.getCause() instanceof InvocationTargetException) {
 				if (((InvocationTargetException) err.getCause()).getTargetException() != null)
-					errorBreakdown += "\n\nCaused by:\n" + ((InvocationTargetException) err.getCause())
-							.getTargetException().getMessage();
+					errorBreakdown += "\n\nCaused by:\n"
+							+ ((InvocationTargetException) err.getCause()).getTargetException().getClass().getSimpleName()
+							+ ": " + ((InvocationTargetException) err.getCause()).getTargetException().getMessage();
 				if (((InvocationTargetException) err.getCause()).getTargetException() instanceof LuaError) {
 					err = (LuaError) ((InvocationTargetException) err.getCause()).getTargetException();
 					inst = true;
@@ -481,7 +482,7 @@ public class InterpretedProgram {
 	private LuaValue lua$getChest(int index) throws InterruptedException {
 		sleep(40);
 		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
-		if (index > chests.length || index < 0) return LuaValue.NIL;
+		if (index >= chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index], this::terminated);
 		return CoerceJavaToLua.coerce(lua);
 	}
