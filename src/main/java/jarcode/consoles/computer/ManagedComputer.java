@@ -24,11 +24,11 @@ public class ManagedComputer extends Computer {
 	}
 
 	@Override
-	public boolean hostname(String hostname) {
+	public boolean setHostname(String hostname) {
 		if (ComputerHandler.getInstance().hostnameTaken(hostname))
 			return false;
 		String old = getHostname();
-		super.hostname(hostname);
+		super.setHostname(hostname);
 		ComputerData.rename(old, hostname);
 		return true;
 	}

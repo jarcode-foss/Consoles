@@ -19,7 +19,7 @@ public class HostnameProgram extends FSProvidedProgram {
 		}
 		else if (FSBlock.allowedBlockName(str)) {
 			String hostname = schedule(() -> {
-				if (computer.hostname(str.toLowerCase())) {
+				if (computer.setHostname(str.toLowerCase())) {
 					return str.toLowerCase();
 				}
 				else return null;

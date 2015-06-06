@@ -84,7 +84,7 @@ public abstract class Computer implements Runnable {
 		setScreenIndex(0);
 	}
 
-	public boolean hostname(String hostname) {
+	public boolean setHostname(String hostname) {
 		this.hostname = hostname;
 		for (ConsoleComponent component : feeds) {
 			if (component instanceof Terminal) {
