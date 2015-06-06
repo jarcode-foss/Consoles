@@ -60,7 +60,6 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		terminal.onStart();
 		return terminal;
 	}
-	private String user = "admin";
 	private String currentDirectory = "/home/admin";
 	private FSFolder root;
 	private Computer computer;
@@ -92,9 +91,6 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 			updatePrompt();
 			prompt();
 		}
-	}
-	public String getUser() {
-		return user;
 	}
 	public void setIgnoreUnauthorizedSigterm(boolean ignore) {
 		this.ignoreUnauthorizedSigterm = ignore;
@@ -128,7 +124,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		return computer;
 	}
 	public void updatePrompt() {
-		setPrompt(String.format("admin@%s:%s$ ", computer.getHostname(), currentDirectory));
+		setPrompt(String.format("%s:%s$ ", computer.getHostname(), currentDirectory));
 	}
 
 	@Override
