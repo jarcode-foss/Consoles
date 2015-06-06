@@ -1,5 +1,7 @@
 package jarcode.consoles.internal;
 
+import jarcode.consoles.event.bukkit.ConsoleCreateEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 
@@ -24,10 +26,6 @@ public class ManagedConsole extends ConsoleRenderer {
 		return new String(arr);
 	}
 
-	protected String consoleType() {
-		return name;
-	}
-
 	private short index;
 	private String identifier = null;
 
@@ -39,8 +37,19 @@ public class ManagedConsole extends ConsoleRenderer {
 		index = ConsoleHandler.getInstance().allocate(w * h);
 		ConsoleHandler.getInstance().consoles.add(this);
 	}
-	public void create(BlockFace face, Location location) {
-		super.create(index, face, location);
+	public void create(BlockFace face, Location location) throws ConsoleCreateException {
+		boolean result = true;
+		try {
+			ConsoleCreateEvent event = new ConsoleCreateEvent(this, face, location);
+			Bukkit.getPluginManager().callEvent(event);
+			result = !event.isCancelled();
+		}
+		catch (Throwable e) {
+			e.printStackTrace();
+		}
+		if (result)
+			super.create(index, face, location);
+		else throw new ConsoleCreateException("Cancelled by external plugin");
 	}
 	@Override
 	public void remove() {

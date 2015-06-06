@@ -3,6 +3,7 @@ package jarcode.consoles.computer;
 import jarcode.consoles.*;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.internal.ConsoleComponent;
+import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ConsoleHandler;
 import jarcode.consoles.internal.ManagedConsole;
 import jarcode.consoles.util.Position2D;
@@ -399,7 +400,13 @@ public class ComputerHandler implements Listener {
 		}
 		BlockFace face = direction(player);
 		ManagedComputer computer = new ManagedComputer(findHostname(player), player.getUniqueId());
-		computer.create(face, location);
+		try {
+			computer.create(face, location);
+		} catch (ConsoleCreateException e) {
+			player.sendMessage(ChatColor.RED + "You can't build a computer there!");
+			if (Consoles.debug)
+				e.printStackTrace();
+		}
 	}
 	private String findHostname(Player player) {
 		String name = player.getName().toLowerCase() + "-";

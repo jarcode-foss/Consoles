@@ -44,7 +44,7 @@ public class ConsoleMeta {
 		this.w = w;
 		this.h = h;
 	}
-	public ManagedConsole spawnConsole() {
+	public ManagedConsole spawnConsole() throws ConsoleCreateException {
 		ManagedConsole console = new ManagedConsole(w, h);
 		console.create(face, location);
 		return console;

@@ -2,6 +2,7 @@ package jarcode.consoles.computer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ConsoleMeta;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.filesystem.SerializedFilesystem;
@@ -170,7 +171,13 @@ public class ComputerData {
 	public Computer toComputer() throws IOException {
 		ManagedComputer computer = new ManagedComputer(hostname, owner, meta.createConsole());
 		computer.load(filesystem);
-		computer.create(meta.face, meta.location);
+		try {
+			computer.create(meta.face, meta.location);
+		} catch (ConsoleCreateException e) {
+			Consoles.getInstance().getLogger().severe("Failed to place computer (cancelled by external plugin)");
+			if (Consoles.debug)
+				e.printStackTrace();
+		}
 		return computer;
 	}
 	private void writeMetadata(OutputStream out) throws IOException {

@@ -1,8 +1,10 @@
 package jarcode.consoles.command;
 
+import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.ComputerHandler;
 import jarcode.consoles.computer.ManagedComputer;
+import jarcode.consoles.internal.ConsoleCreateException;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -28,7 +30,7 @@ public class CommandComputer extends CommandBase {
 		if (args.length == 0) {
 			printHelp(sender);
 		}
-		else if (args[0].equalsIgnoreCase("list") && args.length >= 2) {
+		else if (args[0].equalsIgnoreCase("list")) {
 			sender.sendMessage(ChatColor.BLUE + "Computers:");
 			String[] messages = ComputerHandler.getInstance().getComputers().stream()
 					.map(comp -> ChatColor.YELLOW + comp.getHostname()
@@ -82,7 +84,15 @@ public class CommandComputer extends CommandBase {
 			String str = builder.toString();
 
 			ManagedComputer computer = new ManagedComputer(str, player.getUniqueId());
-			computer.create(face, player.getLocation());
+			try {
+				computer.create(face, player.getLocation());
+			} catch (ConsoleCreateException e) {
+				computer.destroy();
+				sender.sendMessage(ChatColor.YELLOW + "Failed to create computer at location " +
+						"(cancelled by external plugin)");
+				if (Consoles.debug)
+					e.printStackTrace();
+			}
 		}
 		return true;
 	}

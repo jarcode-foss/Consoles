@@ -95,8 +95,8 @@ public abstract class ConsoleRenderer implements Canvas {
 	// Mappings for map id -> entity id, multi-threaded
 	private HashBiMap<Short, Integer> entityMap = HashBiMap.create();
 
-	// Name of the console type. Doesn't actually do anything, only used for debugging.
-	protected String name = consoleType();
+	// Name of the console type. Doesn't actually do anything.
+	protected String type = "unknown";
 
 	public ConsoleRenderer(int w, int h) {
 		this(w, h, true);
@@ -111,8 +111,6 @@ public abstract class ConsoleRenderer implements Canvas {
 
 		cacheBackground();
 	}
-
-	protected abstract String consoleType();
 
 	@SuppressWarnings("deprecation")
 	void create(short index, BlockFace face, Location location) {
@@ -167,7 +165,7 @@ public abstract class ConsoleRenderer implements Canvas {
 				if (pos.getWorld().isChunkLoaded(itemFrame.getBlockPosition().getX() / 16,
 						itemFrame.getBlockPosition().getZ() / 16))
 				// add the entity if chunk is loaded
-					mcWorld.addEntity(itemFrame);
+				mcWorld.addEntity(itemFrame);
 				// set item in frame
 				itemFrame.setItem(CraftItemStack.asNMSCopy(new ItemStack(Material.MAP, 1, index)));
 				// add to entity list
@@ -180,8 +178,11 @@ public abstract class ConsoleRenderer implements Canvas {
 		pos = pos.getBlock().getLocation();
 		screen.onCreate();
 	}
+	public String getType() {
+		return type;
+	}
 	public void setType(String name) {
-		this.name = name;
+		this.type = name;
 	}
 	// I don't expect you to understand this.
 	public int[] intersect(Location eye, double distance) {

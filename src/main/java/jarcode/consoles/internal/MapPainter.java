@@ -102,7 +102,7 @@ public class MapPainter implements Runnable {
 										if (System.currentTimeMillis() - at > 100)
 											System.out.println("Warning, took more than 100ms for paint (" +
 													(System.currentTimeMillis() - at) + "), class: " + renderer.getClass() +
-													", name: " + renderer.name + ", index: " + t + ", entry size: " +
+													", name: " + renderer.type + ", index: " + t + ", entry size: " +
 													entry.connections.length + ", stack size: " + stack.size()
 													+ ", identifiers: " + entry.identifiers[t]);
 									}

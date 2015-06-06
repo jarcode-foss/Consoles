@@ -8,10 +8,7 @@ import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
-import jarcode.consoles.internal.ConsoleButton;
-import jarcode.consoles.internal.ConsoleComponent;
-import jarcode.consoles.internal.ConsoleDialog;
-import jarcode.consoles.internal.ManagedConsole;
+import jarcode.consoles.internal.*;
 import jarcode.consoles.util.Position2D;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
@@ -60,7 +57,7 @@ public abstract class Computer implements Runnable {
 
 	private Kernel kernel;
 
-	private int taskId;
+	private int taskId = -1;
 
 	private StatusBar bar;
 
@@ -73,6 +70,7 @@ public abstract class Computer implements Runnable {
 		this.hostname = hostname;
 		this.owner = owner;
 		this.console = console;
+		console.setType("computer");
 		feeds[0] = new Terminal(this, false);
 		setScreenIndex(0);
 	}
@@ -81,6 +79,7 @@ public abstract class Computer implements Runnable {
 		this.hostname = hostname;
 		this.owner = owner;
 		console = new ManagedConsole(width, height);
+		console.setType("computer");
 		feeds[0] = new Terminal(this, false);
 		setScreenIndex(0);
 	}
@@ -173,7 +172,7 @@ public abstract class Computer implements Runnable {
 		}
 	}
 	// Creates and installs the computer.
-	public void create(BlockFace face, Location location) {
+	public void create(BlockFace face, Location location) throws ConsoleCreateException {
 		console.create(face, location);
 		bar = new StatusBar(console);
 		console.putComponent(STATUS_COMPONENT_POSITION, bar);
@@ -318,7 +317,8 @@ public abstract class Computer implements Runnable {
 	// ALL cleanup should be done in here
 	public void destroy() {
 		console.remove();
-		Bukkit.getScheduler().cancelTask(taskId);
+		if (taskId != -1)
+			Bukkit.getScheduler().cancelTask(taskId);
 		ComputerHandler.getInstance().unregister(this);
 		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),  ComputerHandler.newComputerStack());
 	}

@@ -1,5 +1,6 @@
 package jarcode.consoles.api;
 
+import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ManagedConsole;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -90,13 +91,24 @@ public class Console {
 
 	/**
 	 * Creates the console and adds it to the world.
+	 *
+	 * @return true if the console was created successfully, otherwise false
 	 */
-	public final void create() {
-		if (created) return;
+	public final boolean create() {
+		if (created) return false;
+		if (underlying != null) {
+			underlying.remove();
+		}
 		underlying = new ManagedConsole(width, height, false);
 		underlying.setType("Custom");
-		underlying.create(face, location);
-		created = true;
+		try {
+			underlying.create(face, location);
+			created = true;
+			return true;
+		}
+		catch (ConsoleCreateException e) {
+			return false;
+		}
 	}
 
 	/**

@@ -1,5 +1,7 @@
 package jarcode.consoles.images;
 
+import jarcode.consoles.Consoles;
+import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ManagedConsole;
 import jarcode.consoles.util.Position2D;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
@@ -72,11 +74,17 @@ public class ImageConsole {
 			int ht = image.getHeight() / 128;
 			int h = image.getHeight() % 128 == 0 ? ht : ht + 1;
 			console = new ManagedConsole(w, h, false);
-			console.setType("Image");
+			console.setType("image");
 			console.putComponent(new Position2D(0, 0), new ImageComponent(console, image));
-			console.create(face, location);
-			if (save)
-				ImageConsoleHandler.getInstance().save();
+			try {
+				console.create(face, location);
+				if (save)
+					ImageConsoleHandler.getInstance().save();
+			} catch (ConsoleCreateException e) {
+				console.remove();
+				if (Consoles.debug)
+					e.printStackTrace();
+			}
 		});
 	}
 }
