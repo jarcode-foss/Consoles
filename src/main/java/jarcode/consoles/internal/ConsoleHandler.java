@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -483,18 +484,17 @@ public class ConsoleHandler implements Listener {
 	public void onPlayerInteractBlock(PlayerInteractAtEntityEvent e) {
 		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked()))
 			e.setCancelled(true);
-		clickEvent(e.getPlayer());
+		clickEvent(e.getPlayer(), null);
 	}
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEntityEvent e) {
-		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked())) {
+		if (e.getRightClicked() instanceof ItemFrame && isConsoleEntity((ItemFrame) e.getRightClicked()))
 			e.setCancelled(true);
-		}
-		clickEvent(e.getPlayer());
+		clickEvent(e.getPlayer(), null);
 	}
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent e) {
-		clickEvent(e.getPlayer());
+		clickEvent(e.getPlayer(), e::setCancelled);
 	}
 	public ManagedConsole[] getConsolesLookingAt(Location eye) {
 		return consoles.stream().filter(console -> console.intersect(eye, 7) != null)
@@ -510,11 +510,16 @@ public class ConsoleHandler implements Listener {
 		}
 		return false;
 	}
-	private void clickEvent(Player player) {
+	private void clickEvent(Player player, Consumer<Boolean> cancel) {
+		boolean cancelled = false;
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
 				int[] arr = console.intersect(player.getEyeLocation(), 7);
 				if (arr != null) {
+					if (!cancelled && cancel != null) {
+						cancel.accept(true);
+						cancelled = true;
+					}
 					console.handleClick(arr[0], arr[1], player);
 					ComputerHandler handler = ComputerHandler.getInstance();
 					if (handler != null) {

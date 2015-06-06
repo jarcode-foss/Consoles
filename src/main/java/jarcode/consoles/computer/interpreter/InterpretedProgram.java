@@ -10,8 +10,6 @@ import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import jarcode.consoles.computer.interpreter.types.*;
-import jarcode.consoles.event.ButtonEvent;
-import jarcode.consoles.event.ConsoleEventListener;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.util.Position2D;
 import org.apache.commons.lang.exception.ExceptionUtils;
