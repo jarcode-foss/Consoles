@@ -444,7 +444,7 @@ public class InterpretedProgram {
 		catch (LuaError err) {
 			if (Consoles.debug)
 				err.printStackTrace();
-			return LuaString.valueOf("failed to compile");
+			return LuaString.valueOf(err.getMessage());
 		}
 		return new ZeroArgFunction() {
 			@Override
