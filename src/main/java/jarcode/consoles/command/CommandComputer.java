@@ -49,6 +49,9 @@ public class CommandComputer extends CommandBase {
 			}
 			computer.destroy();
 		}
+		else if (args[0].equalsIgnoreCase("give")) {
+			player.getInventory().addItem(ComputerHandler.newComputerStack());
+		}
 		else if (args[0].equalsIgnoreCase("create") && args.length >= 3) {
 			BlockFace face;
 			switch (args[1].toLowerCase()) {
@@ -104,6 +107,8 @@ public class CommandComputer extends CommandBase {
 		sender.sendMessage(ChatColor.GREEN + "Computer command usage:");
 		sender.sendMessage(ChatColor.BLUE + "/computer list" + ChatColor.WHITE + " - " +
 				"shows all your computers");
+		sender.sendMessage(ChatColor.BLUE + "/computer give" + ChatColor.WHITE + " - " +
+				"gives you a computer");
 		sender.sendMessage(ChatColor.BLUE + "/computer remove [hostname]" + ChatColor.WHITE + " - " +
 				"removes the computer with the given hostname");
 		sender.sendMessage(ChatColor.BLUE + "/computer create [N/E/S/W] [hostname]" + ChatColor.WHITE + " - " +
