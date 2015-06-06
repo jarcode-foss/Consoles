@@ -37,7 +37,7 @@ This class handles the creation of the LuaVM and provides a large
 amount of base Lua function bindings.
 
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "SpellCheckingInspection"})
 public class InterpretedProgram {
 
 	static {
@@ -429,11 +429,31 @@ public class InterpretedProgram {
 	public LuaTypeBuilder lua$typeBuilder() {
 		return new LuaTypeBuilder();
 	}
+
 	public LuaValue lua$defineType(LuaValue value) {
 		if (value.isuserdata() && value.checkuserdata() instanceof LuaTypeBuilder)
 			return LuaTypeBuilder.define((LuaTypeBuilder) value.checkuserdata());
 		else return LuaValue.NIL;
 	}
+
+	public LuaValue lua$loadstring(String arg) {
+		LuaValue value;
+		try {
+			value = globals.load(arg);
+		}
+		catch (LuaError err) {
+			if (Consoles.debug)
+				err.printStackTrace();
+			return LuaString.valueOf("failed to compile");
+		}
+		return new ZeroArgFunction() {
+			@Override
+			public LuaValue call() {
+				return value.call();
+			}
+		};
+	}
+
 	public void lua$removeRestrictions() {
 		if (!restricted) return;
 

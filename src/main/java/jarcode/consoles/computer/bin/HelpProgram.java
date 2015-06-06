@@ -32,7 +32,7 @@ public class HelpProgram extends FSProvidedProgram {
 		nextln();
 		print("Use " + ChatColor.AQUA + "man [program]" + ChatColor.WHITE + " for more information on a program");
 		nextln();
-		println("Visit " + ChatColor.BLUE+ "github.com/wacossusca34/Consoles/"
+		println("Visit " + ChatColor.BLUE + "github.com/wacossusca34/Consoles/"
 				+ ChatColor.WHITE + " for source code & support.");
 	}
 }
