@@ -4,6 +4,6 @@ import jarcode.consoles.api.computer.LibraryCreator;
 
 public class Libraries {
 	public static void init() {
-		LibraryCreator.link(new NetLibrary(), "net", true);
+		LibraryCreator.link(NetLibrary::new, "net", true);
 	}
 }

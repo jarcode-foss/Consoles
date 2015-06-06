@@ -5,24 +5,30 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.LibFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 
-public class ComputerLibrary extends TwoArgFunction {
+import java.util.function.Supplier;
+
+public class ComputerLibrary {
 	private String name;
-	private NamedFunction[] functions;
 	public final boolean isRestricted;
-	public ComputerLibrary(String name, NamedFunction[] functions, boolean isRestricted) {
+	private Supplier<TwoArgFunction> supplier;
+	public ComputerLibrary(String name, boolean isRestricted, Supplier<NamedFunction[]> functions) {
 		this.name = name;
-		this.functions = functions;
 		this.isRestricted = isRestricted;
+		supplier = () -> new TwoArgFunction() {
+			@Override
+			public LuaValue call(LuaValue ignored, LuaValue global) {
+				LuaTable table = new LuaTable(0, 30);
+				global.set(name, table);
+				for (NamedFunction function : functions.get()) {
+					table.set(function.mappedName, function);
+				}
+				global.get("package").get("loaded").set(name, table);
+				return table;
+			}
+		};
 	}
-	@Override
-	public LuaValue call(LuaValue ignored, LuaValue global) {
-		LuaTable table = new LuaTable(0, 30);
-		global.set(name, table);
-		for (NamedFunction function : functions) {
-			table.set(function.mappedName, function);
-		}
-		global.get("package").get("loaded").set(name, table);
-		return table;
+	public TwoArgFunction buildLibrary() {
+		return supplier.get();
 	}
 	public static class NamedFunction extends LibFunction {
 		String mappedName;

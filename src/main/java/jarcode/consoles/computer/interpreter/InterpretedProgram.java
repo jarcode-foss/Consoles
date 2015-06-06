@@ -124,7 +124,7 @@ public class InterpretedProgram {
 			globals.load(interruptLib);
 			Lua.libraries.values().stream()
 					.filter((lib) -> !lib.isRestricted)
-					.forEach(globals::load);
+					.forEach((lib) -> globals.load(lib.buildLibrary()));
 			LoadState.install(globals);
 			LuaC.install(globals);
 
@@ -299,7 +299,7 @@ public class InterpretedProgram {
 				restricted = false;
 				Lua.libraries.values().stream()
 						.filter((lib) -> lib.isRestricted)
-						.forEach(globals::load);
+						.forEach((lib) -> globals.load(lib.buildLibrary()));
 			}
 			else {
 				print("\nlua: insufficient permissions");
