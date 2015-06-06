@@ -73,14 +73,16 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 	private volatile boolean ignoreUnauthorizedSigterm = false;
 
 	public void onStart() {
-		println(ChatColor.GREEN + "LinuxCraft kernel " + Computer.VERSION + " (unstable)");
+		advanceLine();
+		println("Logged into " + ChatColor.YELLOW + computer.getHostname()
+				+ ChatColor.WHITE + " as user " + ChatColor.GREEN + user);
+		advanceLine();
 		randomJoke();
 		advanceLine();
 		updatePrompt();
 		prompt();
 	}
 	public void randomJoke() {
-		advanceLine();
 		Random random = new Random();
 		println(ChatColor.GRAY + JOKES[random.nextInt(JOKES.length)]);
 	}
@@ -126,7 +128,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		return computer;
 	}
 	public void updatePrompt() {
-		setPrompt(String.format(user + "@%s:%s> ", computer.getHostname(), currentDirectory));
+		setPrompt(String.format("%s> ", currentDirectory));
 	}
 	public void setUser(String user) {
 		this.user = user;
