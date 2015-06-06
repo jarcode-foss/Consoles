@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
+import org.luaj.vm2.lib.jse.CoerceLuaToJava;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
@@ -348,21 +349,49 @@ public class Lua {
 			return CoerceJavaToLua.coerce(java);
 		}
 	}
+
+	public static PartialFunctionBind javaCallable(LuaValue value) {
+		if (!value.isfunction()) throw new RuntimeException("expected function");
+		return (args) -> {
+			LuaValue[] arr = Arrays.asList(args).stream()
+					.map(Lua::translateLua)
+					.toArray(LuaValue[]::new);
+			switch (arr.length) {
+				case 0: return value.call();
+				case 1: return value.call(arr[0]);
+				case 2: return value.call(arr[0], arr[1]);
+				case 3: return value.call(arr[0], arr[1], arr[2]);
+			}
+			throw new RuntimeException("function has too many arguments");
+		};
+	}
+
+	public static FunctionBind javaFunction(LuaValue value) {
+		return (args) -> coerce(javaCallable(value).call(args));
+	}
+
+	private static Object coerce(LuaValue value) {
+		if (value.isboolean())
+			return value.checkboolean();
+		else if (value.isnumber())
+			return value.checkdouble();
+		else if (value.isstring())
+			return value.checkjstring();
+		else if (value.isfunction())
+			return javaFunction(value);
+		else if (value.isnil())
+			return null;
+		else if (value.istable())
+			return value;
+		else if (value.isuserdata())
+			return value.checkuserdata();
+		else throw new RuntimeException("could not assume type for: " + value.toString() + " ("
+					+ value.getClass().getSimpleName() + ")");
+	}
 	private static Object translate(Class<?> type, LuaValue value) {
 		if (type != null && FunctionBind.class.isAssignableFrom(type)
 				|| (value.isfunction() && (TypeResolver.Unknown.class == type || type == null))) {
-			if (!value.isfunction()) throw new RuntimeException("expected function");
-			return (FunctionBind) (args) -> {
-				LuaValue[] arr = Arrays.asList(args).stream()
-						.map(Lua::translateLua)
-						.toArray(LuaValue[]::new);
-				switch (arr.length) {
-					case 0: value.call(); break;
-					case 1: value.call(arr[0]); break;
-					case 2: value.call(arr[0], arr[1]); break;
-					case 3: value.call(arr[0], arr[1], arr[2]); break;
-				}
-			};
+			return javaFunction(value);
 		}
 		else if (type != null && LuaValue.class.isAssignableFrom(type)) {
 			return value;
@@ -403,6 +432,9 @@ public class Lua {
 		}
 		else if (value.equals(LuaValue.NIL)) {
 			return null;
+		}
+		else if (value.isuserdata()) {
+			return value.checkuserdata();
 		}
 		else throw new RuntimeException("Unsupported argument: " + type
 					+ ", lua: " + value.getClass().getSimpleName() + ", data: " + value.toString());

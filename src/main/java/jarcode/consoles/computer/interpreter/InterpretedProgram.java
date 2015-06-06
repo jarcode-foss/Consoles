@@ -57,7 +57,7 @@ public class InterpretedProgram {
 	private String args;
 	private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private List<Integer> allocatedSessions = new ArrayList<>();
-	private Globals globals;
+	private EmbeddedGlobals globals;
 
 	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
@@ -114,7 +114,7 @@ public class InterpretedProgram {
 					print(" [PARSE TERMINATED]");
 			}
 			String raw = new String(buf.toByteArray(), charset);
-			globals = new Globals();
+			globals = new EmbeddedGlobals();
 			globals.load(new JseBaseLib());
 			globals.load(new PackageLib());
 			globals.load(new Bit32Lib());
@@ -133,6 +133,7 @@ public class InterpretedProgram {
 			for (Map.Entry<String, LibFunction> entry : pool.functions.entrySet()) {
 				globals.set(entry.getKey(), entry.getValue());
 			}
+
 			globals.STDOUT = new PrintStream(out);
 			// we handle errors with exceptions
 			globals.STDERR = new PrintStream(out) {
@@ -143,6 +144,7 @@ public class InterpretedProgram {
 				public void println(Object x) {}
 			};
 			globals.STDIN = in;
+			globals.finalizeEntries();
 			LuaValue chunk;
 			LuaValue exit = null;
 			try {
@@ -274,6 +276,14 @@ public class InterpretedProgram {
 	}
 	private String err(String str) {
 		return "\t" + ChatColor.RED + str;
+	}
+	public LuaTypeBuilder lua$typeBuilder() {
+		return new LuaTypeBuilder();
+	}
+	public LuaValue lua$defineType(LuaValue value) {
+		if (value.isuserdata() && value.checkuserdata() instanceof LuaTypeBuilder)
+			return LuaTypeBuilder.define((LuaTypeBuilder) value.checkuserdata());
+		else return LuaValue.NIL;
 	}
 	public void lua$removeRestrictions() {
 		if (!restricted) return;
