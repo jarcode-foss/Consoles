@@ -214,11 +214,19 @@ public abstract class Computer implements Runnable {
 			else {
 				kernel = boot("boot/vmlinuz", Kernel.class);
 			}
-			kernel.routine("boot");
 			// register main task
 			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), Computer.this, 1L, 1L);
+
+			// clear the terminal
 			getCurrentTerminal().clear();
+
+			// boot routine, installs devices, runs init program, etc
+			kernel.routine("boot");
+
+			// setup terminal
 			getCurrentTerminal().onStart();
+
+			// repaint
 			console.repaint();
 		}, time);
 	}

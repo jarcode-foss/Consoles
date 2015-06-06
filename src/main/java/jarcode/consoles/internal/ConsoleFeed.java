@@ -35,26 +35,26 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 	};
 
-	private InputStream in = null;
-	private OutputStream out = null;
+	protected InputStream in = null;
+	protected OutputStream out = null;
 
 	private Thread feed;
 
 	// whether the IO thread is running
-	private volatile boolean running = false;
+	protected volatile boolean running = false;
 	// whether the IO thread has ended
-	private volatile boolean ended = true;
+	protected volatile boolean ended = true;
 	private Exception exception = null;
-	private final Object LOCK = new Object();
-	private FeedEncoder encoder = null;
+	protected final Object LOCK = new Object();
+	protected FeedEncoder encoder = null;
 
-	private String prompt = null;
+	protected String prompt = null;
 
 	private FeedCreator creator = null;
-	private boolean initialized = false;
+	protected boolean initialized = false;
 
 	private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-	private ByteArrayOutputStream outgoing = new ByteArrayOutputStream();
+	protected ByteArrayOutputStream outgoing = new ByteArrayOutputStream();
 
 	public ConsoleFeed(ConsoleRenderer renderer) {
 		super(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);

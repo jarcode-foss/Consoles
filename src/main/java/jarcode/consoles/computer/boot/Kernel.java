@@ -102,6 +102,7 @@ public class Kernel extends FSProvidedProgram {
 					((FSFolder) block).contents.put("pcmd0", new PlayerCommandDevice(computer));
 					((FSFolder) block).contents.put("pint0", new PlayerInteractDevice(computer));
 				}
+				computer.getCurrentTerminal().run("/init");
 			}
 		});
 	}

@@ -1,11 +1,13 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.internal.InputComponent;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -106,6 +108,22 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		if (instance != null) {
 			instance.terminate();
 		}
+	}
+	public String run(String string) {
+		if (creator != null && ended) {
+			creator.from(string);
+			String result = creator.result();
+			if (result == null) {
+				setIO(creator.getInputStream(), creator.getOutputStream(), creator.getEncoder());
+				startFeed();
+			}
+			else {
+				if (!result.isEmpty())
+					return result;
+			}
+		}
+		repaint();
+		return null;
 	}
 	public ProgramInstance getLastProgramInstance() {
 		return creator.getLastInstance();
