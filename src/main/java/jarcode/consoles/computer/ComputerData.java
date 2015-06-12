@@ -67,6 +67,9 @@ public class ComputerData {
 
 	private UUID owner;
 
+	// Lua code for handling prompt
+	private String promptHandler = null;
+
 	// sets up a ComputerData object that is prepared to load from a folder
 	public static ComputerData fromFolder(File folder) throws IOException {
 		File header = new File(folder.getAbsolutePath() + File.separator + "header.json");

@@ -40,8 +40,31 @@ amount of base Lua function bindings.
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
 public class InterpretedProgram {
 
+	private static final Charset CHARSET = Charset.forName("UTF-8");
+
 	static {
 		Libraries.init();
+	}
+
+
+	/**
+	 * Compiles and runs the given Lua program. The program is ran
+	 * with elevated permissions and does not have access to graphics
+	 * APIs.
+	 *
+	 * This is not suitable for constant execution of Lua code, as it
+	 * has to compile and sandbox the code each time.
+	 *
+	 * @param program the string that contains the Lua program
+	 * @param computer the computer to run the program on
+	 * @return a string with the output from the program
+	 */
+	public static String exec(String program, Computer computer) {
+		InterpretedProgram inst = new InterpretedProgram();
+		inst.restricted = false;
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		inst.compileAndExecute(out, null, "", computer, null, program);
+		return ChatColor.stripColor(new String(out.toByteArray(), CHARSET));
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -51,7 +74,6 @@ public class InterpretedProgram {
 	private InputStream in;
 	private OutputStream out;
 	private Computer computer;
-	private Charset charset = Charset.forName("UTF-8");
 	private ProgramInstance instance;
 	private FuncPool pool;
 	private String args;
@@ -65,10 +87,16 @@ public class InterpretedProgram {
 
 	private boolean restricted = true;
 
+	// normal constructor for loading a program from a computer
 	public InterpretedProgram(FSFile file, String path) {
 		this.file = file;
 		this.path = path;
 	}
+
+	// blank for program instances that need to be setup for Lua programs
+	// initiated through Java code
+	private InterpretedProgram() {}
+
 	private void map() {
 
 		// instance lua functions, these will call with the program context in mind
@@ -77,17 +105,44 @@ public class InterpretedProgram {
 
 		// configurable API options
 
-		if (Consoles.componentRenderingEnabled) {
+		if (Consoles.componentRenderingEnabled && isUserExecuted()) {
 			Lua.put(this::lua_registerPainter, "paint", pool);
 		}
 
-		if (Consoles.frameRenderingEnabled) {
+		if (Consoles.frameRenderingEnabled && isUserExecuted()) {
 			Lua.put(this::lua_screenBuffer, "screenBuffer", pool);
 			Lua.put(this::lua_screenFrame, "screenFrame", pool);
 		}
 	}
 
-	public void run(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) throws Exception {
+	// used to run programs from a file in a computer
+	public void run(OutputStream out, InputStream in, String str, Computer computer,
+	                ProgramInstance instance) throws Exception {
+		// read from the program file and write it to a buffer
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		try (InputStream is = file.createInput()) {
+			int i;
+			while (true) {
+				if (terminated())
+					break;
+				if (is.available() > 0 || is instanceof ByteArrayInputStream) {
+					i = is.read();
+					if (i == -1) break;
+					buf.write(i);
+				} else Thread.sleep(50);
+			}
+			if (terminated())
+				print(" [PARSE TERMINATED]");
+		}
+
+		// parse as a string
+		String raw = new String(buf.toByteArray(), CHARSET);
+
+		compileAndExecute(out, in, str, computer, instance, raw);
+	}
+	// runs a program with the given raw text
+	public void compileAndExecute(OutputStream out, InputStream in, String str, Computer computer,
+	                ProgramInstance instance, String raw) {
 		try {
 			this.in = in;
 			this.out = out;
@@ -109,29 +164,6 @@ public class InterpretedProgram {
 
 			// map functions from this program instance to the pool
 			map();
-
-			// read from the program file and write it to a buffer
-			ByteArrayOutputStream buf = new ByteArrayOutputStream();
-			try (InputStream is = file.createInput()) {
-				int i;
-				while (true) {
-					if (terminated())
-						break;
-					if (is.available() > 0 || is instanceof ByteArrayInputStream) {
-						i = is.read();
-						if (i == -1) break;
-						buf.write(i);
-					} else Thread.sleep(50);
-				}
-				if (terminated())
-					print(" [PARSE TERMINATED]");
-			}
-
-			// parse as a string
-			String raw = new String(buf.toByteArray(), charset);
-
-			// gc buffer
-			buf = null;
 
 			// create our globals for Lua. We use a special kind of globals
 			// that allows us to finalize variables.
@@ -156,7 +188,7 @@ public class InterpretedProgram {
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
-					.filter((lib) -> !lib.isRestricted)
+					.filter((lib) -> !lib.isRestricted || !restricted)
 					.forEach((lib) -> globals.load(lib.buildLibrary()));
 
 			// install
@@ -169,19 +201,19 @@ public class InterpretedProgram {
 			}
 
 			// set stdout
-			globals.STDOUT = new PrintStream(out);
+			if (out == null)
+				globals.STDOUT = dummyPrintStream();
+			else
+				globals.STDOUT = new PrintStream(out);
 
-			// we handle errors with exceptions, so this will be a dummy writer.
-			globals.STDERR = new PrintStream(out) {
-				@Override
-				public void println(String x) {}
-
-				@Override
-				public void println(Object x) {}
-			};
+			// we handle errors with exceptions, so this will always be a dummy writer.
+			globals.STDERR = dummyPrintStream();
 
 			// set stdin
-			globals.STDIN = in;
+			if (in == null)
+				globals.STDIN = dummyInputStream();
+			else
+				globals.STDIN = in;
 
 			// finalize all entries. This means programs cannot modify any created
 			// globals at this point.
@@ -298,6 +330,28 @@ public class InterpretedProgram {
 		// at the end of this method, in one way or another, our Lua program will have ended.
 	}
 
+	private InputStream dummyInputStream() {
+		return new InputStream() {
+			@Override
+			public int read() throws IOException {
+				return 0;
+			}
+		};
+	}
+
+	private PrintStream dummyPrintStream() {
+		return new PrintStream(new OutputStream() {
+			@Override
+			public void write(int b) throws IOException {}
+		}) {
+			@Override
+			public void println(String x) {}
+
+			@Override
+			public void println(Object x) {}
+		};
+	}
+
 	// finds a new id for a frame that is not taken
 	private int findFrameId() {
 		int i = 0;
@@ -350,7 +404,7 @@ public class InterpretedProgram {
 		String msg = Joiner.on('\n').join(arr);
 
 		// if the amount of lines in the breakdown is greater than 16, dump it to a file
-		if (arr.length > 16) {
+		if (arr.length > 16 && isUserExecuted()) {
 
 			// get terminal instance
 			Terminal terminal = computer.getTerminal(this);
@@ -403,7 +457,7 @@ public class InterpretedProgram {
 	}
 	protected void print(String formatted) {
 		try {
-			out.write(formatted.getBytes(charset));
+			out.write(formatted.getBytes(CHARSET));
 		}
 		catch (IOException e) {
 			e.printStackTrace();
@@ -418,8 +472,17 @@ public class InterpretedProgram {
 	protected FSBlock resolve(String input) {
 		return computer.resolve(input, this);
 	}
+	protected void terminate() {
+		if (instance != null) instance.terminate();
+	}
 	protected boolean terminated() {
-		return instance.isTerminated();
+		return instance != null && instance.isTerminated();
+	}
+	protected boolean isUserExecuted() {
+		return instance != null;
+	}
+	protected void sleepFor(long ms) {
+		if (isUserExecuted()) sleepFor(ms);
 	}
 
 	//
@@ -455,7 +518,7 @@ public class InterpretedProgram {
 	}
 
 	public void lua$removeRestrictions() {
-		if (!restricted) return;
+		if (!restricted || !isUserExecuted()) return;
 
 		AtomicBoolean state = new AtomicBoolean(false);
 
@@ -468,7 +531,7 @@ public class InterpretedProgram {
 
 		exit.addEventListener(event -> {
 			computer.getConsole().removeComponent(pos);
-			instance.terminate();
+			terminate();
 			state.set(true);
 		});
 		allow.addEventListener(event -> {
@@ -482,7 +545,7 @@ public class InterpretedProgram {
 			}
 			else {
 				print("\nlua: insufficient permissions");
-				instance.terminate();
+				terminate();
 			}
 			state.set(true);
 		});
@@ -518,13 +581,15 @@ public class InterpretedProgram {
 		return computer.getHostname();
 	}
 	private LuaComputer lua$findComputer(String hostname) {
-		sleep(40);
+		if (!isUserExecuted()) return null;
+		sleepFor(40);
 		Computer computer = ComputerHandler.getInstance().find(hostname);
 		if (computer == null) return null;
 		else return new LuaComputer(computer);
 	}
 	private LuaChannel lua$registerChannel(String channel) {
-		sleep(40);
+		if (!isUserExecuted()) return null;
+		sleepFor(40);
 		if (!computer.isChannelRegistered(channel)) {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
 				computer.unregisterMessageListener(channel);
@@ -540,17 +605,18 @@ public class InterpretedProgram {
 		return new LuaArray(size);
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
-		sleep(20);
+		if (!isUserExecuted()) return;
+		sleepFor(20);
 		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
 	}
 	private String[] lua$soundList() {
-		sleep(20);
+		sleepFor(20);
 		return Arrays.asList(Sound.values()).stream()
 				.map(Enum::name)
 				.toArray(String[]::new);
 	}
 	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
-		sleep(20);
+		sleepFor(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
 				.findFirst().orElseGet(() -> null);
@@ -562,7 +628,7 @@ public class InterpretedProgram {
 						(float) v1.checkdouble(), (float) v2.checkdouble()));
 	}
 	private Boolean lua$clear() {
-		sleep(50);
+		sleepFor(50);
 		return schedule(() -> {
 			Terminal terminal = computer.getTerminal(this);
 			if (terminal != null)
@@ -571,6 +637,7 @@ public class InterpretedProgram {
 		}, this::terminated);
 	}
 	private String lua$programDir() {
+		if (path == null) return null;
 		String[] arr = this.path.split("/");
 		return Arrays.asList(arr).stream()
 				.limit(arr.length - 1)
@@ -580,7 +647,7 @@ public class InterpretedProgram {
 		return path;
 	}
 	private LuaValue lua$require(String path) {
-		sleep(10);
+		sleepFor(10);
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
@@ -611,7 +678,7 @@ public class InterpretedProgram {
 		return value.call();
 	}
 	private LuaBuffer lua_screenBuffer(Integer index) {
-		sleep(20);
+		sleepFor(20);
 		index--;
 		if (!computer.screenAvailable(index)) return null;
 		allocatedSessions.add(index);
@@ -634,13 +701,13 @@ public class InterpretedProgram {
 		return args;
 	}
 	private LuaFolder lua$resolveFolder(String path) {
-		sleep(10);
+		sleepFor(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFile lua$resolveFile(String path) {
-		sleep(10);
+		sleepFor(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
@@ -653,18 +720,18 @@ public class InterpretedProgram {
 		return frame;
 	}
 	private int lua$chestList() {
-		sleep(40);
+		sleepFor(40);
 		return ComputerHandler.findChests(computer).length;
 	}
 	private LuaValue lua$getChest(int index) throws InterruptedException {
-		sleep(40);
+		sleepFor(40);
 		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
 		if (index >= chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index], this::terminated);
 		return CoerceJavaToLua.coerce(lua);
 	}
 	private LuaFile lua$touch(String path) {
-		sleep(10);
+		sleepFor(10);
 		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
 		return file != null ? new LuaFile(file, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
@@ -672,7 +739,7 @@ public class InterpretedProgram {
 	private String[] lua$reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
 	}
-	private void lua$sleep(Integer ms) {
+	private void lua$sleepFor(Integer ms) {
 		try {
 			interruptLib.update();
 			long target = System.currentTimeMillis() + ms;
@@ -687,7 +754,7 @@ public class InterpretedProgram {
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private LuaFolder lua$mkdir(String path) {
-		sleep(10);
+		sleepFor(10);
 		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
 		return folder != null ? new LuaFolder(folder, path,
 				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
