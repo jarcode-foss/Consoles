@@ -2,6 +2,7 @@ package jarcode.consoles.computer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import jarcode.consoles.internal.ConsoleComponent;
 import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ConsoleMeta;
 import jarcode.consoles.Consoles;
@@ -66,9 +67,6 @@ public class ComputerData {
 	private transient String hostname;
 
 	private UUID owner;
-
-	// Lua code for handling prompt
-	private String promptHandler = null;
 
 	// sets up a ComputerData object that is prepared to load from a folder
 	public static ComputerData fromFolder(File folder) throws IOException {

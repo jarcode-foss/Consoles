@@ -5,6 +5,7 @@ import jarcode.consoles.api.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -223,8 +225,11 @@ public abstract class Computer implements Runnable {
 			// boot routine, installs devices, runs init program, etc
 			kernel.routine("boot");
 
+			// run server-wide startup program
+			InterpretedProgram.execFile("startup.lua", this);
+
 			// setup terminal
-			getCurrentTerminal().onStart();
+			getCurrentTerminal().setupPrompt();
 
 			// repaint
 			console.repaint();
@@ -388,6 +393,16 @@ public abstract class Computer implements Runnable {
 		final ConsoleDialog dialog = ConsoleDialog.show(console, text, button);
 		button.addEventListener(event -> console.removeComponent(dialog));
 		console.repaint();
+	}
+	@SuppressWarnings("unchecked")
+	public <T extends ConsoleComponent> List<T> findComponents(Class<T> type) {
+		List<T> list = new ArrayList<>();
+		for (ConsoleComponent feed : feeds) {
+			if (type.isAssignableFrom(feed.getClass())) {
+				list.add((T) feed);
+			}
+		}
+		return list;
 	}
 	public Terminal getCurrentTerminal() {
 		return getCurrentComponent() instanceof Terminal ? (Terminal) getCurrentComponent() : null;

@@ -34,9 +34,11 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.luaj.vm2.LuaError;
 
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -52,6 +54,7 @@ public class ComputerHandler implements Listener {
 	private static final Field ITEM_STACK_HANDLE;
 	private static final Constructor ITEM_STACK_CREATE;
 
+	// register lua functions in this class
 	static {
 		Lua.map(ComputerHandler::lua_redstone, "redstone");
 		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
@@ -59,6 +62,7 @@ public class ComputerHandler implements Listener {
 		Lua.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
 	}
 
+	// get constructor and handle for craftbukkit's item stack.
 	static {
 		try {
 			ITEM_STACK_HANDLE = CraftItemStack.class.getDeclaredField("handle");
@@ -69,6 +73,42 @@ public class ComputerHandler implements Listener {
 		}
 		catch (Throwable e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	// create default startup program
+	static {
+		scope: try {
+			File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
+					+ File.separatorChar + "startup.lua");
+			if (!file.exists()) {
+				if (!file.createNewFile()) {
+					Consoles.getInstance().getLogger().warning("failed to create startup.lua file!");
+					break scope;
+				}
+			}
+			if (file.isDirectory()) {
+				Consoles.getInstance().getLogger().warning("startup.lua is a directory! Please " +
+						"delete it and re-make it as a file.");
+				break scope;
+			}
+			FileOutputStream out = new FileOutputStream(file);
+			PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8")), true);
+			writer.println("-- Use this program to run code on all computers when they start up");
+			writer.println("function main()");
+			writer.println("\tprintf(\"Logged into &e\" .. hostname() ..\"&f as user &a\" .. getTerminal():getUser())");
+			writer.println("\tnextLine()");
+			writer.println("\tgetTerminal():printRandomJoke()");
+			writer.println("\tnextLine()");
+			writer.println("\t-- old prompt style, uncomment this to restore it");
+			writer.println("\t-- getTerminal():setPrompt(\"%u@%h:%d$ \")");
+			writer.println("end");
+			writer.flush();
+			writer.close();
+		}
+		catch (IOException e) {
+			Consoles.getInstance().getLogger().warning("Failed to create default startup.lua program:");
+			e.printStackTrace();
 		}
 	}
 

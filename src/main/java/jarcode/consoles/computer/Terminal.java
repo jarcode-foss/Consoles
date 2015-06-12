@@ -1,13 +1,11 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.internal.InputComponent;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -59,7 +57,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 
 	public static Terminal newTerminal(Computer computer) {
 		Terminal terminal = new Terminal(computer, false);
-		terminal.onStart();
+		terminal.setupPrompt();
 		return terminal;
 	}
 
@@ -67,6 +65,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 	private String currentDirectory = "/home/admin";
 	private FSFolder root;
 	private Computer computer;
+	private String promptFormatter = "%d> ";
 
 	private volatile Consumer<String> handlerInterrupt = null;
 
@@ -74,13 +73,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 
 	private volatile boolean ignoreUnauthorizedSigterm = false;
 
-	public void onStart() {
-		advanceLine();
-		println("Logged into " + ChatColor.YELLOW + computer.getHostname()
-				+ ChatColor.WHITE + " as user " + ChatColor.GREEN + user);
-		advanceLine();
-		randomJoke();
-		advanceLine();
+	public void setupPrompt() {
 		updatePrompt();
 		prompt();
 	}
@@ -93,6 +86,7 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		this.root = computer.getRoot();
 		this.computer = computer;
 		setFeedCreator(creator);
+		advanceLine();
 		if (setupPrompt) {
 			updatePrompt();
 			prompt();
@@ -145,8 +139,18 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 	public Computer getComputer() {
 		return computer;
 	}
+	public void setPromptFormatter(String formatter) {
+		promptFormatter = formatter;
+		updatePrompt();
+	}
 	public void updatePrompt() {
-		setPrompt(String.format("%s> ", currentDirectory));
+		setPrompt(formattedPrompt());
+	}
+	public String formattedPrompt() {
+		return promptFormatter
+				.replace("%d", currentDirectory)
+				.replace("%u", user)
+				.replace("%h", computer.getHostname());
 	}
 	public void setUser(String user) {
 		this.user = user;

@@ -11,7 +11,9 @@ import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import jarcode.consoles.computer.interpreter.types.*;
 import jarcode.consoles.internal.ConsoleButton;
+import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.util.Position2D;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -46,6 +48,27 @@ public class InterpretedProgram {
 		Libraries.init();
 	}
 
+	/**
+	 * Executes a lua program from the plugin folder, on a specific computer.
+	 *
+	 * @param path the path to the program, relative to the plugin folder
+	 * @param computer the comptuer to run the program on
+	 */
+	public static void execFile(String path, Computer computer) {
+		File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
+				+ File.separatorChar + path);
+		if (!file.exists() || file.isDirectory()) {
+			return;
+		}
+		try {
+			String program = FileUtils.readFileToString(file, CHARSET);
+			exec(program, computer);
+		}
+		catch (IOException e) {
+			Consoles.getInstance().getLogger().warning("Failed to read lua program from plugin folder: " + path);
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Compiles and runs the given Lua program. The program is ran
@@ -55,16 +78,24 @@ public class InterpretedProgram {
 	 * This is not suitable for constant execution of Lua code, as it
 	 * has to compile and sandbox the code each time.
 	 *
+	 * The program that is ran will occupy the current terminal instance
+	 * for the computer.
+	 *
 	 * @param program the string that contains the Lua program
 	 * @param computer the computer to run the program on
-	 * @return a string with the output from the program
+	 * @return true if the program was executed, false if the terminal was busy
 	 */
-	public static String exec(String program, Computer computer) {
+	public static boolean exec(String program, Computer computer) {
+		if (computer.getCurrentTerminal().isBusy())
+			return false;
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		inst.compileAndExecute(out, null, "", computer, null, program);
-		return ChatColor.stripColor(new String(out.toByteArray(), CHARSET));
+		LinkedStream stream = new LinkedStream();
+		inst.compileAndExecute(stream.createOutput(), null, "", computer, null, program);
+		computer.getCurrentTerminal().setIO(stream, null, ConsoleFeed.UTF_ENCODER);
+		computer.getCurrentTerminal().startFeed();
+		stream.close();
+		return true;
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -466,7 +497,7 @@ public class InterpretedProgram {
 	protected void println(String formatted) {
 		print(formatted + '\n');
 	}
-	protected void nextL() {
+	protected void nextLine() {
 		print("\n");
 	}
 	protected FSBlock resolve(String input) {
@@ -574,6 +605,9 @@ public class InterpretedProgram {
 		}
 		return result[0];
 	}
+	private void lua$nextLine() {
+		print("\n");
+	}
 	private String lua$owner() {
 		return computer.getOwner().toString();
 	}
@@ -600,6 +634,9 @@ public class InterpretedProgram {
 			return ch;
 		}
 		else return null;
+	}
+	private LuaTerminal lua$getTerminal() {
+		return new LuaTerminal(computer.getTerminal(this));
 	}
 	private LuaValue lua$static_arr(int size) {
 		return new LuaArray(size);

@@ -113,6 +113,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	public void onRemove() {
 		stop();
 	}
+	public boolean isBusy() {
+		return !(creator != null && ended);
+	}
 	// non-blocking
 	public void write(String string) {
 		if (creator != null && ended) {
@@ -133,7 +136,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 		else if (initialized && running && !ended) {
 			try {
-				synchronized (LOCK) {
+				if (out != null) synchronized (LOCK) {
 					byte[] arr = encoder.encode(string + "\n");
 					outgoing.write(arr);
 				}
@@ -164,7 +167,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		try {
 			while (running) {
 				synchronized (LOCK) {
-					if (outgoing.size() > 0) {
+					if (outgoing.size() > 0 && out != null) {
 						out.write(outgoing.toByteArray());
 						outgoing = new ByteArrayOutputStream();
 					}
