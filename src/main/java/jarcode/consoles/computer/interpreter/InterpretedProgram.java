@@ -81,6 +81,9 @@ public class InterpretedProgram {
 	 * The program that is ran will occupy the current terminal instance
 	 * for the computer.
 	 *
+	 * The directory of the program will be the current directory of
+	 * the terminal
+	 *
 	 * @param program the string that contains the Lua program
 	 * @param computer the computer to run the program on
 	 * @return true if the program was executed, false if the terminal was busy
@@ -96,6 +99,16 @@ public class InterpretedProgram {
 		computer.getCurrentTerminal().startFeed();
 		stream.close();
 		return true;
+	}
+
+	public static void exec(String program, Computer computer, InputStream in, OutputStream out) {
+		exec(program, computer, in, out, "");
+	}
+
+	public static void exec(String program, Computer computer, InputStream in, OutputStream out, String args) {
+		InterpretedProgram inst = new InterpretedProgram();
+		inst.restricted = false;
+		inst.compileAndExecute(out, in, args, computer, null, program);
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -124,7 +137,7 @@ public class InterpretedProgram {
 		this.path = path;
 	}
 
-	// blank for program instances that need to be setup for Lua programs
+	// for program instances that need to be setup for Lua programs
 	// initiated through Java code
 	private InterpretedProgram() {}
 
@@ -688,6 +701,10 @@ public class InterpretedProgram {
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
+		if (this.path == null) {
+			println("lua:" + ChatColor.RED + " failed to load '" + path + "', doesn't exist");
+			return null;
+		}
 		if (file == null) {
 			String[] arr = this.path.split("/");
 			String programDir = Arrays.asList(arr).stream()
