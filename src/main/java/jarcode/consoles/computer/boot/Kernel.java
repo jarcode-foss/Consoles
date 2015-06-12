@@ -53,6 +53,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x13, new WGetProgram());
 		program(0x14, new MapProgram());
 		program(0x15, new SkriptProgram());
+		program(0x16, new ExecuteProgram());
 	}
 
 	{
@@ -129,6 +130,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x13, root, "wget");
 		mapProgram(0x14, root, "map");
 		mapProgram(0x15, root, "skript");
+		mapProgram(0x16, root, "exec");
 
 		LuaDefaults.loadInto(computer);
 	}
