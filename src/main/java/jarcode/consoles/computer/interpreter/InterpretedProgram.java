@@ -165,6 +165,13 @@ public class InterpretedProgram {
 	// used to run programs from a file in a computer
 	public void run(OutputStream out, InputStream in, String str, Computer computer,
 	                ProgramInstance instance) throws Exception {
+
+		// if the file is null, something went wrong
+		if (file == null) {
+			print("null file");
+			return;
+		}
+
 		// read from the program file and write it to a buffer
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
 		try (InputStream is = file.createInput()) {
@@ -198,13 +205,7 @@ public class InterpretedProgram {
 			this.args = str;
 
 			if (contextTerminal == null) {
-				contextTerminal = contextTerminal;
-			}
-
-			// if the file is null, something went wrong
-			if (file == null) {
-				print("null file");
-				return;
+				contextTerminal = computer.getTerminal(this);
 			}
 
 			// this is our function pool, which are a bunch of LuaFunctions mapped to strings
