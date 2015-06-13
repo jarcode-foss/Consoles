@@ -169,11 +169,11 @@ public class InterpretedProgram {
 
 		// configurable API options
 
-		if (Consoles.componentRenderingEnabled && isUserExecuted()) {
+		if (Consoles.componentRenderingEnabled) {
 			Lua.put(this::lua_registerPainter, "paint", pool);
 		}
 
-		if (Consoles.frameRenderingEnabled && isUserExecuted()) {
+		if (Consoles.frameRenderingEnabled) {
 			Lua.put(this::lua_screenBuffer, "screenBuffer", pool);
 			Lua.put(this::lua_screenFrame, "screenFrame", pool);
 		}
@@ -473,7 +473,7 @@ public class InterpretedProgram {
 		String msg = Joiner.on('\n').join(arr);
 
 		// if the amount of lines in the breakdown is greater than 16, dump it to a file
-		if (arr.length > 16 && isUserExecuted()) {
+		if (arr.length > 16) {
 
 			// get terminal instance
 			Terminal terminal = contextTerminal;
@@ -547,11 +547,8 @@ public class InterpretedProgram {
 	protected boolean terminated() {
 		return instance != null && instance.isTerminated();
 	}
-	protected boolean isUserExecuted() {
-		return instance != null;
-	}
-	protected void sleepFor(long ms) {
-		if (isUserExecuted()) ProgramUtils.sleep(ms);
+	protected void delay(long ms) {
+		if (restricted) ProgramUtils.sleep(ms);
 	}
 
 	//
@@ -587,7 +584,7 @@ public class InterpretedProgram {
 	}
 
 	public void lua$removeRestrictions() {
-		if (!restricted || !isUserExecuted()) return;
+		if (!restricted) return;
 
 		AtomicBoolean state = new AtomicBoolean(false);
 
@@ -653,15 +650,13 @@ public class InterpretedProgram {
 		return computer.getHostname();
 	}
 	private LuaComputer lua$findComputer(String hostname) {
-		if (!isUserExecuted()) return null;
-		sleepFor(40);
+		delay(40);
 		Computer computer = ComputerHandler.getInstance().find(hostname);
 		if (computer == null) return null;
 		else return new LuaComputer(computer);
 	}
 	private LuaChannel lua$registerChannel(String channel) {
-		if (!isUserExecuted()) return null;
-		sleepFor(40);
+		delay(40);
 		if (!computer.isChannelRegistered(channel)) {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
 				computer.unregisterMessageListener(channel);
@@ -680,18 +675,17 @@ public class InterpretedProgram {
 		return new LuaArray(size);
 	}
 	private void lua$ignoreTerminate(Boolean ignore) {
-		if (!isUserExecuted()) return;
-		sleepFor(20);
+		delay(20);
 		contextTerminal.setIgnoreUnauthorizedSigterm(ignore);
 	}
 	private String[] lua$soundList() {
-		sleepFor(20);
+		delay(20);
 		return Arrays.asList(Sound.values()).stream()
 				.map(Enum::name)
 				.toArray(String[]::new);
 	}
 	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
-		sleepFor(20);
+		delay(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
 				.findFirst().orElseGet(() -> null);
@@ -703,7 +697,7 @@ public class InterpretedProgram {
 						(float) v1.checkdouble(), (float) v2.checkdouble()));
 	}
 	private Boolean lua$clear() {
-		sleepFor(50);
+		delay(50);
 		return schedule(() -> {
 			Terminal terminal = contextTerminal;
 			if (terminal != null)
@@ -722,7 +716,7 @@ public class InterpretedProgram {
 		return path;
 	}
 	private LuaValue lua$require(String path) {
-		sleepFor(10);
+		delay(10);
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				"/lib", this::terminated, computer) : null;
@@ -757,7 +751,7 @@ public class InterpretedProgram {
 		return value.call();
 	}
 	private LuaBuffer lua_screenBuffer(Integer index) {
-		sleepFor(20);
+		delay(20);
 		index--;
 		if (!computer.screenAvailable(index)) return null;
 		allocatedSessions.add(index);
@@ -780,13 +774,13 @@ public class InterpretedProgram {
 		return args;
 	}
 	private LuaFolder lua$resolveFolder(String path) {
-		sleepFor(10);
+		delay(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFile lua$resolveFile(String path) {
-		sleepFor(10);
+		delay(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
@@ -799,18 +793,18 @@ public class InterpretedProgram {
 		return frame;
 	}
 	private int lua$chestList() {
-		sleepFor(40);
+		delay(40);
 		return ComputerHandler.findChests(computer).length;
 	}
 	private LuaValue lua$getChest(int index) throws InterruptedException {
-		sleepFor(40);
+		delay(40);
 		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
 		if (index >= chests.length || index < 0) return LuaValue.NIL;
 		LuaChest lua = new LuaChest(chests[index], this::terminated);
 		return CoerceJavaToLua.coerce(lua);
 	}
 	private LuaFile lua$touch(String path) {
-		sleepFor(10);
+		delay(10);
 		FSFile file = new TouchProgram(false).touch(path, computer, contextTerminal);
 		return file != null ? new LuaFile(file, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
@@ -833,7 +827,7 @@ public class InterpretedProgram {
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private LuaFolder lua$mkdir(String path) {
-		sleepFor(10);
+		delay(10);
 		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, contextTerminal);
 		return folder != null ? new LuaFolder(folder, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
