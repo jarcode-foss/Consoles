@@ -27,6 +27,8 @@ public class ProgramInstance implements Runnable {
 
 	private final Computer computer;
 
+	private String data = null;
+
 	private volatile boolean terminated = false;
 
 	{
@@ -55,6 +57,10 @@ public class ProgramInstance implements Runnable {
 		this.argument = argument;
 		this.computer = computer;
 	}
+	public ProgramInstance(InterpretedProgram interpreted, String argument, Computer computer, String data) {
+		this(interpreted, argument, computer);
+		this.data = data;
+	}
 	public void start() {
 		thread.start();
 	}
@@ -72,11 +78,16 @@ public class ProgramInstance implements Runnable {
 		try {
 			if (provided != null)
 				provided.init(stdout, stdin, argument, computer, this);
-			else if (interpreted != null)
-				interpreted.run(stdout, stdin, argument, computer, this);
+			else if (interpreted != null) {
+				if (data == null)
+					interpreted.run(stdout, stdin, argument, computer, this);
+				else
+					interpreted.runRaw(stdout, stdin, argument, computer, this, data);
+			}
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
+			Consoles.getInstance().getLogger().severe("Error while executing program:");
 			if (Consoles.debug)
 				e.printStackTrace();
 		}

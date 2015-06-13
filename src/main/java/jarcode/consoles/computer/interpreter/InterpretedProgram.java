@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-/*
+/**
 
 This class handles the creation of the LuaVM and provides a large
 amount of base Lua function bindings.
@@ -60,6 +60,8 @@ public class InterpretedProgram {
 	public static boolean execFile(String path, Terminal terminal, String args) {
 		File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
 				+ File.separatorChar + path);
+		if (Consoles.debug)
+			Consoles.getInstance().getLogger().info("Executing file: " + path);
 		if (!file.exists() || file.isDirectory()) {
 			return false;
 		}
@@ -105,7 +107,7 @@ public class InterpretedProgram {
 		InterpretedProgram interpretedProgram = new InterpretedProgram();
 		interpretedProgram.restricted = false;
 		interpretedProgram.contextTerminal = terminal;
-		ProgramInstance instance = new ProgramInstance(interpretedProgram, "", computer);
+		ProgramInstance instance = new ProgramInstance(interpretedProgram, "", computer, program);
 
 		terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
 		terminal.startFeed();
@@ -126,7 +128,7 @@ public class InterpretedProgram {
 	public static void pass(String program, Computer computer, InputStream in, OutputStream out, String args) {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
-		inst.compileAndExecute(out, in, args, computer, null, program);
+		inst.runRaw(out, in, args, computer, null, program);
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -179,9 +181,19 @@ public class InterpretedProgram {
 		}
 	}
 
+	private void setup(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) {
+		this.in = in;
+		this.out = out;
+		this.computer = computer;
+		this.instance = instance;
+		this.args = str;
+	}
+
 	// used to run programs from a file in a computer
 	public void run(OutputStream out, InputStream in, String str, Computer computer,
 	                ProgramInstance instance) throws Exception {
+
+		setup(out, in, str, computer, instance);
 
 		// if the file is null, something went wrong
 		if (file == null) {
@@ -209,17 +221,18 @@ public class InterpretedProgram {
 		// parse as a string
 		String raw = new String(buf.toByteArray(), CHARSET);
 
-		compileAndExecute(out, in, str, computer, instance, raw);
+		compileAndExecute(raw);
 	}
+
+	public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
+	                   ProgramInstance instance, String raw) {
+		setup(out, in, str, computer, instance);
+		compileAndExecute(raw);
+	}
+
 	// runs a program with the given raw text
-	public void compileAndExecute(OutputStream out, InputStream in, String str, Computer computer,
-	                ProgramInstance instance, String raw) {
+	public void compileAndExecute(String raw) {
 		try {
-			this.in = in;
-			this.out = out;
-			this.computer = computer;
-			this.instance = instance;
-			this.args = str;
 
 			if (contextTerminal == null) {
 				contextTerminal = computer.getTerminal(this);
@@ -529,7 +542,7 @@ public class InterpretedProgram {
 			out.write(formatted.getBytes(CHARSET));
 		}
 		catch (IOException e) {
-			e.printStackTrace();
+			throw new LuaError(e);
 		}
 	}
 	protected void println(String formatted) {
