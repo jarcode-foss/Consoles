@@ -77,9 +77,11 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		updatePrompt();
 		prompt();
 	}
-	public void randomJoke() {
-		Random random = new Random();
-		println(ChatColor.GRAY + JOKES[random.nextInt(JOKES.length)]);
+	public void printRandomJoke() {
+		println(ChatColor.GRAY + randomJoke());
+	}
+	public String randomJoke() {
+		return JOKES[new Random().nextInt(JOKES.length)];
 	}
 	Terminal(Computer computer, boolean setupPrompt) {
 		super(computer.getViewWidth(), computer.getViewHeight(), computer.getConsole());

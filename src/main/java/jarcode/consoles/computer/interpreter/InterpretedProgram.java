@@ -95,10 +95,25 @@ public class InterpretedProgram {
 		inst.restricted = false;
 		LinkedStream stream = new LinkedStream();
 		inst.contextTerminal = computer.getCurrentTerminal();
-		inst.compileAndExecute(stream.createOutput(), null, "", computer, null, program);
 		computer.getCurrentTerminal().setIO(stream, null, ConsoleFeed.UTF_ENCODER);
 		computer.getCurrentTerminal().startFeed();
-		stream.close();
+		OutputStream stdout = stream.createOutput();
+		try {
+			inst.compileAndExecute(stdout, null, "", computer, null, program);
+		}
+		catch (Throwable e) {
+			Consoles.getInstance().getLogger().severe("Something went wrong when trying to execute a program: ");
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				stdout.write(-1);
+				stream.close();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		return true;
 	}
 
@@ -534,7 +549,7 @@ public class InterpretedProgram {
 		return instance != null;
 	}
 	protected void sleepFor(long ms) {
-		if (isUserExecuted()) sleepFor(ms);
+		if (isUserExecuted()) ProgramUtils.sleep(ms);
 	}
 
 	//
@@ -665,7 +680,7 @@ public class InterpretedProgram {
 	private void lua$ignoreTerminate(Boolean ignore) {
 		if (!isUserExecuted()) return;
 		sleepFor(20);
-		getComputer().getTerminal(this).setIgnoreUnauthorizedSigterm(ignore);
+		contextTerminal.setIgnoreUnauthorizedSigterm(ignore);
 	}
 	private String[] lua$soundList() {
 		sleepFor(20);

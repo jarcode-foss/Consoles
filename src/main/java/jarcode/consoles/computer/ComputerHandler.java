@@ -94,15 +94,17 @@ public class ComputerHandler implements Listener {
 			}
 			FileOutputStream out = new FileOutputStream(file);
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8")), true);
+
 			writer.println("-- Use this program to run code on all computers when they start up");
 			writer.println("function main()");
-			writer.println("\tprintf(\"Logged into &e\" .. hostname() ..\"&f as user &a\" .. getTerminal():getUser())");
+			writer.println("\tprintc(\"Logged into &e\" .. hostname() .. \"&f as user &a\" .. getTerminal():getUser())");
 			writer.println("\tnextLine()");
-			writer.println("\tgetTerminal():printRandomJoke()");
+			writer.println("\tprintc(\"&7\" .. getTerminal():randomJoke())");
 			writer.println("\tnextLine()");
 			writer.println("\t-- old prompt style, uncomment this to restore it");
 			writer.println("\t-- getTerminal():setPrompt(\"%u@%h:%d$ \")");
-			writer.println("end");
+			writer.print("end");
+
 			writer.flush();
 			writer.close();
 		}

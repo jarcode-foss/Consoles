@@ -6,6 +6,11 @@ import org.bukkit.Bukkit;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /*
 
@@ -48,13 +53,19 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	protected final Object LOCK = new Object();
 	protected FeedEncoder encoder = null;
 
-	protected String prompt = null;
+	protected volatile String prompt = null;
+	private volatile boolean showPrompt = true;
 
 	private FeedCreator creator = null;
 	protected boolean initialized = false;
 
 	private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 	protected ByteArrayOutputStream outgoing = new ByteArrayOutputStream();
+
+	private final Object TASK_LOCK = new Object();
+	private final List<Integer> tasks = new ArrayList<>();
+
+	private final List<Runnable> afterTasks = new ArrayList<>();
 
 	public ConsoleFeed(ConsoleRenderer renderer) {
 		super(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
@@ -80,6 +91,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 	}
 	public void prompt() {
+		if (!showPrompt) return;
 		if (getLastLine().length() > 0)
 			advanceLine();
 		print(prompt);
@@ -94,6 +106,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		feed.setDaemon(true);
 		feed.setPriority(Thread.MIN_PRIORITY);
 		feed.start();
+	}
+	public void setShowPrompt(boolean show) {
+		showPrompt = show;
 	}
 	public Thread getFeedThread() {
 		return feed;
@@ -130,7 +145,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			else {
 				if (!result.isEmpty())
 					println(result);
-				if (prompt != null)
+				if (prompt != null && showPrompt)
 					print(prompt);
 			}
 		}
@@ -148,8 +163,10 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			advanceLine();
 			print("Could not forward input to terminal (creator=" + creator + ", is=" + in + ", os=" + out + ")," +
 					" running: " + running + ", ended: " + ended + ", initialized: " + initialized);
-			advanceLine();
-			print(prompt);
+			if (showPrompt) {
+				advanceLine();
+				print(prompt);
+			}
 		}
 		repaint();
 	}
@@ -205,17 +222,52 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			ended = true;
 			running = false;
 			synchronized (LOCK) {
-				if (prompt != null)
+				if (prompt != null && showPrompt) {
 					writeConsole("\n" + prompt);
+				}
 			}
+			waitFor();
+			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+				afterTasks.forEach(Runnable::run);
+				afterTasks.clear();
+			});
 		}
 	}
 	private void writeConsole(String text) {
-		if (Consoles.getInstance().isEnabled())
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			this.print(text);
-			repaint();
-		});
+		if (Consoles.getInstance().isEnabled()) {
+			AtomicInteger id = new AtomicInteger(-1);
+			id.set(Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+				this.print(text);
+				repaint();
+				synchronized (TASK_LOCK) {
+					tasks.remove((Integer) id.get());
+					TASK_LOCK.notify();
+				}
+			}));
+			synchronized (TASK_LOCK) {
+				tasks.add(id.get());
+			}
+		}
+	}
+
+	// should be used by the main thread instead of waitFor()
+	public void doAfter(Runnable task) {
+		afterTasks.add(task);
+	}
+
+	// should not be called by the main thread, as the tasks themselves
+	// are ran from it.
+	public void waitFor() {
+		synchronized (TASK_LOCK) {
+			try {
+				while (tasks.size() > 0 || !ended) {
+					TASK_LOCK.wait();
+				}
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	public interface FeedEncoder {
 		public String get(byte[] read);

@@ -13,6 +13,6 @@ public class JokeProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		Terminal terminal = computer.getCurrentTerminal();
-		terminal.randomJoke();
+		terminal.printRandomJoke();
 	}
 }

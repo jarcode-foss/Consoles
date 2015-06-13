@@ -14,8 +14,8 @@ public class LuaTerminal {
 		terminal.setPromptFormatter(prompt);
 	}
 
-	public void printRandomJoke() {
-		terminal.randomJoke();
+	public String randomJoke() {
+		return terminal.randomJoke();
 	}
 
 	public String getUser() {

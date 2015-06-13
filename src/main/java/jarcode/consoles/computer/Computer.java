@@ -183,14 +183,12 @@ public abstract class Computer implements Runnable {
 		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
 		String[] text = {
-				"Loading vmlinuz", null, ".", null, ".", null, ".", null, ".", null, ".\tdone\n",
-				"Loading initrd.gz", null, ".", null, ".", null, ".", null, ".", null, "\tdone\n\n",
-				"Initializing filesystem", ".", ".", ".", "\tdone\n",
-				"Scanning devices", ".", ".", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0\n",
-				"Blacklisting kernel modules", ".", ".", "\tdone\n",
-				"Starting services", null, ".", null, ".", null, ".", null, "\tdone\n",
-				"Loading drivers", "\n\t[+] plcommand-1.34-245", "\n\t[+] plaction-1.06-083",
-				"\n\t[+] command-1.34-174", "\n\t[+] ttyinput-1.94-042", "\n\t[+] luabindings-2.3-009"
+				"Loading vmlinuz", null, " . ", null, " . ", null, " . ", null, " . ", null, "done\n",
+				"Loading initrd.gz", null, " . ", null, " . ", null, " . ", null, " . ", null, "done\n\n",
+				"Initializing filesystem", " . ", " . ", " . ", "done\n",
+				"Scanning devices", " . ", " . ", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0\n",
+				"Loading drivers", null, " . ", null, " . ", null, " . ", null, "done\n",
+				"Blacklisting kernel modules", " . ", " . ", "done\n"
 		};
 		int i = 20;
 		for (String str : text) {
@@ -217,22 +215,30 @@ public abstract class Computer implements Runnable {
 				kernel = boot("boot/vmlinuz", Kernel.class);
 			}
 			// register main task
-			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), Computer.this, 1L, 1L);
+			taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), Computer.this, 10L, 10L);
+
+			Terminal term = getCurrentTerminal();
 
 			// clear the terminal
-			getCurrentTerminal().clear();
+			term.clear();
+			term.setShowPrompt(false);
 
 			// boot routine, installs devices, runs init program, etc
 			kernel.routine("boot");
 
+			// task for when the feed finishes writing to the terminal
+			term.doAfter(() -> {
+				term.setShowPrompt(true);
+
+				// setup terminal
+				term.setupPrompt();
+
+				// repaint
+				console.repaint();
+			});
+
 			// run server-wide startup program
 			InterpretedProgram.execFile("startup.lua", this);
-
-			// setup terminal
-			getCurrentTerminal().setupPrompt();
-
-			// repaint
-			console.repaint();
 		}, time);
 	}
 	public void save() {
