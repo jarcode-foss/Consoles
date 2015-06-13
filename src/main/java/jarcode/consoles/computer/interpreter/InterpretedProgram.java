@@ -94,6 +94,7 @@ public class InterpretedProgram {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
 		LinkedStream stream = new LinkedStream();
+		inst.contextTerminal = computer.getCurrentTerminal();
 		inst.compileAndExecute(stream.createOutput(), null, "", computer, null, program);
 		computer.getCurrentTerminal().setIO(stream, null, ConsoleFeed.UTF_ENCODER);
 		computer.getCurrentTerminal().startFeed();
@@ -101,11 +102,11 @@ public class InterpretedProgram {
 		return true;
 	}
 
-	public static void exec(String program, Computer computer, InputStream in, OutputStream out) {
-		exec(program, computer, in, out, "");
+	public static void pass(String program, Computer computer, InputStream in, OutputStream out) {
+		pass(program, computer, in, out, "");
 	}
 
-	public static void exec(String program, Computer computer, InputStream in, OutputStream out, String args) {
+	public static void pass(String program, Computer computer, InputStream in, OutputStream out, String args) {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
 		inst.compileAndExecute(out, in, args, computer, null, program);
@@ -130,6 +131,8 @@ public class InterpretedProgram {
 	private List<String> registeredChannels = new ArrayList<>();
 
 	private boolean restricted = true;
+
+	private Terminal contextTerminal = null;
 
 	// normal constructor for loading a program from a computer
 	public InterpretedProgram(FSFile file, String path) {
@@ -193,6 +196,10 @@ public class InterpretedProgram {
 			this.computer = computer;
 			this.instance = instance;
 			this.args = str;
+
+			if (contextTerminal == null) {
+				contextTerminal = contextTerminal;
+			}
 
 			// if the file is null, something went wrong
 			if (file == null) {
@@ -357,7 +364,7 @@ public class InterpretedProgram {
 			registeredChannels.clear();
 
 			// remove terminal hooks
-			Terminal terminal = computer.getTerminal(this);
+			Terminal terminal = contextTerminal;
 			if (terminal != null) {
 				// user input handling
 				terminal.setHandlerInterrupt(null);
@@ -451,7 +458,7 @@ public class InterpretedProgram {
 		if (arr.length > 16 && isUserExecuted()) {
 
 			// get terminal instance
-			Terminal terminal = computer.getTerminal(this);
+			Terminal terminal = contextTerminal;
 			if (terminal != null) {
 
 				// find file name to use. We use LuaFile because
@@ -514,7 +521,7 @@ public class InterpretedProgram {
 		print("\n");
 	}
 	protected FSBlock resolve(String input) {
-		return computer.resolve(input, this);
+		return computer.getBlock(input, contextTerminal.getCurrentDirectory());
 	}
 	protected void terminate() {
 		if (instance != null) instance.terminate();
@@ -605,7 +612,7 @@ public class InterpretedProgram {
 	private String lua$read() {
 		final String[] result = {null};
 		AtomicBoolean locked = new AtomicBoolean(true);
-		computer.getTerminal(this).setHandlerInterrupt((str) -> {
+		contextTerminal.setHandlerInterrupt((str) -> {
 			result[0] = str;
 			locked.set(false);
 		});
@@ -649,7 +656,7 @@ public class InterpretedProgram {
 		else return null;
 	}
 	private LuaTerminal lua$getTerminal() {
-		return new LuaTerminal(computer.getTerminal(this));
+		return new LuaTerminal(contextTerminal);
 	}
 	private LuaValue lua$static_arr(int size) {
 		return new LuaArray(size);
@@ -680,7 +687,7 @@ public class InterpretedProgram {
 	private Boolean lua$clear() {
 		sleepFor(50);
 		return schedule(() -> {
-			Terminal terminal = computer.getTerminal(this);
+			Terminal terminal = contextTerminal;
 			if (terminal != null)
 				terminal.clear();
 			return true;
@@ -758,13 +765,13 @@ public class InterpretedProgram {
 		sleepFor(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
-				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFile lua$resolveFile(String path) {
 		sleepFor(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
-				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private LuaFrame lua_screenFrame() {
 		if (framePool.size() > 128) return null;
@@ -786,9 +793,9 @@ public class InterpretedProgram {
 	}
 	private LuaFile lua$touch(String path) {
 		sleepFor(10);
-		FSFile file = new TouchProgram(false).touch(path, computer, computer.getTerminal(this));
+		FSFile file = new TouchProgram(false).touch(path, computer, contextTerminal);
 		return file != null ? new LuaFile(file, path,
-				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	private String[] lua$reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
@@ -809,9 +816,9 @@ public class InterpretedProgram {
 	@SuppressWarnings("SpellCheckingInspection")
 	private LuaFolder lua$mkdir(String path) {
 		sleepFor(10);
-		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, computer.getTerminal(this));
+		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, contextTerminal);
 		return folder != null ? new LuaFolder(folder, path,
-				computer.getTerminal(this).getCurrentDirectory(), this::terminated, computer) : null;
+				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
 	@SuppressWarnings("SpellCheckingInspection")
 	private void lua$printc(String formatted) {

@@ -38,7 +38,7 @@ public class ExecuteProgram extends FSProvidedProgram {
 		}
 		try {
 			String program = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-			InterpretedProgram.exec(program, computer, in, out, args);
+			InterpretedProgram.pass(program, computer, in, out, args);
 		}
 		catch (IOException e) {
 			println("Failed to read lua program from plugin folder: " + path);
