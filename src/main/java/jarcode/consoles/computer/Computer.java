@@ -226,19 +226,31 @@ public abstract class Computer implements Runnable {
 			// boot routine, installs devices, runs init program, etc
 			kernel.routine("boot");
 
-			// task for when the feed finishes writing to the terminal
-			term.doAfter(() -> {
-				term.setShowPrompt(true);
+			// task for running computer startup program
+			Runnable startup = () -> {
+				// task for when the feed finishes writing to the terminal
+				term.doAfter(() -> {
+					term.setShowPrompt(true);
 
-				// setup terminal
-				term.setupPrompt();
+					// setup terminal
+					term.setupPrompt();
 
-				// repaint
-				console.repaint();
-			});
+					// repaint
+					console.repaint();
+				});
 
-			// run server-wide startup program
-			InterpretedProgram.execFile("startup.lua", this);
+				// run server-wide startup program
+				InterpretedProgram.execFile("startup.lua", term);
+			};
+
+			// run init program normally in its own thread
+			term.run("/init");
+
+			// if the terminal returned immediately, the program didn't start
+			if (term.hasEnded())
+				startup.run(); // run our startup task
+			else
+				term.doAfter(startup); // schedule our startup task to run after the init program
 		}, time);
 	}
 	public void save() {

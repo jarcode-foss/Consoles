@@ -113,12 +113,8 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 				setIO(creator.getInputStream(), creator.getOutputStream(), creator.getEncoder());
 				startFeed();
 			}
-			else {
-				if (!result.isEmpty())
-					return result;
-			}
+			else return result;
 		}
-		repaint();
 		return null;
 	}
 	public ProgramInstance getLastProgramInstance() {

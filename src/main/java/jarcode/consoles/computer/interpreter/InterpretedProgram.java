@@ -52,28 +52,37 @@ public class InterpretedProgram {
 	 * Executes a lua program from the plugin folder, on a specific computer.
 	 *
 	 * @param path the path to the program, relative to the plugin folder
-	 * @param computer the comptuer to run the program on
+	 * @param terminal the terminal to run the program on
+	 * @param args the arguments for the program
+	 * @return true if the program was executed, false if the terminal was busy,
+	 * or if something went wrong when loading the file.
 	 */
-	public static void execFile(String path, Computer computer) {
+	public static boolean execFile(String path, Terminal terminal, String args) {
 		File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
 				+ File.separatorChar + path);
 		if (!file.exists() || file.isDirectory()) {
-			return;
+			return false;
 		}
 		try {
 			String program = FileUtils.readFileToString(file, CHARSET);
-			exec(program, computer);
+			return exec(program, terminal, args);
 		}
 		catch (IOException e) {
 			Consoles.getInstance().getLogger().warning("Failed to read lua program from plugin folder: " + path);
 			e.printStackTrace();
+			return false;
 		}
 	}
 
+	public static boolean execFile(String path, Terminal terminal) {
+		return execFile(path, terminal, "");
+	}
+
+
+
 	/**
 	 * Compiles and runs the given Lua program. The program is ran
-	 * with elevated permissions and does not have access to graphics
-	 * APIs.
+	 * with elevated permissions.
 	 *
 	 * This is not suitable for constant execution of Lua code, as it
 	 * has to compile and sandbox the code each time.
@@ -85,36 +94,29 @@ public class InterpretedProgram {
 	 * the terminal
 	 *
 	 * @param program the string that contains the Lua program
-	 * @param computer the computer to run the program on
+	 * @param terminal the terminal to run the program on
+	 * @param args the arguments for the program
 	 * @return true if the program was executed, false if the terminal was busy
 	 */
-	public static boolean exec(String program, Computer computer) {
-		if (computer.getCurrentTerminal().isBusy())
+	public static boolean exec(String program, Terminal terminal, String args) {
+		if (terminal.isBusy())
 			return false;
-		InterpretedProgram inst = new InterpretedProgram();
-		inst.restricted = false;
-		LinkedStream stream = new LinkedStream();
-		inst.contextTerminal = computer.getCurrentTerminal();
-		computer.getCurrentTerminal().setIO(stream, null, ConsoleFeed.UTF_ENCODER);
-		computer.getCurrentTerminal().startFeed();
-		OutputStream stdout = stream.createOutput();
-		try {
-			inst.compileAndExecute(stdout, null, "", computer, null, program);
-		}
-		catch (Throwable e) {
-			Consoles.getInstance().getLogger().severe("Something went wrong when trying to execute a program: ");
-			e.printStackTrace();
-		}
-		finally {
-			try {
-				stdout.write(-1);
-				stream.close();
-			}
-			catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+		Computer computer = terminal.getComputer();
+		InterpretedProgram interpretedProgram = new InterpretedProgram();
+		interpretedProgram.restricted = false;
+		interpretedProgram.contextTerminal = terminal;
+		ProgramInstance instance = new ProgramInstance(interpretedProgram, "", computer);
+
+		terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
+		terminal.startFeed();
+
+		instance.start();
+
 		return true;
+	}
+
+	public static boolean exec(String program, Terminal terminal) {
+		return exec(program, terminal, "");
 	}
 
 	public static void pass(String program, Computer computer, InputStream in, OutputStream out) {
