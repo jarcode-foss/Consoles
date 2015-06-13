@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -229,9 +230,12 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 			}
 			waitFor();
 			Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-				Arrays.asList(afterTasks.stream().toArray(Runnable[]::new))
-						.stream().forEach(Runnable::run);
-				afterTasks.clear();
+				List<Runnable> currentTasks = Arrays.asList(afterTasks.stream().toArray(Runnable[]::new));
+				currentTasks.stream().forEach(Runnable::run);
+				Iterator<Runnable> it = afterTasks.iterator();
+				while (it.hasNext())
+					if (currentTasks.contains(it.next()))
+						it.remove();
 			});
 		}
 	}
