@@ -30,6 +30,8 @@ public class Kernel extends FSProvidedProgram {
 	private Computer computer;
 	private boolean missingDevFolderError = false;
 
+	private int driverTick = 0;
+
 	{
 		program(0x00, this);
 		program(0x01, new CurrentDirectoryProgram());
@@ -213,7 +215,8 @@ public class Kernel extends FSProvidedProgram {
 	}
 	// drivers!
 	public void tick() {
-		if (!missingDevFolderError) try {
+		if (!missingDevFolderError && driverTick % 10 == 0) try {
+			driverTick = 0;
 			FSBlock devices = computer.getRoot().get("dev");
 			if (!(devices instanceof FSFolder)) {
 				if (!missingDevFolderError) {
@@ -282,6 +285,7 @@ public class Kernel extends FSProvidedProgram {
 				}
 			}
 		}
+		driverTick++;
 		drivers.forEach(Driver::tick);
 	}
 }
