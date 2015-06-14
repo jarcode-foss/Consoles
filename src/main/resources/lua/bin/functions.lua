@@ -27,7 +27,8 @@ end
 function reduce(tbl, predicate)
     local newTbl = {}
     for i = 1,#tbl do
-       if (predicate(tbl[i])) then newTbl[#t + 1] = tbl[i];
+       if (predicate(tbl[i])) then
+           newTbl[#newTbl + 1] = tbl[i];
        end
     end
     return newTbl;

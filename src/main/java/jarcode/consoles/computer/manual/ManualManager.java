@@ -50,13 +50,16 @@ public class ManualManager {
 				name.substring(4) : null);
 	}
 	public static void loadType(Class type) {
-		map(type, name -> type.getSimpleName() + ":" + name);
+		map(type, name -> name.contains("$") ? null : type.getSimpleName() + ":" + name, false);
 	}
 	public static Map<String, ManualEntry> manuals() {
 		return Collections.unmodifiableMap(MAP);
 	}
 	public static void map(Class type, Function<String, String> finder) {
-		for (Method method : type.getDeclaredMethods()) {
+		map(type, finder, true);
+	}
+	public static void map(Class type, Function<String, String> finder, boolean searchPrivate) {
+		for (Method method : searchPrivate ? type.getDeclaredMethods() : type.getMethods()) {
 			Annotation[] arr = method.getAnnotations();
 
 			String name = finder.apply(method.getName());
