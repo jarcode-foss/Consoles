@@ -3,6 +3,7 @@ package jarcode.consoles.computer.manual;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.interpreter.FunctionBind;
+import jarcode.consoles.computer.interpreter.Lua;
 import org.bukkit.ChatColor;
 import org.luaj.vm2.LuaValue;
 
@@ -40,6 +41,8 @@ public class ManualManager {
 			}
 		}
 		PROVIDED_MAP = Collections.unmodifiableMap(providedMap);
+
+		Lua.map(ManualManager::lua_manual_functionNames, "manual_functionNames");
 	}
 
 	public static void load(Class type) {
@@ -68,7 +71,9 @@ public class ManualManager {
 
 			// builder for method synopsis
 			StringBuilder b = new StringBuilder();
+			b.append(ChatColor.AQUA);
 			b.append(name);
+			b.append(ChatColor.WHITE);
 
 			b.append('(');
 			Class<?>[] params = method.getParameterTypes();
@@ -80,7 +85,9 @@ public class ManualManager {
 
 				String typeName = typeName(params[t]);
 
+				b.append(ChatColor.GRAY);
 				b.append(typeName);
+				b.append(ChatColor.WHITE);
 
 				Arg argAnn = (Arg) Arrays.asList(ann[t]).stream()
 						.filter(a -> Arg.class.isAssignableFrom(a.annotationType()))
@@ -113,10 +120,22 @@ public class ManualManager {
 				ab.append(str);
 				ab.append('\n');
 			}
+			ab.append('\n');
+			ab.append("returns ");
+			ab.append(ChatColor.YELLOW);
+			if (method.getReturnType() != null
+					&& method.getReturnType() != Void.class
+					&& method.getReturnType() != void.class)
+				ab.append(typeName(method.getReturnType()));
+			else ab.append("nil");
+			ab.append('\n');
 			MAP.put(name, new ManualEntry((n) ->
 					"Manual for function: " + ChatColor.GREEN + n,
-					null, man == null ? "missing manual" : man.value(), null, b.toString(), ab.toString()));
+					null, man == null ? "no description available" : man.value(), null, b.toString(), ab.toString()));
 		}
+	}
+	public static String[] lua_manual_functionNames() {
+		return MAP.keySet().stream().toArray(String[]::new);
 	}
 	private static String typeName(Class type) {
 		if (type == String.class)

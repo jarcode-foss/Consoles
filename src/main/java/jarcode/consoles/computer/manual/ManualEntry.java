@@ -30,7 +30,7 @@ public class ManualEntry {
 	}
 
 	public String getContents() {
-		return author;
+		return contents;
 	}
 
 	public String getVersion() {
@@ -59,17 +59,20 @@ public class ManualEntry {
 		if (getAuthor() != null) {
 			title.accept("AUTHOR: ");
 			builder.append(getAuthor());
-			builder.append("\n\n");
+			if (getContents() != null || getUsage() != null || getVersion() != null)
+				builder.append("\n\n");
 		}
 		if (getVersion() != null) {
 			title.accept("VERSION: ");
 			builder.append(getVersion());
-			builder.append("\n\n");
+			if (getContents() != null || getUsage() != null)
+				builder.append("\n\n");
 		}
 		if (getContents() != null) {
 			title.accept("DESCRIPTION: ");
 			builder.append(getContents());
-			builder.append("\n\n");
+			if (getUsage() != null)
+				builder.append("\n\n");
 		}
 		if (getUsage() != null) {
 			title.accept("USAGE: ");
@@ -78,7 +81,6 @@ public class ManualEntry {
 				builder.append("\n\n");
 				builder.append(getArgs());
 			}
-			builder.append("\n\n");
 		}
 		return builder.toString();
 	}
