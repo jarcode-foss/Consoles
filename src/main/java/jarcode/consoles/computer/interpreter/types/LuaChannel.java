@@ -1,11 +1,20 @@
 package jarcode.consoles.computer.interpreter.types;
 
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.TypeManual;
 import org.luaj.vm2.LuaError;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
+@TypeManual(
+		value = "A channel that can be opened for listening to messages sent from other computers.",
+		usage = "-- Opens a new channel\n" +
+				"local channel = registerChannel(\"MyChannel\")\n" +
+				"-- Waits for a message to be received and reads it\n" +
+				"local msg = channel:read()")
 @SuppressWarnings("unused")
 public class LuaChannel {
 
@@ -20,9 +29,15 @@ public class LuaChannel {
 		this.terminated = terminated;
 	}
 
-	public void append(String content) {
+	@FunctionManual("Writes data to this channel as if a client was writing to it. This function is called " +
+			"internally to send this channel messages from other clients.")
+	public void append(
+			@Arg(name = "content", info = "the content to append to this channel") String content) {
 		list.add(content);
 	}
+
+	@FunctionManual("Polls data from this channel, returning the next available message, or nil if no message " +
+			"has been received.")
 	public String poll() {
 		if (list.size() == 0) return null;
 		else {
@@ -31,6 +46,9 @@ public class LuaChannel {
 			return str;
 		}
 	}
+
+	@FunctionManual("Reads data from this channel, blocking until the next available message. Once a message " +
+			"is available, this function will return it.")
 	public String read() {
 		while (list.size() == 0) {
 			try {
@@ -47,6 +65,8 @@ public class LuaChannel {
 		list.remove(0);
 		return str;
 	}
+
+	@FunctionManual("Destroys this channel, cleaning up any resources and frees the channel name.")
 	public void destroy() {
 		destroy.run();
 	}

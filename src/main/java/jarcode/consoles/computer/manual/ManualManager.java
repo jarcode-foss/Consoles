@@ -76,6 +76,9 @@ public class ManualManager {
 					.findFirst()
 					.orElseGet(() -> null);
 
+			if (man == null)
+				continue;
+
 			// builder for method synopsis
 			StringBuilder b = new StringBuilder();
 			b.append(ChatColor.AQUA);
@@ -138,7 +141,7 @@ public class ManualManager {
 			else ab.append("nil");
 			MANUALS.put(name, new ManualEntry((n) ->
 					"Manual for function: " + ChatColor.GREEN + n,
-					null, man == null ? "no description available" : man.value(), null, b.toString(), ab.toString()));
+					null, ChatColor.translateAlternateColorCodes('&', man.value()), null, b.toString(), ab.toString()));
 		}
 	}
 	public static String[] lua_manual_functionNames() {

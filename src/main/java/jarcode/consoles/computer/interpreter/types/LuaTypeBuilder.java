@@ -4,6 +4,7 @@ import jarcode.consoles.computer.interpreter.FunctionBind;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.computer.manual.Arg;
 import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.TypeManual;
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
@@ -14,6 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@TypeManual("Used to build custom types for Lua programs.")
 public class LuaTypeBuilder {
 
 	private Function<String, LuaValue> stringGetHandler = null;

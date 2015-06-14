@@ -4,6 +4,7 @@ import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.manual.Arg;
 import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.TypeManual;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
@@ -12,6 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+@TypeManual(
+		value = "Represents a single frame that can be drawn to the screen. Contains " +
+		"methods for drawing various content to the frame, and can be used with LuaBuffer to " +
+		"update a session.",
+		usage = "-- Creates a new frame\n" +
+				"local screen = screenFrame()\n" +
+				"-- Draw some text\n" +
+				"screen:write(24, 16, \"Hello World!\"\n" +
+				"-- Update a LuaBuffer with this frame\n" +
+				"buffer:update(screen:id())")
 @SuppressWarnings("unused")
 public class LuaFrame {
 

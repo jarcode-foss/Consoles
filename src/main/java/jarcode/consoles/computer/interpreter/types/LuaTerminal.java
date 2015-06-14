@@ -3,7 +3,12 @@ package jarcode.consoles.computer.interpreter.types;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.manual.Arg;
 import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.TypeManual;
 
+@TypeManual(
+		value = "Represents the terminal that the current program is running in.",
+		usage = "-- Retrieve terminal that the program is running in\n" +
+				"local term = getTerminal()")
 public class LuaTerminal {
 
 	private Terminal terminal;

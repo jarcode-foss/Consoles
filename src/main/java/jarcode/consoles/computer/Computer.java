@@ -7,6 +7,9 @@ import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import jarcode.consoles.computer.interpreter.Lua;
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.event.ButtonEvent;
 import jarcode.consoles.event.ConsoleEventListener;
 import jarcode.consoles.internal.*;
@@ -35,9 +38,10 @@ public abstract class Computer implements Runnable {
 
 	// Lua<->Java mappings
 	static {
-		Lua.map(Computer::lua_session, "switchSession");
+		Lua.map(Computer::lua_switchSession, "switchSession");
 		Lua.map(Computer::lua_dialog, "dialog");
 		Lua.map(Computer::lua_messageOwner, "tellOwner");
+		ManualManager.load(Computer.class);
 	}
 
 	public static final String VERSION = "1.19.2";
@@ -291,7 +295,12 @@ public abstract class Computer implements Runnable {
 				.create();
 		setComponent(index, (ConsoleComponent) comp);
 	}
-	private static void lua_session(Integer id) {
+
+	@FunctionManual("Used to switch the current screen session that the user is looking at. The program is " +
+			"still attached to the original console it was started it, and should set the screen session back " +
+			"after the program exits.")
+	private static void lua_switchSession(
+			@Arg(name = "id", info = "the id of the screen session to switch to") Integer id) {
 		Computer computer = Lua.context();
 		computer.switchView(id);
 		try {
@@ -389,11 +398,18 @@ public abstract class Computer implements Runnable {
 	public ConsoleComponent getCurrentComponent() {
 		return feeds[componentIndex];
 	}
-	public static void lua_dialog(String text) {
+
+	@FunctionManual("Opens a dialog with the given text, and lets the program continue to execute " +
+			"while the dialog overlays the screen.")
+	public static void lua_dialog(
+			@Arg(name = "text", info = "the text to display on the dialog") String text) {
 		Computer computer = Lua.context();
 		Lua.main(() -> computer.showDialog(text));
 	}
-	public static void lua_messageOwner(String text) {
+
+	@FunctionManual("Sends a message to the owner of this computer, in chat.")
+	public static void lua_messageOwner(
+			@Arg(name = "text", info = "the message to send to the owner") String text) {
 		Computer computer = Lua.context();
 		Lua.main(() -> {
 			UUID uuid = computer.getOwner();

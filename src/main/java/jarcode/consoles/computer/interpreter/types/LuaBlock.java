@@ -3,10 +3,14 @@ package jarcode.consoles.computer.interpreter.types;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
+import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.TypeManual;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@TypeManual("A block in the filesystem, which can represent any kind of file or folder. " +
+		"This type is abstract and can not be instantiated.")
 @SuppressWarnings("unused")
 public abstract class LuaBlock {
 
@@ -21,6 +25,7 @@ public abstract class LuaBlock {
 		this.computer = computer;
 	}
 
+	@FunctionManual("Deletes this block from the filesystem.")
 	public boolean delete() {
 		String[] arr = FSBlock.section(path, "/");
 		String f = Arrays.asList(arr).stream()
@@ -39,7 +44,14 @@ public abstract class LuaBlock {
 		}
 		else return false;
 	}
+
+	@FunctionManual("Returns the path of this block in the filesystem.")
 	public String getPath() {
 		return path;
+	}
+
+	@FunctionManual("Returns the type of this filesystem block as a string.")
+	public String getBlockType() {
+		return this.getClass().getSimpleName();
 	}
 }
