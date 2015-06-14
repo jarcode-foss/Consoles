@@ -17,6 +17,7 @@ public class ManualManager {
 
 	public static final Map<FSProvidedProgram, ManualEntry> PROVIDED_MANUALS;
 	public static final Map<String, ManualEntry> MANUALS = new ConcurrentHashMap<>();
+	public static final Map<String, ManualEntry> TYPE_MANUALS = new ConcurrentHashMap<>();
 
 	static {
 
@@ -49,7 +50,10 @@ public class ManualManager {
 		map(type, name -> name.contains("$") ? null : type.getSimpleName() + ":" + name, false);
 	}
 	public static Map<String, ManualEntry> manuals() {
-		return Collections.unmodifiableMap(MANUALS);
+		Map<String, ManualEntry> map = new HashMap<>();
+		map.putAll(MANUALS);
+		map.putAll(TYPE_MANUALS);
+		return Collections.unmodifiableMap(map);
 	}
 	public static void map(Class type, Function<String, String> finder) {
 		map(type, finder, true);
