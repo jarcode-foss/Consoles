@@ -98,6 +98,10 @@ public class MapDataStore {
 	public static void save(Plugin plugin, World world) {
 		plugin.getLogger().info("Saving map data for " + world.getName());
 		MapDataStore[] stores = levels.get(world.getName());
+		if (stores == null) {
+			plugin.getLogger().warning("Could not find data stores for world '" + world.getName() + "', skipping");
+			return;
+		}
 		for (int t = 0; t < stores.length; t++) {
 			File file = new File(plugin.getDataFolder().getAbsolutePath()
 					+ File.separator + MAP_FOLDER + File.separator + "map-" + t + "-" + world.getName() + ".dat");
