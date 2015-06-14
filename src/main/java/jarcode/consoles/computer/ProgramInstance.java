@@ -94,9 +94,6 @@ public class ProgramInstance implements Runnable {
 		finally {
 			try {
 				stdout.write((byte) -1); // write -1 (EOF) to signal stream end
-				Terminal terminal = computer.getTerminal(this);
-				if (terminal != null && Thread.currentThread() == thread)
-					terminal.waitFor();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

@@ -237,6 +237,9 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 					if (currentTasks.contains(it.next()))
 						it.remove();
 			});
+			synchronized (TASK_LOCK) {
+				TASK_LOCK.notify();
+			}
 		}
 	}
 	private void writeConsole(String text) {
