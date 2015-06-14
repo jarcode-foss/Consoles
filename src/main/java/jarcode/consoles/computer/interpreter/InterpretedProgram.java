@@ -279,6 +279,12 @@ public class InterpretedProgram {
 			// Load our debugging library, which is used to terminate the program
 			globals.load(interruptLib);
 
+			// Block some functions
+			globals.set("load", LuaValue.NIL);
+			globals.set("loadfile", LuaValue.NIL);
+			// require should be used instead
+			globals.set("dofile", LuaValue.NIL);
+
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()

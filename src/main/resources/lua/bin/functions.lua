@@ -15,6 +15,7 @@ function main()
         write("\n")
         printc("&eComputer types:")
         printValues(uniqueTypeNames())
+        printc("\n&eStandard Lua libraries: &astring&f, &abit32&f, &atable")
         printc("\nUse &cman [function]&f for information about a function, or &cfunctions [type]&f for a list of functions from a specific type.")
     else
         -- check for functions from a unique type
