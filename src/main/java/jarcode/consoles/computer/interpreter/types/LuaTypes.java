@@ -17,7 +17,6 @@ public class LuaTypes {
 	}
 
 	public static void init() {
-		reg(LuaArray.class);
 		reg(LuaBlock.class);
 		reg(LuaBuffer.class);
 		reg(LuaChest.class);

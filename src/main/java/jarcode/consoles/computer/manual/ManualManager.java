@@ -75,7 +75,7 @@ public class ManualManager {
 			// builder for method synopsis
 			StringBuilder b = new StringBuilder();
 			b.append(ChatColor.AQUA);
-			b.append(name);
+			b.append(name.replace(":", ChatColor.WHITE + ":" + ChatColor.AQUA));
 			b.append(ChatColor.WHITE);
 
 			b.append('(');
@@ -124,7 +124,7 @@ public class ManualManager {
 				ab.append('\n');
 			}
 			ab.append('\n');
-			ab.append("returns ");
+			ab.append("\t\treturns ");
 			ab.append(ChatColor.YELLOW);
 			if (method.getReturnType() != null
 					&& method.getReturnType() != Void.class

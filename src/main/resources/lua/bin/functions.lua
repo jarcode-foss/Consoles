@@ -17,7 +17,7 @@ function main()
     else
         -- check for functions from a unique type
         printc("Functions for type: &e" .. argument)
-        local printed = printValues(reduce(manual_functionNames(), function(entry) startsWith(entry, argument) end))
+        local printed = printValues(reduce(manual_functionNames(), function(entry) return startsWith(entry, argument) end))
         if printed > 0 then
            printc("\nUse &cman [" .. argument .. ":function] for information on a function\n")
         end
