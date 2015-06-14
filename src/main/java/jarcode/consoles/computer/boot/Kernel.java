@@ -119,7 +119,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
 		mapProgram(0x09, root, "view");
-		mapProgram(0x0A, root, "edit");
+		mapProgram(0x0A, root, "edit", "emacs");
 		mapProgram(0x0B, root, "touch");
 		mapProgram(0x0C, root, "rm");
 		mapProgram(0x0D, root, "help");
