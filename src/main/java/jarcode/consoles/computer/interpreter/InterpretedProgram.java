@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
@@ -80,8 +81,6 @@ public class InterpretedProgram {
 		return execFile(path, terminal, "");
 	}
 
-
-
 	/**
 	 * Compiles and runs the given Lua program. The program is ran
 	 * with elevated permissions.
@@ -121,14 +120,18 @@ public class InterpretedProgram {
 		return exec(program, terminal, "");
 	}
 
-	public static void pass(String program, Computer computer, InputStream in, OutputStream out) {
-		pass(program, computer, in, out, "");
+	public static void pass(String program, Terminal terminal, InputStream in, OutputStream out) {
+		pass(program, terminal, in, out, "");
 	}
 
-	public static void pass(String program, Computer computer, InputStream in, OutputStream out, String args) {
+	public static void pass(String program, Terminal terminal, InputStream in, OutputStream out, String args) {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
-		inst.runRaw(out, in, args, computer, null, program);
+		inst.contextTerminal = terminal;
+		AtomicBoolean terminated = new AtomicBoolean(false);
+		inst.terminator = () -> terminated.set(true);
+		inst.terminated = terminated::get;
+		inst.runRaw(out, in, args, terminal.getComputer(), null, program);
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -138,12 +141,14 @@ public class InterpretedProgram {
 	private InputStream in;
 	private OutputStream out;
 	private Computer computer;
-	private ProgramInstance instance;
 	private FuncPool pool;
 	private String args;
 	private SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	private List<Integer> allocatedSessions = new ArrayList<>();
 	private EmbeddedGlobals globals;
+
+	private Runnable terminator;
+	private BooleanSupplier terminated;
 
 	private InterruptLib interruptLib = new InterruptLib(this::terminated);
 
@@ -185,7 +190,10 @@ public class InterpretedProgram {
 		this.in = in;
 		this.out = out;
 		this.computer = computer;
-		this.instance = instance;
+		if (instance != null) {
+			this.terminated = instance::isTerminated;
+			this.terminator = instance::terminate;
+		}
 		this.args = str;
 	}
 
@@ -225,8 +233,8 @@ public class InterpretedProgram {
 	}
 
 	public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
-	                   ProgramInstance instance, String raw) {
-		setup(out, in, str, computer, instance);
+	                   ProgramInstance inst, String raw) {
+		setup(out, in, str, computer, inst);
 		compileAndExecute(raw);
 	}
 
@@ -555,10 +563,10 @@ public class InterpretedProgram {
 		return computer.getBlock(input, contextTerminal.getCurrentDirectory());
 	}
 	protected void terminate() {
-		if (instance != null) instance.terminate();
+		terminator.run();
 	}
 	protected boolean terminated() {
-		return instance != null && instance.isTerminated();
+		return terminated.getAsBoolean();
 	}
 	protected void delay(long ms) {
 		if (restricted) ProgramUtils.sleep(ms);
