@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 		usage = "-- Creates a new frame\n" +
 				"local screen = screenFrame()\n" +
 				"-- Draw some text\n" +
-				"screen:write(24, 16, \"Hello World!\"\n" +
+				"screen:write(24, 16, \"Hello World!\")\n" +
 				"-- Update a LuaBuffer with this frame\n" +
 				"buffer:update(screen:id())")
 @SuppressWarnings("unused")
@@ -81,7 +81,13 @@ public class LuaFrame {
 		final String t = text;
 		operations.add((g) -> g.drawFormatted(x, y, t));
 	}
-	public void box(Integer x, Integer y, Integer w, Integer h, Integer c) {
+	@FunctionManual("Draws a filled box in the given area.")
+	public void box(
+			@Arg(name = "x", info = "X coordinate")  Integer x,
+			@Arg(name = "y", info = "Y coordinate") Integer y,
+			@Arg(name = "w", info = "box width") Integer w,
+			@Arg(name = "h", info = "box height") Integer h,
+			@Arg(name = "c", info = "box color") Integer c) {
 		if (removed) return;
 		byte converted = convert(c);
 		operations.add((g) -> {
@@ -92,7 +98,9 @@ public class LuaFrame {
 			}
 		});
 	}
-	public void fill(Integer c) {
+	@FunctionManual("Fills the entire frame with the given color")
+	public void fill(
+			@Arg(name = "c", info = "the color to fill with") Integer c) {
 		if (removed) return;
 		byte converted = convert(c);
 		operations.add((g) -> {
@@ -103,10 +111,12 @@ public class LuaFrame {
 			}
 		});
 	}
+	@FunctionManual("Returns the width of the frame")
 	public int getWidth() {
 		if (removed) return -1;
 		return computer.getViewWidth();
 	}
+	@FunctionManual("Returns the height of the frame")
 	public int getHeight() {
 		if (removed) return -1;
 		return computer.getViewHeight();
