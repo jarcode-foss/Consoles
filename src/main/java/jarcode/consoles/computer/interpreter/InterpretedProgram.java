@@ -833,7 +833,7 @@ public class InterpretedProgram {
 	private String[] lua$reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
 	}
-	private void lua$sleepFor(Integer ms) {
+	private void lua$sleep(Integer ms) {
 		try {
 			interruptLib.update();
 			long target = System.currentTimeMillis() + ms;
