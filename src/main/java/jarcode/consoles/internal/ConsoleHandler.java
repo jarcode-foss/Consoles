@@ -12,6 +12,7 @@ import net.minecraft.server.v1_8_R3.*;
 import net.minecraft.server.v1_8_R3.DataWatcher.WatchableObject;
 import net.minecraft.server.v1_8_R3.World;
 import org.bukkit.*;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
@@ -35,10 +36,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -255,6 +253,10 @@ public class ConsoleHandler implements Listener {
 						.forEach(frame -> {
 							EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
 							world.removeEntity(nms);
+							if (Consoles.debug) {
+								Consoles.getInstance().getLogger().info("Removed item frame: "
+										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
+							}
 						});
 			}
 		}
@@ -267,26 +269,45 @@ public class ConsoleHandler implements Listener {
 		}
 	}
 	@EventHandler
-	public void onChunkLoad(ChunkLoadEvent e) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
-			org.bukkit.Chunk chunk = e.getChunk();
-			Region region = new Region(new LocalPosition(chunk.getX() * 16, 0, chunk.getZ() * 16),
-					new LocalPosition(chunk.getX() * 16 + 15, 0, chunk.getZ() * 16 + 15));
-			for (ManagedConsole console : consoles) {
-				console.bukkitEntities().stream()
-						.filter(frame -> frame.getWorld() == e.getWorld())
-						.filter(frame -> region.insideIgnoreY(frame.getLocation()))
-						.forEach(frame -> {
-							EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
-							World world = ((CraftWorld) e.getWorld()).getHandle();
-							nms.dead = false;
-							if (!world.addEntity(nms)) {
-								Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
-										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
-							}
-						});
+	public void loadAdjacentConsoles(PlayerJoinEvent e) {
+		Chunk chunk = e.getPlayer().getLocation().getChunk();
+		Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+			int dist = Bukkit.getServer().getViewDistance();
+			for (int x = -dist; x <= dist; x++) {
+				for (int z = -dist; z < dist; z++) {
+					Chunk at = e.getPlayer().getWorld().getChunkAt(chunk.getX() + x, chunk.getZ() + z);
+					updateFrames(chunk);
+				}
 			}
-		});
+		}, 5L);
+	}
+	private void updateFrames(Chunk chunk) {
+		for (ManagedConsole console : consoles) {
+			console.bukkitEntities().stream()
+					.filter(frame -> frame.getWorld() == chunk.getWorld())
+					.filter(frame -> {
+						Chunk at = frame.getLocation().getChunk();
+						return at.getX() == chunk.getX() && at.getZ() == chunk.getZ();
+					})
+					.filter(frame -> !Arrays.asList(chunk.getEntities()).contains(frame))
+					.forEach(frame -> {
+						EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
+						World world = ((CraftWorld) chunk.getWorld()).getHandle();
+						nms.dead = false;
+						if (!world.addEntity(nms)) {
+							Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
+									+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
+						} else if (Consoles.debug) {
+							Consoles.getInstance().getLogger().info("Spawned item frame: "
+									+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
+						}
+					});
+		}
+	}
+	@EventHandler
+	public void onChunkLoad(ChunkLoadEvent e) {
+		Chunk chunk = e.getChunk();
+		updateFrames(chunk);
 	}
 	@EventHandler
 	public void onPlayerWorldChange(PlayerChangedWorldEvent e) {
