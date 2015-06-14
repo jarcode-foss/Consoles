@@ -265,4 +265,8 @@ public final class WrappedClassLoader extends ClassLoader {
 	public Set<String> getLoadedClasses() {
 		return loaded.keySet();
 	}
+
+	public Collection<Class> getKnownClasses() {
+		return loaded.values();
+	}
 }

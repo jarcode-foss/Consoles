@@ -5,13 +5,14 @@ import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.12-b",
 		contents = "Creates a directory at the given path on the filesystem. This program " +

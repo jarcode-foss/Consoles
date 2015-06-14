@@ -4,6 +4,7 @@ import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -12,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.3",
 		contents = "Executes a program provided by the server. These programs must exist " +

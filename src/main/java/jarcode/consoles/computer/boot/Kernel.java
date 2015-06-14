@@ -22,7 +22,7 @@ import java.util.*;
 // fake operating system kernel, but contains important activities and driver management.
 public class Kernel extends FSProvidedProgram {
 
-	private final HashBiMap<Byte, FSProvidedProgram> programs = HashBiMap.create();
+	private static final HashBiMap<Byte, FSProvidedProgram> programs = HashBiMap.create();
 	private HashMap<String, FSProvidedProgram> activities = new HashMap<>();
 	private List<String> systemPath = new ArrayList<>();
 	private List<Driver> drivers = new ArrayList<>();
@@ -32,8 +32,7 @@ public class Kernel extends FSProvidedProgram {
 
 	private int driverTick = 0;
 
-	{
-		program(0x00, this);
+	static {
 		program(0x01, new CurrentDirectoryProgram());
 		program(0x02, new ShowDirectoryProgram());
 		program(0x03, new WriteProgram());
@@ -56,6 +55,14 @@ public class Kernel extends FSProvidedProgram {
 		program(0x14, new MapProgram());
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
+	}
+
+	private static void program(int id, FSProvidedProgram providedProgram) {
+		programs.put((byte) id, providedProgram);
+	}
+
+	public static FSProvidedProgram[] programs() {
+		return programs.values().stream().toArray(FSProvidedProgram[]::new);
 	}
 
 	{
@@ -164,16 +171,14 @@ public class Kernel extends FSProvidedProgram {
 		HashBiMap<Byte, FSProvidedProgram> map = HashBiMap.create();
 		programs.entrySet().stream()
 				.forEach(en -> map.put(en.getKey(), en.getValue()));
+		map.put((byte) 0x00, this);
 		return map;
-	}
-	private void program(int id, FSProvidedProgram providedProgram) {
-		programs.put((byte) id, providedProgram);
 	}
 	public List<String> getSystemPath() {
 		return systemPath;
 	}
 	public FSProvidedProgram getProgram(byte id) {
-		return programs.get(id);
+		return id == 0x00 ? this : programs.get(id);
 	}
 	public byte getId(FSProvidedProgram program) {
 		return programs.inverse().get(program);

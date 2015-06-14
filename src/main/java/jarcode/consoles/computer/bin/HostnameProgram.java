@@ -3,10 +3,11 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.2",
 		contents = "A script that is capable of either printing or changing the hostname of a computer."

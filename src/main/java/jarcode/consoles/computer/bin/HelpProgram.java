@@ -5,11 +5,12 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 import org.bukkit.ChatColor;
 
 import java.util.stream.Collectors;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.6",
 		contents = "A program that prints programs installed in the /bin folder, and points " +

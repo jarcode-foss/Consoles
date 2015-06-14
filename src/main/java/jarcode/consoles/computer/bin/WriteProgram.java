@@ -3,6 +3,7 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,7 +12,7 @@ import java.util.HashMap;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "2.1",
 		contents = "Appends, prefixes and writes to files on the filesystem. This program " +

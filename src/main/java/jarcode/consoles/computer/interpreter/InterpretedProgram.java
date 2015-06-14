@@ -10,6 +10,9 @@ import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import jarcode.consoles.computer.interpreter.types.*;
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.util.Position2D;
@@ -47,6 +50,8 @@ public class InterpretedProgram {
 
 	static {
 		Libraries.init();
+		ManualManager.load(InterpretedProgram.class);
+		LuaTypes.init();
 	}
 
 	/**
@@ -573,17 +578,17 @@ public class InterpretedProgram {
 	// Below are all functions visible to the Lua program (identified by the 'lua$' prefix)
 	//
 
+	@FunctionManual("Returns a LuaTypeBuilder, which can be used to build a unique type for " +
+			"use in Lua programs. The builder can be used to set various handlers for the type, " +
+			"and once defined, will return a function which can be used to create the type.")
 	public LuaTypeBuilder lua$typeBuilder() {
 		return new LuaTypeBuilder();
 	}
 
-	public LuaValue lua$defineType(LuaValue value) {
-		if (value.isuserdata() && value.checkuserdata() instanceof LuaTypeBuilder)
-			return LuaTypeBuilder.define((LuaTypeBuilder) value.checkuserdata());
-		else return LuaValue.NIL;
-	}
-
-	public LuaValue lua$loadstring(String arg) {
+	@FunctionManual("Evalutes Lua code from a string passed as an argument. This function will " +
+			"return a value if the compiled chunk returns something, otherwise it will return nil.")
+	public LuaValue lua$loadstring(
+			@Arg(name = "arg", info = "valid lua code in plaintext") String arg) {
 		LuaValue value;
 		try {
 			value = globals.load(arg);
@@ -601,6 +606,11 @@ public class InterpretedProgram {
 		};
 	}
 
+	@FunctionManual("Removes restrictions on the current running program, once authenticated with " +
+			"an admin. A dialog will open prompting for a player with the permission computer.admin " +
+			"to verify the function call. Any user may choose to exit the program via the same dialog, " +
+			"and a player with insufficient permissions attempting to verify the call will exit the " +
+			"program.")
 	public void lua$removeRestrictions() {
 		if (!restricted) return;
 
@@ -641,6 +651,8 @@ public class InterpretedProgram {
 			throw new LuaError(e);
 		}
 	}
+	@FunctionManual("Reads input from the terminal that the program is running in. This function " +
+			"will block until input is recieved after the function call.")
 	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 	private String lua$read() {
 		final String[] result = {null};

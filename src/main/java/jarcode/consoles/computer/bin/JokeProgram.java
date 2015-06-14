@@ -3,8 +3,9 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.1",
 		contents = "Prints a random joke"

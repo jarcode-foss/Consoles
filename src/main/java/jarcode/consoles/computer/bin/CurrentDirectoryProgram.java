@@ -6,8 +6,9 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.1",
 		contents = "Opens a dialog that presents the option to delete the computer. " +

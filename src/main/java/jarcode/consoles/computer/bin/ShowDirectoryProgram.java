@@ -6,11 +6,12 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 import org.bukkit.ChatColor;
 
 import java.util.Map;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.4",
 		contents = "Shows the current directory of the terminal instance, and will change the " +

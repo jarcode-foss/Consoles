@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import jarcode.consoles.computer.manual.ProvidedManual;
 import jarcode.consoles.internal.IndexedConsoleTextArea;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
@@ -14,7 +15,7 @@ import java.nio.charset.Charset;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.2",
 		contents = "Displays the contents of a file on a separate screen instance. The program " +

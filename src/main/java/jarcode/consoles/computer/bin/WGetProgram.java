@@ -7,6 +7,7 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFolder;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.filesystem.FSStoredFile;
+import jarcode.consoles.computer.manual.ProvidedManual;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.1",
 		contents = "Downloads from an external URL and saves the data to a file. " +

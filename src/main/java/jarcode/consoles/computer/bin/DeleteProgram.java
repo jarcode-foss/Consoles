@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import jarcode.consoles.computer.manual.ProvidedManual;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.util.Position2D;
 import jarcode.consoles.computer.Computer;
@@ -9,7 +10,7 @@ import org.bukkit.entity.Player;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.3",
 		contents = "Opens a dialog that presents the option to delete the computer. " +

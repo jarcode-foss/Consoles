@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import jarcode.consoles.computer.manual.ProvidedManual;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.util.Position2D;
 import jarcode.consoles.computer.Computer;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.0",
 		contents = "Uploads the contents of a file to Skript, if the plugin exists. This action " +

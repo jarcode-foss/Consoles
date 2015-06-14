@@ -39,7 +39,7 @@ public class LuaTypeBuilder {
 		constructor = value;
 	}
 
-	public static LuaFunction define(LuaTypeBuilder builder) {
+	public LuaFunction define() {
 		Supplier<LuaValue> typeSupplier = () -> new LuaValue() {
 			@Override
 			public int type() {
@@ -68,25 +68,25 @@ public class LuaTypeBuilder {
 				return resolve(str);
 			}
 			private LuaValue resolve(int i) {
-				if (builder.integerSetHandler != null)
-					return builder.integerGetHandler.apply(i);
+				if (integerSetHandler != null)
+					return integerGetHandler.apply(i);
 				else return LuaValue.NIL;
 			}
 
 			private LuaValue resolve(String str) {
-				if (builder.stringGetHandler != null)
-					return builder.stringGetHandler.apply(str);
+				if (stringGetHandler != null)
+					return stringGetHandler.apply(str);
 				else return LuaValue.NIL;
 			}
 
 			private void change(int i, LuaValue value) {
-				if (builder.integerSetHandler != null)
-					builder.integerSetHandler.accept(i, value);
+				if (integerSetHandler != null)
+					integerSetHandler.accept(i, value);
 			}
 
 			private void change(String str, LuaValue value) {
-				if (builder.stringSetHandler != null)
-					builder.stringSetHandler.accept(str, value);
+				if (stringSetHandler != null)
+					stringSetHandler.accept(str, value);
 			}
 
 			@Override
@@ -122,8 +122,8 @@ public class LuaTypeBuilder {
 		return new VarArgFunction() {
 			@Override
 			public Varargs invoke(Varargs varargs) {
-				if (builder.constructor != null)
-					builder.constructor.invoke(varargs);
+				if (constructor != null)
+					constructor.invoke(varargs);
 				return typeSupplier.get();
 			}
 		};

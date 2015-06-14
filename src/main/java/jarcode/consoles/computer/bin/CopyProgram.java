@@ -3,6 +3,7 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.Terminal;
 import jarcode.consoles.computer.filesystem.*;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 import static jarcode.consoles.computer.ProgramUtils.*;
 
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.6",
 		contents = "Copies a file or folder from one path location to another."

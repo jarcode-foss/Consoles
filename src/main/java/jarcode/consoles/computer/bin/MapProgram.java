@@ -3,10 +3,11 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.MapComponent;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.8",
 		contents = "A program that allows you to navigate mapped area in the current world." +

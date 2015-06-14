@@ -5,12 +5,13 @@ import jarcode.consoles.computer.filesystem.FSBlock;
 import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSGroup;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import jarcode.consoles.computer.manual.ProvidedManual;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.7",
 		contents = "Returns UTF-8 encoded text of the raw output from the given file, " +

@@ -1,5 +1,6 @@
 package jarcode.consoles.computer.bin;
 
+import jarcode.consoles.computer.manual.ProvidedManual;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.util.Position2D;
 import jarcode.consoles.computer.Computer;
@@ -7,7 +8,7 @@ import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
-@Manual(
+@ProvidedManual(
 		author = "Jarcode",
 		version = "1.1",
 		contents = "Restores both Lua and Java programs that were modified or removed " +
