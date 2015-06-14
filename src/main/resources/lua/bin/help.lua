@@ -1,7 +1,7 @@
 --#desc A program that prints programs installed in the /bin folder, and points the user to this project's source code and the 'man' command.
 --#author Jarcode
 --#version 2.6
---#usage clear
+--#usage help
 function main()
     local bin = resolveFolder("/bin")
     if bin == nil then
