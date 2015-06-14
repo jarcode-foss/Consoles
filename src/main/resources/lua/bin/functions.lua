@@ -1,7 +1,7 @@
 
--- This program is used to list all unqiue types and functions provided by consoles. You can find documentation for official Lua libraries and functions online.
---
--- Written by Jarcode
+--#desc This program is used to list all unqiue types and functions provided by consoles. Documentation for official Lua libraries and functions can be found online.
+--#author Jarcode
+--#version 1.0
 
 function main()
     -- remove spaces

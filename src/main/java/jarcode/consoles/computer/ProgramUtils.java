@@ -1,9 +1,15 @@
 package jarcode.consoles.computer;
 
 import jarcode.consoles.Consoles;
+import jarcode.consoles.computer.filesystem.FSFile;
 import org.bukkit.Bukkit;
 import org.luaj.vm2.LuaError;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -159,6 +165,26 @@ public class ProgramUtils {
 		catch (InterruptedException e) {
 			throw new LuaError(e);
 		}
+	}
+
+	public static String readFully(FSFile file, BooleanSupplier terminated) {
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		try (InputStream is = file.createInput()) {
+			int i;
+			while (true) {
+				if (terminated.getAsBoolean())
+					break;
+				if (is.available() > 0 || is instanceof ByteArrayInputStream) {
+					i = is.read();
+					if (i == -1) break;
+					buf.write(i);
+				} else Thread.sleep(50);
+			}
+		} catch (Exception e) {
+			throw new LuaError(e);
+		}
+
+		return new String(buf.toByteArray(), StandardCharsets.UTF_8);
 	}
 
 	/**

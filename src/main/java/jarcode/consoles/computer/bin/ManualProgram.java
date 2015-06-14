@@ -2,21 +2,22 @@ package jarcode.consoles.computer.bin;
 
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSBlock;
+import jarcode.consoles.computer.filesystem.FSFile;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import jarcode.consoles.computer.manual.ManualEntry;
 import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.computer.manual.ProvidedManual;
 import org.bukkit.ChatColor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
 
 @ProvidedManual(
 		author = "Jarcode",
-		version = "1.1",
-		contents = "A program that queries information from provided applications " +
-				"that are installed with a computer."
+		version = "2.0",
+		contents = "A program that displays information necessary for use about functions and programs."
 )
 public class ManualProgram extends FSProvidedProgram {
 	@Override
@@ -26,24 +27,27 @@ public class ManualProgram extends FSProvidedProgram {
 			print("usage: man [PROGRAM | FUNCTION]");
 			return;
 		}
-		FSProvidedProgram foundProgram = null;
+		FSBlock foundProgram = null;
 		boolean foundRoot = false;
 
 		if (!str.contains("/")) {
 			FSBlock block = computer.getBlock(str, "/bin");
-			if (block instanceof FSProvidedProgram) {
-				foundProgram = (FSProvidedProgram) block;
+			if (block instanceof FSProvidedProgram || block instanceof FSFile) {
+				foundProgram = block;
 			}
 		}
 		if (foundProgram == null) {
 			FSBlock block = computer.getBlock(str, "/");
-			if (block instanceof FSProvidedProgram) {
-				foundProgram = (FSProvidedProgram) block;
+			if (block instanceof FSProvidedProgram || block instanceof FSFile) {
+				foundProgram = block;
 				foundRoot = true;
 			}
 		}
 
-		ManualEntry programMatch = foundProgram == null ? null : ManualManager.PROVIDED_MAP.get(foundProgram);
+		ManualEntry programMatch = foundProgram == null ? null : (
+				foundProgram instanceof FSProvidedProgram ?
+						ManualManager.PROVIDED_MAP.get(foundProgram) : parseFile((FSFile) foundProgram)
+		);
 
 		Map<String, ManualEntry> manuals = ManualManager.manuals();
 
@@ -84,5 +88,30 @@ public class ManualProgram extends FSProvidedProgram {
 		computer.getTerminal(this).clear();
 
 		println(selection.getText(str));
+	}
+	private ManualEntry parseFile(FSFile file) {
+		String[] lines = readFully(file, this::terminated).split("\n");
+
+		HashMap<String, String> map = new HashMap<>();
+
+		for (String line : lines) {
+			line = line.trim();
+			if (line.startsWith("--#")) {
+				line = line.substring(3);
+				StringBuilder elementBuilder = new StringBuilder();
+				for (char c : line.toCharArray()) {
+					if (c != ' ')
+						elementBuilder.append(c);
+					else break;
+				}
+				String element = elementBuilder.toString();
+				String data = line.length() > element.length() ? line.substring(element.length() + 1) : "";
+				data = data.replace("\\n", "\n").replace("\\t", "\t");
+				map.put(element, data);
+			}
+		}
+
+		return new ManualEntry((name) -> "Manual for Lua program: " + ChatColor.GREEN + name,
+				map.get("author"), map.get("desc"), map.get("version"), map.get("usage"), null);
 	}
 }
