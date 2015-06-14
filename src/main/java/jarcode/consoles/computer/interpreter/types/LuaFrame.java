@@ -56,8 +56,8 @@ public class LuaFrame {
 	@FunctionManual("Sets the X,Y coordinate to the specified map color.")
 	public void set(
 			@Arg(name = "x", info = "X coordinate") Integer x,
-			@Arg(name = "x", info = "Y coordinate") Integer y,
-			@Arg(name = "x", info = "the minecraft map color to use") Integer c) {
+			@Arg(name = "y", info = "Y coordinate") Integer y,
+			@Arg(name = "c", info = "the minecraft map color to use") Integer c) {
 		if (removed) return;
 		if (x >= 0 && y >= 0 && getHeight() > y && getWidth() > x)
 			operations.add((g) -> g.draw(x, y, convert(c)));
@@ -73,7 +73,7 @@ public class LuaFrame {
 	@FunctionManual("Draws the specified text at the given X,Y coordinates. Color codes are supported.")
 	public void write(
 			@Arg(name = "x", info = "X coordinate") Integer x,
-			@Arg(name = "x", info = "Y coordinate") Integer y,
+			@Arg(name = "y", info = "Y coordinate") Integer y,
 			@Arg(name = "text", info = "the text to print on the frame")String text) {
 		if (removed) return;
 		text = ChatColor.translateAlternateColorCodes('&', text);
