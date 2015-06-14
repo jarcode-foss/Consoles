@@ -17,7 +17,8 @@ import static jarcode.consoles.computer.ProgramUtils.*;
 @ProvidedManual(
 		author = "Jarcode",
 		version = "2.0",
-		contents = "A program that displays information necessary for use about functions and programs."
+		contents = "A program that displays information necessary for use about functions, programs, and types. This " +
+				"program does not contain information about standard lua functions and libraries, see online instead."
 )
 public class ManualProgram extends FSProvidedProgram {
 	@Override
