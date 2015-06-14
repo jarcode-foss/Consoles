@@ -1,5 +1,7 @@
--- Written by Jarcode
-
+--#desc A simple program to toggle the first hooked up redstone input (if it exists).
+--#author Jarcode
+--#version 1.0
+--#usage redstone (on/off)
 blocks = redstoneLength()
 if (blocks == 0) then
     print("There are no redstone blocks hooked up!")

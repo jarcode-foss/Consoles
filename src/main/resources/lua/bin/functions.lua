@@ -2,6 +2,7 @@
 --#desc This program is used to list all unqiue types and functions provided by consoles. Documentation for official Lua libraries and functions can be found online.
 --#author Jarcode
 --#version 1.0
+--#usage functions [type]
 
 function main()
     -- remove spaces

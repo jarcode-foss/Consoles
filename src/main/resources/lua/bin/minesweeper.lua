@@ -1,4 +1,7 @@
--- Written by Jarcode
+--#desc Minesweeper, written entirely in Lua!
+--#author Jarcode
+--#version 1.0
+--#usage minesweeper [bomb_chance]
 
 local BLOCK = require("minesweeper_block")
 

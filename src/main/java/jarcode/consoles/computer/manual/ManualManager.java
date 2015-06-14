@@ -18,9 +18,9 @@ import java.util.function.Function;
 
 public class ManualManager {
 
-	public static final Map<FSProvidedProgram, ManualEntry> PROVIDED_MAP;
+	public static final Map<FSProvidedProgram, ManualEntry> PROVIDED_MANUALS;
 
-	private static Map<String, ManualEntry> MAP = new ConcurrentHashMap<>();
+	public static final Map<String, ManualEntry> MANUALS = new ConcurrentHashMap<>();
 
 	static {
 
@@ -40,7 +40,7 @@ public class ManualManager {
 						man.author(), man.contents(), man.version(), null, null));
 			}
 		}
-		PROVIDED_MAP = Collections.unmodifiableMap(providedMap);
+		PROVIDED_MANUALS = Collections.unmodifiableMap(providedMap);
 
 		Lua.map(ManualManager::lua_manual_functionNames, "manual_functionNames");
 	}
@@ -53,7 +53,7 @@ public class ManualManager {
 		map(type, name -> name.contains("$") ? null : type.getSimpleName() + ":" + name, false);
 	}
 	public static Map<String, ManualEntry> manuals() {
-		return Collections.unmodifiableMap(MAP);
+		return Collections.unmodifiableMap(MANUALS);
 	}
 	public static void map(Class type, Function<String, String> finder) {
 		map(type, finder, true);
@@ -131,13 +131,13 @@ public class ManualManager {
 					&& method.getReturnType() != void.class)
 				ab.append(typeName(method.getReturnType()));
 			else ab.append("nil");
-			MAP.put(name, new ManualEntry((n) ->
+			MANUALS.put(name, new ManualEntry((n) ->
 					"Manual for function: " + ChatColor.GREEN + n,
 					null, man == null ? "no description available" : man.value(), null, b.toString(), ab.toString()));
 		}
 	}
 	public static String[] lua_manual_functionNames() {
-		return MAP.keySet().stream().toArray(String[]::new);
+		return MANUALS.keySet().stream().toArray(String[]::new);
 	}
 	private static String typeName(Class type) {
 		if (type == String.class)

@@ -46,7 +46,7 @@ public class ManualProgram extends FSProvidedProgram {
 
 		ManualEntry programMatch = foundProgram == null ? null : (
 				foundProgram instanceof FSProvidedProgram ?
-						ManualManager.PROVIDED_MAP.get(foundProgram) : parseFile((FSFile) foundProgram)
+						ManualManager.PROVIDED_MANUALS.get(foundProgram) : parseFile((FSFile) foundProgram)
 		);
 
 		Map<String, ManualEntry> manuals = ManualManager.manuals();
@@ -105,11 +105,15 @@ public class ManualProgram extends FSProvidedProgram {
 					else break;
 				}
 				String element = elementBuilder.toString();
-				String data = line.length() > element.length() ? line.substring(element.length() + 1) : "";
-				data = data.replace("\\n", "\n").replace("\\t", "\t");
-				map.put(element, data);
+				if (!element.trim().isEmpty()) {
+					String data = line.length() > element.length() ? line.substring(element.length() + 1) : "";
+					data = ChatColor.translateAlternateColorCodes('&', data.replace("\\n", "\n").replace("\\t", "\t"));
+					map.put(element, data);
+				}
 			}
 		}
+		if (map.isEmpty())
+			return null;
 
 		return new ManualEntry((name) -> "Manual for Lua program: " + ChatColor.GREEN + name,
 				map.get("author"), map.get("desc"), map.get("version"), map.get("usage"), null);
