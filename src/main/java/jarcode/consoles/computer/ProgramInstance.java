@@ -84,9 +84,6 @@ public class ProgramInstance implements Runnable {
 				else
 					interpreted.runRaw(stdout, stdin, argument, computer, this, data);
 			}
-			Terminal terminal = computer.getTerminal(this);
-			if (terminal != null)
-				terminal.waitFor();
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
@@ -97,6 +94,9 @@ public class ProgramInstance implements Runnable {
 		finally {
 			try {
 				stdout.write((byte) -1); // write -1 (EOF) to signal stream end
+				Terminal terminal = computer.getTerminal(this);
+				if (terminal != null && Thread.currentThread() == thread)
+					terminal.waitFor();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
