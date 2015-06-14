@@ -8,6 +8,7 @@ function main()
     local argument = args():gsub("%s+", "")
     -- check if empty args
     if (argument == "") then
+        clear()
         printc("&eComputer functions:")
         printValues(reflect())
         write("\n")
@@ -16,9 +17,9 @@ function main()
         printc("\nUse &cman [function]&f for information about a function, or &cfunctions [type]&f for a list of functions from a specific type.")
     else
         -- check for functions from a unique type
-        printc("Functions for type: &e" .. argument)
         local functionList = reduce(manual_functionNames(), function(entry) return startsWith(entry, argument) end);
         if (#functionList > 0) then
+            clear()
             printc("Functions for type: &e" .. argument)
             printValues(functionList)
             printc("\nUse &cman [" .. argument .. ":function] for information on a function\n")
