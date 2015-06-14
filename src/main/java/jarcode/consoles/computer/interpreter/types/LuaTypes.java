@@ -76,9 +76,12 @@ public class LuaTypes {
 		return typeNames.toArray(new String[typeNames.size()]);
 	}
 	private static void typeManual(Class type, String desc, String usage) {
+		if (usage != null)
+			usage = "\n\n" + Arrays.asList(usage.split("\n")).stream()
+					.map(str -> "\t\t" + str)
+					.collect(Collectors.joining());
 		ManualManager.MANUALS.put(type.getClass().getSimpleName(),
-				new ManualEntry((name) -> "Manual entry for type: " + ChatColor.GREEN + name, null, desc, null, "\n\n"
-						+ Arrays.asList(usage.split("\n")).stream().map(str -> "\t\t" + str).collect(Collectors.joining()),
-						null));
+				new ManualEntry((name) -> "Manual entry for type: " + ChatColor.GREEN + name, null, desc, null,
+						usage, null));
 	}
 }
