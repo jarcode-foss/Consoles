@@ -128,7 +128,6 @@ public class ManualManager {
 					&& method.getReturnType() != void.class)
 				ab.append(typeName(method.getReturnType()));
 			else ab.append("nil");
-			ab.append('\n');
 			MAP.put(name, new ManualEntry((n) ->
 					"Manual for function: " + ChatColor.GREEN + n,
 					null, man == null ? "no description available" : man.value(), null, b.toString(), ab.toString()));

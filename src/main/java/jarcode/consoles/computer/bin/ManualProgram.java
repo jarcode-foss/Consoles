@@ -83,6 +83,6 @@ public class ManualProgram extends FSProvidedProgram {
 
 		computer.getTerminal(this).clear();
 
-		print(selection.getText(str));
+		println(selection.getText(str));
 	}
 }
