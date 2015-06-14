@@ -832,6 +832,13 @@ public class InterpretedProgram {
 		@Arg(name="text",info="text to write to the terminal") String text) {
 		print(text);
 	}
+	@FunctionManual("Appends formatted text to the terminal using minecraft color codes prefixed by " +
+			"the & symbol. This will not suffix a newline (\\n) character, " +
+			"unlike the printc function.")
+	private void lua$writec(
+			@Arg(name="formatted",info="formatted text to write to the terminal") String text) {
+		print(ChatColor.translateAlternateColorCodes('&', text));
+	}
 	private LuaPainter lua_registerPainter(Integer index, FunctionBind painter, FunctionBind listener, Integer bg) {
 		index--;
 		if (!computer.screenAvailable(index)) return null;

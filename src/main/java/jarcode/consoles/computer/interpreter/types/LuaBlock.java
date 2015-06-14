@@ -50,6 +50,15 @@ public abstract class LuaBlock {
 		return path;
 	}
 
+	@FunctionManual("Returns the name of the block in the filesystem.")
+	public String getName() {
+		String[] arr = FSBlock.section(path, "/");
+		return Arrays.asList(arr).stream()
+				.filter(s -> !s.isEmpty())
+				.reduce((o1, o2) -> o2)
+				.get();
+	}
+
 	@FunctionManual("Returns the type of this filesystem block as a string.")
 	public String getBlockType() {
 		return this.getClass().getSimpleName();

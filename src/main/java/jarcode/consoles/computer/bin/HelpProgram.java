@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 		contents = "A program that prints programs installed in the /bin folder, and points " +
 				"the user to this project's source code and the 'man' command."
 )
+@Deprecated
 public class HelpProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {

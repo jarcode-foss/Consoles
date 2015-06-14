@@ -39,14 +39,17 @@ public class Kernel extends FSProvidedProgram {
 		program(0x04, new CatProgram());
 		program(0x05, new DeleteProgram());
 		program(0x06, new HostnameProgram());
+		// depreciated, replaced with Lua program
 		program(0x07, new ClearProgram());
 		program(0x08, new FlashProgram());
 		program(0x09, new ViewProgram());
 		program(0x0A, new EditProgram());
 		program(0x0B, new TouchProgram());
 		program(0x0C, new RemoveProgram());
+		// depreciated, replace with Lua program
 		program(0x0D, new HelpProgram());
 		program(0x0E, new MakeDirectoryProgram());
+		// depreciated, replace with Lua program
 		program(0x0F, new OwnerProgram());
 		program(0x10, new ManualProgram());
 		program(0x11, new JokeProgram());
@@ -123,15 +126,15 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x04, root, "cat");
 		mapProgram(0x05, root, "delete");
 		mapProgram(0x06, root, "hostname");
-		mapProgram(0x07, root, "clear");
+		// mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
 		mapProgram(0x09, root, "view");
 		mapProgram(0x0A, root, "edit", "emacs");
 		mapProgram(0x0B, root, "touch");
 		mapProgram(0x0C, root, "rm");
-		mapProgram(0x0D, root, "help");
+		// mapProgram(0x0D, root, "help");
 		mapProgram(0x0E, root, "mkdir");
-		mapProgram(0x0F, root, "owner");
+		// mapProgram(0x0F, root, "owner");
 		mapProgram(0x10, root, "man");
 		mapProgram(0x11, root, "joke");
 		mapProgram(0x12, root, "cp");
