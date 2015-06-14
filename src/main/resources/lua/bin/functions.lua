@@ -10,15 +10,16 @@ function main()
     if (argument == "") then
         printc("&eComputer functions:")
         printValues(reflect())
+        write("\n")
         printc("&eComputer types:")
         printValues(uniqueTypeNames())
-        printc("Use &cman [function]&f for information about a function, or &cfunctions [type]&f for a list of functions from a specific type.")
+        printc("\nUse &cman [function]&f for information about a function, or &cfunctions [type]&f for a list of functions from a specific type.")
     else
         -- check for functions from a unique type
         printc("Functions for type: &e" .. argument)
         local printed = printValues(reduce(manual_functionNames(), function(entry) startsWith(entry, argument) end))
         if printed > 0 then
-           printc("use &cman [" .. argument .. ":function] for information on a function")
+           printc("\nUse &cman [" .. argument .. ":function] for information on a function\n")
         end
     end
 end
