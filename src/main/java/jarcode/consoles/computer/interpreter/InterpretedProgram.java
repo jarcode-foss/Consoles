@@ -16,7 +16,6 @@ import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.util.Position2D;
-import jdk.nashorn.internal.objects.annotations.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;

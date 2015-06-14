@@ -2,6 +2,9 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.*;
 import jarcode.consoles.computer.interpreter.Lua;
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
+import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.internal.ConsoleComponent;
 import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ConsoleHandler;
@@ -60,6 +63,7 @@ public class ComputerHandler implements Listener {
 		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
 		Lua.map(ComputerHandler::lua_redstoneInputLength, "redstoneInputLength");
 		Lua.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
+		ManualManager.load(ComputerHandler.class);
 	}
 
 	// get constructor and handle for craftbukkit's item stack.
@@ -260,13 +264,19 @@ public class ComputerHandler implements Listener {
 		return arr;
 	}
 
-	public static boolean lua_redstoneInput(Integer index) {
+	@FunctionManual("Returns the powered state of an input block behind the computer at the specified index. Indexes " +
+			"start at 0 and end at the amount of eligible inputs, minus one, The amount of inputs can be obtained with " +
+			"redstoneInputLength(). Redstone inputs are determined by the amount of solid, powerable blocks behind the " +
+			"computer.")
+	public static boolean lua_redstoneInput(
+			@Arg(name = "index", info = "the index of the input block to check") Integer index) {
 		Computer computer = Lua.context();
 		boolean[] inputs;
 		inputs = schedule(() -> findInputs(computer), Lua::terminated);
 		return inputs.length > index && index >= 0 && inputs[index];
 	}
 
+	@FunctionManual("Returns the amount of blocks behind the computer that can receive redstone input")
 	public static int lua_redstoneInputLength() {
 		Computer computer = Lua.context();
 		boolean[] inputs;
@@ -274,8 +284,14 @@ public class ComputerHandler implements Listener {
 		return inputs.length;
 	}
 
+	@FunctionManual("Toggles the redstone output at the specified index. Indexes start at 0 and " +
+			"end at the amount of redstone outputs, minus one. The amount of available outputs can " +
+			"be obtained with redstoneLength(). Redstone outputs are added by placing a redstone block " +
+			"directly behind the computer.")
 	@SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
-	public static boolean lua_redstone(Integer index, Boolean on) {
+	public static boolean lua_redstone(
+			@Arg(name = "index", info = "the index of the output to toggle") Integer index,
+			@Arg(name = "state", info = "the state of the output, true for on, false for off") Boolean on) {
 		Computer computer = Lua.context();
 		// our supplier to be called in the main thread
 		BooleanSupplier func = () -> {
@@ -321,6 +337,7 @@ public class ComputerHandler implements Listener {
 		return result.get();
 	}
 
+	@FunctionManual("Returns the amount of redstone outputs there are available for this computer")
 	public static int lua_redstoneLength() {
 		Computer computer = Lua.context();
 		Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
