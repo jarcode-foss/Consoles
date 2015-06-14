@@ -8,7 +8,7 @@ function main()
         write("help: /bin folder missing")
         return
     end
-    println("Installed programs:")
+    print("Installed programs:")
     showEntries(providedList(bin))
     write("\t")
     showEntries(luaList(bin))
