@@ -36,6 +36,7 @@ function providedList(folder)
             provided[#provided + 1] = "&c" .. fullList[i]
         end
     end
+    return provided
 end
 
 function luaList(folder)
@@ -44,6 +45,7 @@ function luaList(folder)
     for i = 1,#files do
         list[#list + 1] = "&e" .. files[i]:getName()
     end
+    return list
 end
 
 function isFile(files, name)
