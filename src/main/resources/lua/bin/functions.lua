@@ -31,6 +31,7 @@ function reduce(tbl, predicate)
     end
     return newTbl;
 end
+
 function printValues(tbl)
     for i = 1,#tbl do
         write(tbl[i])

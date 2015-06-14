@@ -9,12 +9,12 @@ import java.util.List;
 
 public class LuaTypes {
 
+	private static List<String> typeNames = new ArrayList<>();
+
 	static {
 		Lua.map(LuaTypes::lua_uniqueTypeNames, "uniqueTypeNames");
 		ManualManager.load(LuaTypes.class);
 	}
-
-	private static List<String> typeNames = new ArrayList<>();
 
 	public static void init() {
 		reg(LuaArray.class);
@@ -35,7 +35,7 @@ public class LuaTypes {
 		ManualManager.loadType(type);
 		typeNames.add(type.getSimpleName());
 	}
-	private String[] lua_uniqueTypeNames() {
+	private static String[] lua_uniqueTypeNames() {
 		return typeNames.toArray(new String[typeNames.size()]);
 	}
 }
