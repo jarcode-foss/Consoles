@@ -454,6 +454,14 @@ public abstract class Computer implements Runnable {
 		}
 		return null; // this is bad. If this happens, a program has been detached from its terminal instance!
 	}
+
+	public Terminal getTerminal(ProgramInstance instance) {
+		for (ConsoleComponent component : feeds) {
+			if (component instanceof Terminal && ((Terminal) component).getLastProgramInstance() == instance)
+				return (Terminal) component;
+		}
+		return null;
+	}
 	public FSBlock resolve(String input, Object program) {
 		return getBlock(input, getTerminal(program).getCurrentDirectory());
 	}

@@ -84,6 +84,8 @@ public class ProgramInstance implements Runnable {
 				else
 					interpreted.runRaw(stdout, stdin, argument, computer, this, data);
 			}
+			Terminal terminal = computer.getTerminal(this);
+			terminal.waitFor();
 		}
 		catch (Throwable e) {
 			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
