@@ -9,7 +9,7 @@ import jarcode.consoles.computer.manual.TypeManual;
 				"local coords = buffer:pollCoords()\n" +
 				"-- Print coordinates if they exist\n" +
 				"if coords ~= nil then\n" +
-				"\tprint(coords:x() .. \", \" .. coords:y()\n" +
+				"\tprint(coords:x() .. \", \" .. coords:y())\n" +
 				"end")
 @SuppressWarnings("unused")
 public class LuaInteraction {

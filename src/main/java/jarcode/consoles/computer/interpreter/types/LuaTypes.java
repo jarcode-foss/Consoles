@@ -55,7 +55,12 @@ public class LuaTypes {
 					.map(str -> "\t\t" + str)
 					.collect(Collectors.joining("\n"));
 		if (type.getSuperclass() != Object.class)
-			desc += "\n\n\t\tInherits functions from " + ChatColor.AQUA + type.getSuperclass().getSimpleName();
+			desc += "\n\n\t\tInherits functions from " + ChatColor.AQUA + type.getSuperclass().getSimpleName()
+					+ ChatColor.WHITE;
+		desc += "\n\n\t\tContains functions: " + Arrays.asList(ManualManager.lua_manual_functionNames()).stream()
+				.filter(name -> name.startsWith(type.getSimpleName()))
+				.map(name -> ChatColor.AQUA + name + ChatColor.WHITE)
+				.collect(Collectors.joining(", "));
 		ManualManager.TYPE_MANUALS.put(type.getSimpleName(),
 				new ManualEntry((name) -> "Manual entry for type: " + ChatColor.GREEN + name, null, desc, null,
 						usage, null));
