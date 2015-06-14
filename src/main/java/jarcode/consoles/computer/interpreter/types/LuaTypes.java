@@ -79,9 +79,9 @@ public class LuaTypes {
 		if (usage != null)
 			usage = "\n\n" + Arrays.asList(usage.split("\n")).stream()
 					.map(str -> "\t\t" + str)
-					.collect(Collectors.joining());
+					.collect(Collectors.joining("\n"));
 		if (type.getSuperclass() != Object.class)
-			desc += "\n\nInherits functions from " + ChatColor.GREEN + type.getSuperclass().getSimpleName();
+			desc += "\n\n\t\tInherits functions from " + ChatColor.AQUA + type.getSuperclass().getSimpleName();
 		ManualManager.TYPE_MANUALS.put(type.getSimpleName(),
 				new ManualEntry((name) -> "Manual entry for type: " + ChatColor.GREEN + name, null, desc, null,
 						usage, null));
