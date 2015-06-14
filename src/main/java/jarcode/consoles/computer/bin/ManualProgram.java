@@ -25,7 +25,7 @@ public class ManualProgram extends FSProvidedProgram {
 	public void run(String str, Computer computer) throws Exception {
 		str = str.trim();
 		if (str.isEmpty()) {
-			print("usage: man [PROGRAM | FUNCTION]");
+			print("usage: man [PROGRAM/FUNCTION/TYPE]");
 			return;
 		}
 		FSBlock foundProgram = null;
