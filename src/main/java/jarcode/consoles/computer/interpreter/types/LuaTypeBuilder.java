@@ -2,6 +2,8 @@ package jarcode.consoles.computer.interpreter.types;
 
 import jarcode.consoles.computer.interpreter.FunctionBind;
 import jarcode.consoles.computer.interpreter.Lua;
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
 import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaValue;
@@ -13,32 +15,54 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class LuaTypeBuilder {
+
 	private Function<String, LuaValue> stringGetHandler = null;
 	private Function<Integer, LuaValue> integerGetHandler = null;
 	private BiConsumer<String, LuaValue> stringSetHandler = null;
 	private BiConsumer<Integer, LuaValue> integerSetHandler = null;
 	private LuaValue constructor = null;
 
-	public void stringSetHandler(FunctionBind bind) {
+
+	@FunctionManual("Sets the handler function for when a value is being set at an " +
+			"index. The first function parameter is the index, the second is the value.")
+	public void stringSetHandler(
+			@Arg(name = "bind", info = "the function to use for string value sets") FunctionBind bind) {
 		stringSetHandler = (str, val) -> bind.call(str, val);
 	}
 
-	public void integerSetHandler(FunctionBind bind) {
+	@FunctionManual("Sets the handler function for when a value is being set at an " +
+			"index. The first function parameter is the index, the second is the value.")
+	public void integerSetHandler(
+			@Arg(name = "bind", info = "the function to use for integer value sets") FunctionBind bind) {
 		integerSetHandler = (i, val) -> bind.call(i, val);
 	}
 
-	public void stringGetHandler(LuaValue bind) {
+	@FunctionManual("Sets the handler function for when the type is being indexed by " +
+			"a string. The first argument of the passed function will be the string " +
+			"being indexed with.")
+	public void stringGetHandler(
+			@Arg(name = "bind", info = "the function to use to handle string indexes") LuaValue bind) {
 		stringGetHandler = (str) -> Lua.javaCallable(bind).call(str);
 	}
 
-	public void integerGetHandler(LuaValue bind) {
+	@FunctionManual("Sets the handler function for when the type is being indexed by " +
+			"an integer. The first argument of the passed function will be the integer " +
+			"being indexed with.")
+	public void integerGetHandler(
+			@Arg(name = "bind", info = "the function to use to handle integer indexes") LuaValue bind) {
 		stringGetHandler = (i) -> Lua.javaCallable(bind).call(i);
 	}
 
-	public void constructor(LuaValue value) {
+	@FunctionManual("Sets the construction handler for this type. When the supplying " +
+			"function is called, the arguments are passed to the constructor in this " +
+			"function.")
+	public void constructor(
+			@Arg(name = "constructor", info = "the function to invoke when instantiating this type") LuaValue value) {
 		constructor = value;
 	}
 
+	@FunctionManual("Defines the type and returns a function that will return an " +
+			"instance of the new type when called.")
 	public LuaFunction define() {
 		Supplier<LuaValue> typeSupplier = () -> new LuaValue() {
 			@Override

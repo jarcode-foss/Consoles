@@ -16,6 +16,7 @@ import jarcode.consoles.computer.manual.ManualManager;
 import jarcode.consoles.internal.ConsoleButton;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.util.Position2D;
+import jdk.nashorn.internal.objects.annotations.Function;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;
@@ -659,7 +660,7 @@ public class InterpretedProgram {
 			throw new LuaError(e);
 		}
 	}
-	@FunctionManual("Reads input from the terminal that the program is running in. This function " +
+	@FunctionManual("Reads input from the terminal that the current program is running in. This function " +
 			"will block until input is recieved after the function call.")
 	@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 	private String lua$read() {
@@ -678,29 +679,29 @@ public class InterpretedProgram {
 		}
 		return result[0];
 	}
-	@FunctionManual("Prints a newline to the console")
+	@FunctionManual("Prints a new line to the console.")
 	private void lua$nextLine() {
 		print("\n");
 	}
-	@FunctionManual("Returns the owner of the computer")
+	@FunctionManual("Returns the UUID of the computer's owner as a string.")
 	private String lua$owner() {
 		return computer.getOwner().toString();
 	}
-	@FunctionManual("Returns the computer's hostname")
+	@FunctionManual("Returns the computer's hostname as a string")
 	private String lua$hostname() {
 		return computer.getHostname();
 	}
-	@FunctionManual("Finds a computer with the given hostname")
+	@FunctionManual("Finds a computer with the given hostname.")
 	private LuaComputer lua$findComputer(
-		@Arg(name="hostname",info="Hostname of the computer.") String hostname) {
+		@Arg(name="hostname",info="hostname of the target computer") String hostname) {
 		delay(40);
 		Computer computer = ComputerHandler.getInstance().find(hostname);
 		if (computer == null) return null;
 		else return new LuaComputer(computer);
 	}
-	@FunctionManual("Registers a network channel object that the script can use to send data to other computers.")
+	@FunctionManual("Registers a network channel that a program can use to send data to other computers.")
 	private LuaChannel lua$registerChannel(
-		@Arg(name="channel",info="Name of the channel to register.") String channel) {
+		@Arg(name="channel",info="name of the channel to register") String channel) {
 		delay(40);
 		if (!computer.isChannelRegistered(channel)) {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
@@ -713,7 +714,7 @@ public class InterpretedProgram {
 		}
 		else return null;
 	}
-	@FunctionManual("Returns a terminal object.")
+	@FunctionManual("Returns the terminal that the current program is being executed from.")
 	private LuaTerminal lua$getTerminal() {
 		return new LuaTerminal(contextTerminal);
 	}
@@ -737,11 +738,12 @@ public class InterpretedProgram {
 				.map(Enum::name)
 				.toArray(String[]::new);
 	}
-	@FunctionManual("Plays a sound.")
+	@FunctionManual("Plays a sound. A full list of sounds that can be played can be obtained " +
+			"by calling soundList().")
 	private void lua$sound(
-		@Arg(name="name",info="Name of the sound to play") String name, 
-		@Arg(name="volume",info="Volume of the sound.") LuaValue v1, 
-		@Arg(name="pitch",info="Pitch of the sound.") LuaValue v2) {
+		@Arg(name="name",info="name of the sound to play") String name,
+		@Arg(name="volume",info="volume of the sound") LuaValue v1,
+		@Arg(name="pitch",info="pitch of the sound") LuaValue v2) {
 		delay(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
@@ -753,7 +755,7 @@ public class InterpretedProgram {
 				.playSound(computer.getConsole().getLocation(), match,
 						(float) v1.checkdouble(), (float) v2.checkdouble()));
 	}
-	@FunctionManual("Clears the terminal")
+	@FunctionManual("Clears the terminal.")
 	private Boolean lua$clear() {
 		delay(50);
 		return schedule(() -> {
@@ -763,7 +765,7 @@ public class InterpretedProgram {
 			return true;
 		}, this::terminated);
 	}
-	@FunctionManual("Returns the directory the program is in")
+	@FunctionManual("Returns the directory the program belongs to, as a string.")
 	private String lua$programDir() {
 		if (path == null) return null;
 		String[] arr = this.path.split("/");
@@ -771,11 +773,11 @@ public class InterpretedProgram {
 				.limit(arr.length - 1)
 				.collect(Collectors.joining("/"));
 	}
-	@FunctionManual("Returns the path to the program's file")
+	@FunctionManual("Returns the path to the program's file, as a string.")
 	private String lua$programPath() {
 		return path;
 	}
-	@FunctionManual("Loads the specified file from /lib")
+	@FunctionManual("Loads the specified file from /lib or from the folder of the current program")
 	private LuaValue lua$require(
 		@Arg(name="module",info="Name of the lua module to load.") String path) {
 		delay(10);
@@ -812,7 +814,11 @@ public class InterpretedProgram {
 		}
 		return value.call();
 	}
-	private LuaBuffer lua_screenBuffer(Integer index) {
+
+	@FunctionManual("Registers and returns a new screen buffer for the screen session. If the given session " +
+			"at the index is already in use, this function will return nil.")
+	private LuaBuffer lua_screenBuffer(
+			@Arg(name = "index", info = "the index of the screen session to use") Integer index) {
 		delay(20);
 		index--;
 		if (!computer.screenAvailable(index)) return null;
@@ -821,9 +827,10 @@ public class InterpretedProgram {
 		computer.setComponent(index, component);
 		return new LuaBuffer(this, index, component, interruptLib::update);
 	}
-	@FunctionManual("Write text to the terminal")
+	@FunctionManual("Appends text to the terminal. This will not suffix a newline (\\n) character, " +
+			"unlike the print function.")
 	private void lua$write(
-		@Arg(name="text",info="Text to write to the terminal") String text) {
+		@Arg(name="text",info="text to write to the terminal") String text) {
 		print(text);
 	}
 	private LuaPainter lua_registerPainter(Integer index, FunctionBind painter, FunctionBind listener, Integer bg) {
@@ -834,21 +841,30 @@ public class InterpretedProgram {
 		allocatedSessions.add(index);
 		return new LuaPainter(index, computer);
 	}
+	@FunctionManual("Returns the arguments passed to the program as a single string")
 	private String lua$args() {
 		return args;
 	}
-	private LuaFolder lua$resolveFolder(String path) {
+	@FunctionManual("Attempts to find a folder at the given path, and will return a " +
+			"LuaFolder if found (nil if the folder could not be found).")
+	private LuaFolder lua$resolveFolder(
+			@Arg(name = "path", info = "path of the folder to find") String path) {
 		delay(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFolder ? new LuaFolder((FSFolder) block, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
-	private LuaFile lua$resolveFile(String path) {
+	@FunctionManual("Attempts to find a file at the given path, and will return a " +
+			"LuaFile if found (nil if the file could not be found).")
+	private LuaFile lua$resolveFile(
+			@Arg(name = "path", info = "path of the file to find") String path) {
 		delay(10);
 		FSBlock block = resolve(path);
 		return block instanceof FSFile ? new LuaFile((FSFile) block, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
+	@FunctionManual("Allocates and creates a frame to use for graphics rendering. This function will " +
+			"return a LuaFrame, unless there are more than 128 active frames from the current program.")
 	private LuaFrame lua_screenFrame() {
 		if (framePool.size() > 128) return null;
 		int id = findFrameId();
@@ -856,27 +872,39 @@ public class InterpretedProgram {
 		framePool.put(id, frame);
 		return frame;
 	}
+	@FunctionManual("Returns the amount of chests behind the computer.")
 	private int lua$chestList() {
 		delay(40);
 		return ComputerHandler.findChests(computer).length;
 	}
-	private LuaValue lua$getChest(int index) throws InterruptedException {
+	@FunctionManual("Returns a LuaChest at the specified index, and will return nil if the " +
+			"index is invalid. Chest indexes start at zero and end at the amount of chests, minus " +
+			"one. The amount of chests available can be checked with chestList().")
+	private LuaChest lua$getChest(
+			@Arg(name = "index", info = "the index of the chest to obtain") int index) throws InterruptedException {
 		delay(40);
 		Chest[] chests = schedule(() -> ComputerHandler.findChests(computer), this::terminated);
-		if (index >= chests.length || index < 0) return LuaValue.NIL;
-		LuaChest lua = new LuaChest(chests[index], this::terminated);
-		return CoerceJavaToLua.coerce(lua);
+		if (index >= chests.length || index < 0) return null;
+		return new LuaChest(chests[index], this::terminated);
 	}
-	private LuaFile lua$touch(String path) {
+
+	@FunctionManual("Creates a new file if it does not already exist. A new LuaFile is returned on " +
+			"creation of a file, and nil is returned if a file/folder already exists.")
+	private LuaFile lua$touch(
+			@Arg(name = "path", info = "the path to the file to create") String path) {
 		delay(10);
 		FSFile file = new TouchProgram(false).touch(path, computer, contextTerminal);
 		return file != null ? new LuaFile(file, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
+	@FunctionManual("Returns all computer functions (excludes default Lua functions and libraries) as a table of " +
+			"strings.")
 	private String[] lua$reflect() {
 		return pool.functions.keySet().toArray(new String[pool.functions.size()]);
 	}
-	private void lua$sleep(Integer ms) {
+	@FunctionManual("Halts the program for the specified amount of time, in miliseconds.")
+	private void lua$sleep(
+			@Arg(name = "ms", info = "the duration in which to sleep") Integer ms) {
 		try {
 			interruptLib.update();
 			long target = System.currentTimeMillis() + ms;
@@ -889,15 +917,21 @@ public class InterpretedProgram {
 			throw new LuaError(e);
 		}
 	}
+	@FunctionManual("Creates a new directory if it does not already exist. A new LuaFolder is returned on " +
+			"creation of the folder, and nil is returned if a file/folder already exists.")
 	@SuppressWarnings("SpellCheckingInspection")
-	private LuaFolder lua$mkdir(String path) {
+	private LuaFolder lua$mkdir(
+			@Arg(name = "path", info = "the path to the folder to create") String path) {
 		delay(10);
 		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, contextTerminal);
 		return folder != null ? new LuaFolder(folder, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
+	@FunctionManual("Prints formatted text to the terminal, using minecraft color codes prefixed by " +
+			"the & symbol.")
 	@SuppressWarnings("SpellCheckingInspection")
-	private void lua$printc(String formatted) {
+	private void lua$printc(
+			@Arg(name = "formatted", info = "formatted text to print to the terminal") String formatted) {
 		formatted = ChatColor.translateAlternateColorCodes('&', formatted);
 		println(formatted);
 	}

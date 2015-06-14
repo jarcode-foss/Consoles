@@ -2,6 +2,8 @@ package jarcode.consoles.computer.interpreter.types;
 
 import jarcode.consoles.api.CanvasGraphics;
 import jarcode.consoles.computer.Computer;
+import jarcode.consoles.computer.manual.Arg;
+import jarcode.consoles.computer.manual.FunctionManual;
 import org.bukkit.ChatColor;
 import org.bukkit.map.MapFont;
 import org.bukkit.map.MinecraftFont;
@@ -26,26 +28,42 @@ public class LuaFrame {
 		this.id = id;
 		this.remove = remove;
 	}
+	@FunctionManual("Removes the frame and cleans up resources. This function is called automatically when " +
+			"using the frame to update a screen buffer.")
 	public void remove() {
 		if (removed) return;
 		removed = true;
 		remove.run();
 	}
+
+	@FunctionManual("Returns the ID of this fame")
 	public int id() {
 		if (removed) return -1;
 		return id;
 	}
-	public void set(Integer x, Integer y, Integer c) {
+
+	@FunctionManual("Sets the X,Y coordinate to the specified map color.")
+	public void set(
+			@Arg(name = "x", info = "X coordinate") Integer x,
+			@Arg(name = "x", info = "Y coordinate") Integer y,
+			@Arg(name = "x", info = "the minecraft map color to use") Integer c) {
 		if (removed) return;
 		if (x >= 0 && y >= 0 && getHeight() > y && getWidth() > x)
 			operations.add((g) -> g.draw(x, y, convert(c)));
 	}
-	public int len(String text) {
+	@FunctionManual("Returns the length, in pixels, of the text passed through this function. Ignores " +
+			"color formatting.")
+	public int len(
+			@Arg(name = "text", info = "the text to parse") String text) {
 		if (removed) return -1;
 		text = ChatColor.translateAlternateColorCodes('&', text);
 		return FONT.getWidth(ChatColor.stripColor(text).replace("\u00A7", "&"));
 	}
-	public void write(Integer x, Integer y, String text) {
+	@FunctionManual("Draws the specified text at the given X,Y coordinates. Color codes are supported.")
+	public void write(
+			@Arg(name = "x", info = "X coordinate") Integer x,
+			@Arg(name = "x", info = "Y coordinate") Integer y,
+			@Arg(name = "text", info = "the text to print on the frame")String text) {
 		if (removed) return;
 		text = ChatColor.translateAlternateColorCodes('&', text);
 		text = text.replace("\n", "");

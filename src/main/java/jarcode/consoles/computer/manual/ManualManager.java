@@ -145,7 +145,10 @@ public class ManualManager {
 		return MANUALS.keySet().stream().toArray(String[]::new);
 	}
 	private static String typeName(Class type) {
-		if (type == String.class)
+		if (type.isArray()) {
+			return "table{" + typeName(type.getComponentType()) + "}";
+		}
+		else if (type == String.class)
 			return "string";
 		else if (type == Integer.class)
 			return "int";
