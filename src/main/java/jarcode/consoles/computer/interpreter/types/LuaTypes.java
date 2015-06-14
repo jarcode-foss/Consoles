@@ -80,6 +80,8 @@ public class LuaTypes {
 			usage = "\n\n" + Arrays.asList(usage.split("\n")).stream()
 					.map(str -> "\t\t" + str)
 					.collect(Collectors.joining());
+		if (type.getSuperclass() != Object.class)
+			desc += "\n\nInherits functions from " + ChatColor.GREEN + type.getSuperclass().getSimpleName();
 		ManualManager.MANUALS.put(type.getClass().getSimpleName(),
 				new ManualEntry((name) -> "Manual entry for type: " + ChatColor.GREEN + name, null, desc, null,
 						usage, null));

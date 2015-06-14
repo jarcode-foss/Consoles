@@ -9,17 +9,13 @@ import org.luaj.vm2.LuaValue;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class ManualManager {
 
 	public static final Map<FSProvidedProgram, ManualEntry> PROVIDED_MANUALS;
-
 	public static final Map<String, ManualEntry> MANUALS = new ConcurrentHashMap<>();
 
 	static {
@@ -60,6 +56,10 @@ public class ManualManager {
 	}
 	public static void map(Class type, Function<String, String> finder, boolean searchPrivate) {
 		for (Method method : searchPrivate ? type.getDeclaredMethods() : type.getMethods()) {
+
+			if (method.getDeclaringClass() != type)
+				continue;
+
 			Annotation[] arr = method.getAnnotations();
 
 			String name = finder.apply(method.getName());
@@ -123,7 +123,8 @@ public class ManualManager {
 				ab.append(str);
 				ab.append('\n');
 			}
-			ab.append('\n');
+			if (argInfo.length > 0)
+				ab.append('\n');
 			ab.append("\t\treturns ");
 			ab.append(ChatColor.YELLOW);
 			if (method.getReturnType() != null
