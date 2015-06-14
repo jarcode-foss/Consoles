@@ -678,22 +678,29 @@ public class InterpretedProgram {
 		}
 		return result[0];
 	}
+	@FunctionManual("Prints a newline to the console")
 	private void lua$nextLine() {
 		print("\n");
 	}
+	@FunctionManual("Returns the owner of the computer")
 	private String lua$owner() {
 		return computer.getOwner().toString();
 	}
+	@FunctionManual("Returns the computer's hostname")
 	private String lua$hostname() {
 		return computer.getHostname();
 	}
-	private LuaComputer lua$findComputer(String hostname) {
+	@FunctionManual("Finds a computer with the given hostname")
+	private LuaComputer lua$findComputer(
+		@Arg(name="hostname",info="Hostname of the computer.") String hostname) {
 		delay(40);
 		Computer computer = ComputerHandler.getInstance().find(hostname);
 		if (computer == null) return null;
 		else return new LuaComputer(computer);
 	}
-	private LuaChannel lua$registerChannel(String channel) {
+	@FunctionManual("Registers a network channel object that the script can use to send data to other computers.")
+	private LuaChannel lua$registerChannel(
+		@Arg(name="channel",info="Name of the channel to register.") String channel) {
 		delay(40);
 		if (!computer.isChannelRegistered(channel)) {
 			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
@@ -706,23 +713,35 @@ public class InterpretedProgram {
 		}
 		else return null;
 	}
+	@FunctionManual("Returns a terminal object.")
 	private LuaTerminal lua$getTerminal() {
 		return new LuaTerminal(contextTerminal);
 	}
-	private LuaValue lua$static_arr(int size) {
+	@FunctionManual("Returns a static array for Lua. Static arrays are like normal arrays except they can't be " + 
+		"resized, can't have non-numerical keys, are not compatable with the '{}' syntax of defining tables, and " +
+		"they are a unique type ('static_array')")
+	private LuaValue lua$static_arr(
+		@Arg(name="size",info="Size of the array to register") int size) {
 		return new LuaArray(size);
 	}
-	private void lua$ignoreTerminate(Boolean ignore) {
+	@FunctionManual("Sets if the program is allowed to be terminated.")
+	private void lua$ignoreTerminate(
+		@Arg(name="ignore",info="Sets if the program can ignore termination.") Boolean ignore) {
 		delay(20);
 		contextTerminal.setIgnoreUnauthorizedSigterm(ignore);
 	}
+	@FunctionManual("Returns the list of possible sounds the computer can play.")
 	private String[] lua$soundList() {
 		delay(20);
 		return Arrays.asList(Sound.values()).stream()
 				.map(Enum::name)
 				.toArray(String[]::new);
 	}
-	private void lua$sound(String name, LuaValue v1, LuaValue v2) {
+	@FunctionManual("Plays a sound.")
+	private void lua$sound(
+		@Arg(name="name",info="Name of the sound to play") String name, 
+		@Arg(name="volume",info="Volume of the sound.") LuaValue v1, 
+		@Arg(name="pitch",info="Pitch of the sound.") LuaValue v2) {
 		delay(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
@@ -734,6 +753,7 @@ public class InterpretedProgram {
 				.playSound(computer.getConsole().getLocation(), match,
 						(float) v1.checkdouble(), (float) v2.checkdouble()));
 	}
+	@FunctionManual("Clears the terminal")
 	private Boolean lua$clear() {
 		delay(50);
 		return schedule(() -> {
@@ -743,6 +763,7 @@ public class InterpretedProgram {
 			return true;
 		}, this::terminated);
 	}
+	@FunctionManual("Returns the directory the program is in")
 	private String lua$programDir() {
 		if (path == null) return null;
 		String[] arr = this.path.split("/");
@@ -750,10 +771,13 @@ public class InterpretedProgram {
 				.limit(arr.length - 1)
 				.collect(Collectors.joining("/"));
 	}
+	@FunctionManual("Returns the path to the program's file")
 	private String lua$programPath() {
 		return path;
 	}
-	private LuaValue lua$require(String path) {
+	@FunctionManual("Loads the specified file from /lib")
+	private LuaValue lua$require(
+		@Arg(name="module",info="Name of the lua module to load.") String path) {
 		delay(10);
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
@@ -797,7 +821,9 @@ public class InterpretedProgram {
 		computer.setComponent(index, component);
 		return new LuaBuffer(this, index, component, interruptLib::update);
 	}
-	private void lua$write(String text) {
+	@FunctionManual("Write text to the terminal")
+	private void lua$write(
+		@Arg(name="text",info="Text to write to the terminal") String text) {
 		print(text);
 	}
 	private LuaPainter lua_registerPainter(Integer index, FunctionBind painter, FunctionBind listener, Integer bg) {
