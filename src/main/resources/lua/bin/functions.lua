@@ -22,7 +22,7 @@ function main()
             clear()
             printc("Functions for type: &e" .. argument)
             printValues(functionList)
-            printc("\nUse &cman [" .. argument .. ":function] for information on a function\n")
+            printc("\nUse &cman [" .. argument .. ":function]&f for information on a function\n")
         else
             printc("Could not find any functions for type: &e" .. argument)
         end
