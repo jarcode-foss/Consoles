@@ -120,18 +120,15 @@ public class InterpretedProgram {
 		return exec(program, terminal, "");
 	}
 
-	public static void pass(String program, Terminal terminal, InputStream in, OutputStream out) {
-		pass(program, terminal, in, out, "");
+	public static void pass(String program, Terminal terminal, ProgramInstance instance) {
+		pass(program, terminal, instance, "");
 	}
 
-	public static void pass(String program, Terminal terminal, InputStream in, OutputStream out, String args) {
+	public static void pass(String program, Terminal terminal, ProgramInstance instance, String args) {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
 		inst.contextTerminal = terminal;
-		AtomicBoolean terminated = new AtomicBoolean(false);
-		inst.terminator = () -> terminated.set(true);
-		inst.terminated = terminated::get;
-		inst.runRaw(out, in, args, terminal.getComputer(), null, program);
+		inst.runRaw(instance.out, instance.in, args, terminal.getComputer(), instance, program);
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();

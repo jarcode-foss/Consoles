@@ -26,7 +26,7 @@ public abstract class FSProvidedProgram extends FSBlock {
 
 	private Computer computer;
 
-	private ProgramInstance instance;
+	protected ProgramInstance instance;
 
 	public FSProvidedProgram() {
 		super(ID);
