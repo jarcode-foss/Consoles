@@ -181,6 +181,7 @@ public class Kernel extends FSProvidedProgram {
 		return id == 0x00 ? this : programs.get(id);
 	}
 	public byte getId(FSProvidedProgram program) {
+		if (program == this) return 0x00;
 		return programs.inverse().get(program);
 	}
 	@Override
