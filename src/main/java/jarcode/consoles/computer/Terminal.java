@@ -117,6 +117,9 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 		}
 		return null;
 	}
+	public void setProgramInstance(ProgramInstance instance) {
+		creator.setCurrentInstance(instance);
+	}
 	public ProgramInstance getLastProgramInstance() {
 		return creator.getLastInstance();
 	}

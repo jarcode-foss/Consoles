@@ -113,6 +113,8 @@ public class InterpretedProgram {
 		interpretedProgram.contextTerminal = terminal;
 		ProgramInstance instance = new ProgramInstance(interpretedProgram, "", computer, program);
 
+		terminal.setProgramInstance(instance);
+
 		terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
 		terminal.startFeed();
 

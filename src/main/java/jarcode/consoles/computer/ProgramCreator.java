@@ -166,6 +166,9 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 	public ProgramInstance getLastInstance() {
 		return lastInstance;
 	}
+	public void setCurrentInstance(ProgramInstance instance) {
+		lastInstance = instance;
+	}
 	String tryBlock(FSBlock target, String argument, String user, String path) {
 		ProgramInstance instance;
 		if ((target instanceof FSFile || target instanceof FSProvidedProgram)) {
