@@ -33,23 +33,23 @@ public class Kernel extends FSProvidedProgram {
 	private int driverTick = 0;
 
 	static {
+		// Some of these are deprecated, and are replaced with Lua programs
+		// when flashing computers. They are still mapped to program IDs for
+		// legacy support, when filesystems reference an old program ID.
 		program(0x01, new CurrentDirectoryProgram());
 		program(0x02, new ShowDirectoryProgram());
 		program(0x03, new WriteProgram());
 		program(0x04, new CatProgram());
 		program(0x05, new DeleteProgram());
 		program(0x06, new HostnameProgram());
-		// depreciated, replaced with Lua program
 		program(0x07, new ClearProgram());
 		program(0x08, new FlashProgram());
 		program(0x09, new ViewProgram());
 		program(0x0A, new EditProgram());
 		program(0x0B, new TouchProgram());
 		program(0x0C, new RemoveProgram());
-		// depreciated, replace with Lua program
 		program(0x0D, new HelpProgram());
 		program(0x0E, new MakeDirectoryProgram());
-		// depreciated, replace with Lua program
 		program(0x0F, new OwnerProgram());
 		program(0x10, new ManualProgram());
 		program(0x11, new JokeProgram());
@@ -136,7 +136,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x0E, root, "mkdir");
 		// mapProgram(0x0F, root, "owner");
 		mapProgram(0x10, root, "man");
-		mapProgram(0x11, root, "joke");
+		// mapProgram(0x11, root, "joke");
 		mapProgram(0x12, root, "cp");
 		mapProgram(0x13, root, "wget");
 		mapProgram(0x14, root, "map");

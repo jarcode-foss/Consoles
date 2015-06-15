@@ -10,6 +10,7 @@ import jarcode.consoles.computer.manual.ProvidedManual;
 		version = "1.1",
 		contents = "Prints a random joke"
 )
+@Deprecated
 public class JokeProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
