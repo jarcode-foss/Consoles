@@ -164,6 +164,8 @@ public class ManualManager {
 		else if (type == Byte.class)
 			return "byte";
 		else if (type == Character.class)
+			return "boolean";
+		else if (type == Boolean.class)
 			return "char";
 		else if (type == FunctionBind.class)
 			return "function";
