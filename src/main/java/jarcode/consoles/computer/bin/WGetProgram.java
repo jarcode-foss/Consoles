@@ -10,12 +10,12 @@ import jarcode.consoles.computer.filesystem.FSStoredFile;
 import jarcode.consoles.computer.manual.ProvidedManual;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 

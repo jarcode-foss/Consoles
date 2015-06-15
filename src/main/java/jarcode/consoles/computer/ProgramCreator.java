@@ -1,8 +1,9 @@
 package jarcode.consoles.computer;
 
+import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.computer.filesystem.*;
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.interpreter.SandboxProgram;
 import org.bukkit.ChatColor;
 
 import java.io.FileNotFoundException;
@@ -180,7 +181,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 					return "permission denied";
 		}
 		if (target instanceof FSFile) {
-			instance = new ProgramInstance(new InterpretedProgram((FSFile) target, path), argument, terminal.getComputer());
+			instance = new ProgramInstance(SandboxProgram.FILE_FACTORY.call((FSFile) target, path), argument, terminal.getComputer());
 		}
 		else if (target instanceof FSProvidedProgram) {
 			instance = new ProgramInstance((FSProvidedProgram) target, argument, terminal.getComputer());

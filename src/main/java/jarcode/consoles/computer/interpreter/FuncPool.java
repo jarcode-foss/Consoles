@@ -12,9 +12,9 @@ public class FuncPool {
 	private Computer computer;
 	private Thread context;
 
-	private InterpretedProgram program;
+	private SandboxProgram program;
 
-	public FuncPool(Thread context, InterpretedProgram program) {
+	public FuncPool(Thread context, SandboxProgram program) {
 		this.computer = program.getComputer();
 		this.program = program;
 		this.context = context;
@@ -24,7 +24,7 @@ public class FuncPool {
 			functions.put(entry.getKey(), entry.getValue());
 		}
 	}
-	public InterpretedProgram getProgram() {
+	public SandboxProgram getProgram() {
 		return program;
 	}
 	public void cleanup() {

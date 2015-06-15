@@ -3,7 +3,7 @@ package jarcode.consoles.computer.bin;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.interpreter.SandboxProgram;
 import jarcode.consoles.computer.manual.ProvidedManual;
 import org.apache.commons.io.FileUtils;
 
@@ -39,7 +39,7 @@ public class ExecuteProgram extends FSProvidedProgram {
 		}
 		try {
 			String program = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-			InterpretedProgram.pass(program, computer.getTerminal(this), instance, args);
+			SandboxProgram.pass(program, computer.getTerminal(this), instance, args);
 		}
 		catch (IOException e) {
 			println("Failed to read lua program from plugin folder: " + path);

@@ -28,7 +28,7 @@ public class HostnameProgram extends FSProvidedProgram {
 			if (hostname != null)
 				print("hostname changed to: '" + hostname + '\'');
 			else
-				print("Invalid or taken hostname: '" + str + '\'');
+				print("invalid or taken hostname: '" + str + '\'');
 		}
 		else {
 			print("illegal hostname: '" + str + '\'');

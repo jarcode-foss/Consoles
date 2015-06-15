@@ -5,7 +5,7 @@ import jarcode.consoles.api.*;
 import jarcode.consoles.computer.boot.Kernel;
 import jarcode.consoles.computer.devices.CommandDevice;
 import jarcode.consoles.computer.filesystem.*;
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.interpreter.SandboxProgram;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.computer.manual.Arg;
 import jarcode.consoles.computer.manual.FunctionManual;
@@ -244,7 +244,7 @@ public abstract class Computer implements Runnable {
 				});
 
 				// run server-wide startup program
-				InterpretedProgram.execFile("startup.lua", term);
+				SandboxProgram.execFile("startup.lua", term);
 			};
 
 			// run init program normally in its own thread

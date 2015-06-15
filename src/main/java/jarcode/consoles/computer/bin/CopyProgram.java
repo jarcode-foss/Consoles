@@ -131,6 +131,9 @@ public class CopyProgram extends FSProvidedProgram {
 			}
 			return folder;
 		}
+		else if (blk instanceof FSProvidedProgram) {
+			return blk;
+		}
 		else return null;
 	}
 	private void printUsage() {

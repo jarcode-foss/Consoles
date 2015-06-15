@@ -83,7 +83,7 @@ public class EditProgram extends FSProvidedProgram {
 				print("\tterminated");
 		}
 		str = new String(out.toByteArray(), charset);
-		final String finalStr = str;
+		final String finalStr = str.replace("\r", "");
 		final int finalIndex = index;
 		schedule(() -> {
 			EditorComponent component = new EditorComponent(computer.getViewWidth(),

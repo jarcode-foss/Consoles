@@ -2,7 +2,7 @@ package jarcode.consoles.computer;
 
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.interpreter.SandboxProgram;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +19,7 @@ public class ProgramInstance implements Runnable {
 	public final OutputStream out;
 
 	FSProvidedProgram provided;
-	public InterpretedProgram interpreted;
+	public SandboxProgram interpreted;
 
 	private final Thread thread = new Thread(this);
 
@@ -47,7 +47,7 @@ public class ProgramInstance implements Runnable {
 		this.argument = argument;
 		this.computer = computer;
 	}
-	public ProgramInstance(InterpretedProgram interpreted, String argument, Computer computer) {
+	public ProgramInstance(SandboxProgram interpreted, String argument, Computer computer) {
 		stdin = new LinkedStream();
 		out = ((LinkedStream) stdin).createOutput();
 		in = new LinkedStream();
@@ -57,7 +57,7 @@ public class ProgramInstance implements Runnable {
 		this.argument = argument;
 		this.computer = computer;
 	}
-	public ProgramInstance(InterpretedProgram interpreted, String argument, Computer computer, String data) {
+	public ProgramInstance(SandboxProgram interpreted, String argument, Computer computer, String data) {
 		this(interpreted, argument, computer);
 		this.data = data;
 	}
@@ -110,6 +110,6 @@ public class ProgramInstance implements Runnable {
 
 	public boolean contains(Object another) {
 		return another instanceof FSProvidedProgram ?
-				provided == another : another instanceof InterpretedProgram && interpreted == another;
+				provided == another : another instanceof SandboxProgram && interpreted == another;
 	}
 }

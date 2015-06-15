@@ -2,7 +2,7 @@ package jarcode.consoles.computer.interpreter.types;
 
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.interpreter.BufferedFrameComponent;
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
+import jarcode.consoles.computer.interpreter.SandboxProgram;
 import jarcode.consoles.computer.manual.Arg;
 import jarcode.consoles.computer.manual.FunctionManual;
 import jarcode.consoles.computer.manual.TypeManual;
@@ -19,13 +19,13 @@ public class LuaBuffer {
 
 	private static final int MIN_UPDATE_TIME = 100;
 
-	private InterpretedProgram program;
+	private SandboxProgram program;
 	private BufferedFrameComponent component;
 	private long lastUpdate = -1;
 	private final int index;
 	private Runnable update;
 
-	public LuaBuffer(InterpretedProgram program, int index, BufferedFrameComponent component, Runnable update) {
+	public LuaBuffer(SandboxProgram program, int index, BufferedFrameComponent component, Runnable update) {
 		this.program = program;
 		this.component = component;
 		this.index = index;

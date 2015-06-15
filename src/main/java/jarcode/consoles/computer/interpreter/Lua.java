@@ -2,20 +2,17 @@ package jarcode.consoles.computer.interpreter;
 import jarcode.consoles.Consoles;
 import jarcode.consoles.computer.Computer;
 import jarcode.consoles.computer.interpreter.func.*;
-import jarcode.consoles.computer.interpreter.libraries.Libraries;
 import net.jodah.typetools.TypeResolver;
 import org.bukkit.Bukkit;
 import org.luaj.vm2.*;
 import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.jse.CoerceJavaToLua;
-import org.luaj.vm2.lib.jse.CoerceLuaToJava;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 /**
  * This is meant to make method lambdas (using :: operator) usable
@@ -209,7 +206,7 @@ public class Lua {
 		return findPool().getComputer();
 	}
 
-	public static InterpretedProgram program() {
+	public static SandboxProgram program() {
 		return findPool().getProgram();
 	}
 

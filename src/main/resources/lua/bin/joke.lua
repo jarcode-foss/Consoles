@@ -3,4 +3,3 @@
 --#version 2.6
 --#usage joke
 printc("&7" .. getTerminal():randomJoke() .. "\n")
-
