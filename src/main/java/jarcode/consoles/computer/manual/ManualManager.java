@@ -108,7 +108,8 @@ public class ManualManager {
 
 				if (argAnn != null) {
 					b.append(argAnn.name());
-					argInfo[t] = ChatColor.YELLOW + argAnn.name() + ChatColor.WHITE + " - " + argAnn.info();
+					argInfo[t] = ChatColor.YELLOW + argAnn.name() + ChatColor.WHITE + " - "
+							+ ChatColor.translateAlternateColorCodes('&', argAnn.info());
 				}
 				else {
 					b.append("arg");
