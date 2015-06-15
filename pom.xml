@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>jarcode</groupId>
     <artifactId>mc-consoles</artifactId>
-    <version>1.7b-beta</version>
+    <version>1.7c-beta</version>
 
     <repositories>
         <repository>
