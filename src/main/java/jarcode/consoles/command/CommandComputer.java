@@ -47,7 +47,7 @@ public class CommandComputer extends CommandBase {
 				sender.sendMessage(ChatColor.RED + "That computer doesn't exist!");
 				return true;
 			}
-			computer.destroy();
+			computer.destroy(true);
 		}
 		else if (args[0].equalsIgnoreCase("give")) {
 			player.getInventory().addItem(ComputerHandler.newComputerStack());
@@ -90,7 +90,7 @@ public class CommandComputer extends CommandBase {
 			try {
 				computer.create(face, player.getLocation());
 			} catch (ConsoleCreateException e) {
-				computer.destroy();
+				computer.destroy(true);
 				sender.sendMessage(ChatColor.YELLOW + "Failed to create computer at location " +
 						"(cancelled by external plugin)");
 				if (Consoles.debug)

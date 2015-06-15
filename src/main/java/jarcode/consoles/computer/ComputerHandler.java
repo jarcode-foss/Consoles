@@ -19,7 +19,6 @@ import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R3.block.CraftBlock;
 import org.bukkit.craftbukkit.v1_8_R3.command.VanillaCommandWrapper;
 import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
@@ -35,7 +34,6 @@ import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.luaj.vm2.LuaError;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -46,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static jarcode.consoles.computer.ProgramUtils.*;
@@ -129,13 +128,14 @@ public class ComputerHandler implements Listener {
 	}
 
 	public static ItemStack newComputerStack() {
-		return newComputerStack(true);
+		return newComputerStack(true, null);
 	}
 
 	@SuppressWarnings("RedundantCast")
-	private static ItemStack newComputerStack(boolean glow) {
+	public static ItemStack newComputerStack(boolean glow, String hostname) {
 		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
-		meta.setDisplayName(ChatColor.GREEN + "Computer");
+		meta.setDisplayName(ChatColor.GREEN + "Computer" + ChatColor.GRAY
+				+ (hostname != null ? " (" + hostname + ")" : ""));
 		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + "Place to build"));
 		ItemStack stack = null;
 		try {
@@ -157,12 +157,16 @@ public class ComputerHandler implements Listener {
 			// it, unless they are setting the NBT tags explicitly - which
 			// would mean they are probably an admin.
 			comp.setBoolean("computer", true);
+
+			if (hostname != null)
+				comp.setString("hostname", hostname);
 			nms.setTag(comp);
 		}
 		return stack;
 	}
 
 	ShapedRecipe computerRecipe;
+	private ArrayList<String> inactiveHostnames = new ArrayList<>();
 	private ArrayList<Computer> computers = new ArrayList<>();
 	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
 	private HashMap<Location, Computer> trackedBlocks = new LinkedHashMap<>();
@@ -427,8 +431,9 @@ public class ComputerHandler implements Listener {
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (isComputer(e.getItemInHand())) {
+
 			try {
-				build(e.getPlayer(), e.getBlockPlaced().getLocation());
+				build(e.getPlayer(), e.getBlockPlaced().getLocation(), getHostname(e.getItemInHand()));
 			}
 			finally {
 				Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
@@ -443,6 +448,7 @@ public class ComputerHandler implements Listener {
 			e.setCurrentItem(newComputerStack());
 		}
 	}
+
 	public List<Computer> getComputers() {
 		return Collections.unmodifiableList(computers);
 	}
@@ -451,20 +457,49 @@ public class ComputerHandler implements Listener {
 				.filter(computer -> computer.getOwner().equals(uuid))
 				.collect(Collectors.toList());
 	}
-	private void build(Player player, Location location) {
+	private void build(Player player, Location location, String hostname) {
+
 		if (getComputers(player.getUniqueId()).size() >= Consoles.maxComputers
 				&& !player.hasPermission("computer.limit.ignore")) {
 			player.sendMessage(ChatColor.RED + "You can't have more than " + Consoles.maxComputers + " computers!");
 			return;
 		}
+
 		BlockFace face = direction(player);
-		ManagedComputer computer = new ManagedComputer(findHostname(player), player.getUniqueId());
+		ManagedComputer computer;
+
+		Supplier<ManagedComputer> func = () -> new ManagedComputer(findHostname(player), player.getUniqueId());
+
+		if (hostname == null)
+			computer = func.get();
+		else {
+			computer = ComputerData.load(hostname);
+			if (computer == null) {
+				computer = func.get();
+				hostname = null;
+				player.sendMessage(ChatColor.YELLOW + "Failed to load computer data, building factory computer...");
+			}
+		}
+
 		try {
 			computer.create(face, location);
+
+			// update metadata if this was created with an existing hostname
+			if (hostname != null) {
+				boolean ret = ComputerData.updateMeta(hostname, (meta) -> {
+					meta.face = face;
+					meta.location = location;
+				});
+				if (!ret)
+					Consoles.getInstance().getLogger().warning("Failed to write to metadata file for host: " + hostname);
+
+				ComputerHandler.getInstance().register(computer);
+			}
 		} catch (ConsoleCreateException e) {
 			player.sendMessage(ChatColor.RED + "You can't build a computer there!");
 			if (Consoles.debug)
 				e.printStackTrace();
+			unregister(computer, false);
 		}
 	}
 	private String findHostname(Player player) {
@@ -496,7 +531,19 @@ public class ComputerHandler implements Listener {
 	}
 	private boolean isNamedComputer(ItemStack stack) {
 		ItemMeta meta = stack.getItemMeta();
-		return meta.getDisplayName() != null && meta.getDisplayName().equals(ChatColor.GREEN + "Computer");
+		return meta.getDisplayName() != null && meta.getDisplayName().startsWith(ChatColor.GREEN + "Computer");
+	}
+	private String getHostname(ItemStack stack) {
+
+		net.minecraft.server.v1_8_R3.ItemStack nms;
+		try {
+			nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get(stack);
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		NBTTagCompound tag = nms.getTag();
+		return tag == null ? null : tag.getString("hostname");
+
 	}
 	private boolean isComputer(ItemStack stack) {
 		ItemMeta meta = stack.getItemMeta();
@@ -508,12 +555,14 @@ public class ComputerHandler implements Listener {
 			throw new RuntimeException(e);
 		}
 		NBTTagCompound tag = nms.getTag();
-		return tag != null && meta.getDisplayName() != null && meta.getDisplayName().equals(ChatColor.GREEN + "Computer")
+		return tag != null && meta.getDisplayName() != null && meta.getDisplayName().startsWith(ChatColor.GREEN + "Computer")
 				&& stack.getType() == Material.STAINED_GLASS && tag.hasKey("computer");
 	}
 	public boolean hostnameTaken(String hostname) {
-		return computers.stream().filter(comp -> comp.getHostname().equals(hostname.toLowerCase()))
-				.findFirst().isPresent();
+		return inactiveHostnames.contains(hostname) || computers.stream()
+				.filter(comp -> comp.getHostname().equals(hostname.toLowerCase()))
+				.findFirst()
+				.isPresent();
 	}
 	public Computer find(String hostname) {
 		return computers.stream().filter(comp -> comp.getHostname().equals(hostname))
@@ -525,6 +574,8 @@ public class ComputerHandler implements Listener {
 	}
 	public void register(Computer computer) {
 		computers.add(computer);
+		if (inactiveHostnames.contains(computer.getHostname()))
+			inactiveHostnames.remove(computer.getHostname());
 	}
 	@EventHandler
 	public void onPluginDisable(PluginDisableEvent e) {
@@ -533,7 +584,7 @@ public class ComputerHandler implements Listener {
 				b.setType(Material.REDSTONE_BLOCK);
 		});
 	}
-	public void unregister(Computer computer) {
+	public void unregister(Computer computer, boolean delete) {
 		computers.remove(computer);
 		Iterator<Map.Entry<Location, Computer>> it = trackedBlocks.entrySet().iterator();
 		while (it.hasNext()) {
@@ -546,7 +597,9 @@ public class ComputerHandler implements Listener {
 				}
 			}
 		}
-		if (!ComputerData.delete(computer.getHostname()))
-			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getConsole());
+		if (delete && !ComputerData.delete(computer.getHostname()))
+			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getHostname());
+		if (!delete && !inactiveHostnames.contains(computer.getHostname()))
+			inactiveHostnames.add(computer.getHostname());
 	}
 }

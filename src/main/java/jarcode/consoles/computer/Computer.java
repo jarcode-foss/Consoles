@@ -350,17 +350,17 @@ public abstract class Computer implements Runnable {
 				index++;
 			folder.contents.put(baseName + index, file);
 		}
-		// ignore adding device files when the device folder doesn't exist
+		// ignore adding dev ice files when the device folder doesn't exist
 		catch (FileNotFoundException | ClassCastException ignored) {}
 	}
 
 	// ALL cleanup should be done in here
-	public void destroy() {
+	public void destroy(boolean delete) {
 		console.remove();
 		if (taskId != -1)
 			Bukkit.getScheduler().cancelTask(taskId);
-		ComputerHandler.getInstance().unregister(this);
-		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),  ComputerHandler.newComputerStack());
+		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),
+				delete ? ComputerHandler.newComputerStack() : ComputerHandler.newComputerStack(true, hostname));
 	}
 	public Kernel getKernel() {
 		return kernel;

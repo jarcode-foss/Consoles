@@ -40,7 +40,7 @@ public class ComputerManagement {
 		if (computersAreEnabled()) {
 			Computer computer = ComputerHandler.getInstance().find(host);
 			if (computer == null) return;
-			computer.destroy();
+			computer.destroy(true);
 		}
 	}
 

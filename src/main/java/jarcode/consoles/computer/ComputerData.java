@@ -2,7 +2,6 @@ package jarcode.consoles.computer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jarcode.consoles.internal.ConsoleComponent;
 import jarcode.consoles.internal.ConsoleCreateException;
 import jarcode.consoles.internal.ConsoleMeta;
 import jarcode.consoles.Consoles;
@@ -18,13 +17,14 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 // this class represents a serialized computer
 public class ComputerData {
 
 	private static final Gson GSON;
 
-	private static File file;
+	private static File computerFolder;
 
 
 	// file structure:
@@ -37,14 +37,14 @@ public class ComputerData {
 	//    -- metadata.dat (file - serialized ConsoleMeta)
 	static void init(){
 		Plugin plugin = Consoles.getInstance();
-		file = new File(plugin.getDataFolder().getAbsolutePath() +
+		computerFolder = new File(plugin.getDataFolder().getAbsolutePath() +
 				File.separator + "computers");
-		if (!file.exists()) {
+		if (!computerFolder.exists()) {
 			File folder = plugin.getDataFolder();
 			if (!folder.exists() && !folder.mkdir()) {
 				plugin.getLogger().warning("Could not create plugin folder");
 			}
-			if (!file.mkdir()) {
+			if (!computerFolder.mkdir()) {
 				plugin.getLogger().warning("Could not create JSON scoreboard file");
 			}
 		}
@@ -75,7 +75,7 @@ public class ComputerData {
 		File metadata = new File(folder.getAbsolutePath() + File.separator + "metadata.dat");
 		validateFiles(header, fs, metadata);
 		ComputerData data = GSON.fromJson(new FileReader(header), ComputerData.class);
-		data.readMetadata(new FileInputStream(metadata));
+		data.meta = readMetadata(new FileInputStream(metadata));
 		data.filesystem = fs;
 		data.hostname = folder.getName();
 		return data;
@@ -83,7 +83,7 @@ public class ComputerData {
 
 	// deletes the data that corresponds to the given computer's hostname
 	public static boolean delete(String hostname) {
-		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
+		File folder = new File(computerFolder.getAbsolutePath() + File.separator + hostname);
 		if (!folder.exists())
 			return false;
 		try {
@@ -97,8 +97,8 @@ public class ComputerData {
 
 	// renames a computer
 	public static boolean rename(String old, String hostname) {
-		File folder = new File(file.getAbsolutePath() + File.separator + old);
-		return folder.exists() && folder.renameTo(new File(file.getAbsolutePath() + File.separator + hostname));
+		File folder = new File(computerFolder.getAbsolutePath() + File.separator + old);
+		return folder.exists() && folder.renameTo(new File(computerFolder.getAbsolutePath() + File.separator + hostname));
 	}
 
 	private static void makeFiles(File... files) throws IOException {
@@ -120,7 +120,7 @@ public class ComputerData {
 	// loads and instantiates all the computers currently saved to disk
 	public static List<Computer> makeAll() {
 		Consoles.getInstance().getLogger().info("Loading computers...");
-		File[] files = file.listFiles();
+		File[] files = computerFolder.listFiles();
 		List<Computer> list = new ArrayList<>();
 		if (files != null) {
 			int loaded = 0;
@@ -128,7 +128,7 @@ public class ComputerData {
 				if (entry.isDirectory()) {
 					try {
 						ComputerData data = fromFolder(entry);
-						list.add(data.toComputer());
+						list.add(data.toComputer(true));
 						loaded++;
 					}
 					catch (IOException e) {
@@ -142,6 +142,38 @@ public class ComputerData {
 		else Consoles.getInstance().getLogger().severe("Could not load saved computers, failed to obtain files");
 		return list;
 	}
+	public static boolean updateMeta(String hostname, Consumer<ConsoleMeta> transformer) {
+		File target = new File(computerFolder.getAbsolutePath() + File.separatorChar + hostname);
+		if (target.exists() && target.isDirectory()) {
+			try {
+				File metadata = new File(target.getAbsolutePath() + File.separator + "metadata.dat");
+				validateFiles(metadata);
+				ConsoleMeta meta = readMetadata(new FileInputStream(metadata));
+				transformer.accept(meta);
+				writeMetadata(new FileOutputStream(metadata), meta);
+				return true;
+			}
+			catch (IOException e) {
+				Consoles.getInstance().getLogger().severe("Failed to load computer:");
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+	public static ManagedComputer load(String hostname) {
+		File target = new File(computerFolder.getAbsolutePath() + File.separatorChar + hostname);
+		if (target.exists() && target.isDirectory()) {
+			try {
+				ComputerData data = fromFolder(target);
+				return data.toComputer(false);
+			}
+			catch (IOException e) {
+				Consoles.getInstance().getLogger().severe("Failed to load computer:");
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
 
 	public ComputerData() {}
 	public ComputerData(Computer computer) {
@@ -153,14 +185,14 @@ public class ComputerData {
 	// if this ComputerData object was created from a computer, this method is used to
 	// save everything to file.
 	public void save() throws IOException {
-		File folder = new File(file.getAbsolutePath() + File.separator + hostname);
+		File folder = new File(computerFolder.getAbsolutePath() + File.separator + hostname);
 		if (!folder.exists() && !folder.mkdir())
 			throw new IOException("failed to create folder: " + folder.getAbsolutePath());
 		File header = new File(folder.getAbsolutePath() + File.separator + "header.json");
 		File fs = new File(folder.getAbsolutePath() + File.separator + "fs.dat");
 		File metadata = new File(folder.getAbsolutePath() + File.separator + "metadata.dat");
 		makeFiles(header, fs, metadata);
-		writeMetadata(new FileOutputStream(metadata));
+		writeMetadata(new FileOutputStream(metadata), meta);
 		SerializedFilesystem files = new SerializedFilesystem(computer);
 		files.serialize();
 		files.writeTo(new FileOutputStream(fs));
@@ -169,7 +201,7 @@ public class ComputerData {
 		writer.close();
 	}
 	// if this ComputerData object was created from a folder, this creates the computer
-	public Computer toComputer() throws IOException {
+	public ManagedComputer toComputer(boolean create) throws IOException {
 		ManagedComputer computer = new ManagedComputer(hostname, owner, meta.createConsole());
 		computer.load(filesystem);
 		try {
@@ -181,18 +213,11 @@ public class ComputerData {
 		}
 		return computer;
 	}
-	private void writeMetadata(OutputStream out) throws IOException {
-		DataOutputStream data = new DataOutputStream(out);
-		byte[] arr = meta.toBytes();
-		data.writeInt(arr.length);
-		data.write(arr);
-		out.close();
-	}
 	@SuppressWarnings("unused")
 	private void writeBlankJson(OutputStream out) {
 		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(file);
+			fos = new FileOutputStream(computerFolder);
 			fos.write("{}".getBytes());
 		}
 		catch (IOException e) {
@@ -208,13 +233,22 @@ public class ComputerData {
 			}
 		}
 	}
-	private void readMetadata(InputStream in) throws IOException {
+	private static void writeMetadata(OutputStream out, ConsoleMeta meta) throws IOException {
+		DataOutputStream data = new DataOutputStream(out);
+		byte[] arr = meta.toBytes();
+		data.writeInt(arr.length);
+		data.write(arr);
+		out.close();
+	}
+	private static ConsoleMeta readMetadata(InputStream in) throws IOException {
 		DataInputStream data = new DataInputStream(in);
+		ConsoleMeta meta;
 		int len = data.readInt();
 		byte[] bytes = new byte[len];
 		if (data.read(bytes) != bytes.length)
 			throw new IOException("did not fully read meta from header");
 		meta = new ConsoleMeta(bytes);
 		in.close();
+		return meta;
 	}
 }

@@ -124,7 +124,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x02, root, "dir", "ls");
 		mapProgram(0x03, root, "write");
 		mapProgram(0x04, root, "cat");
-		mapProgram(0x05, root, "delete");
+		mapProgram(0x05, root, "delete", "remove");
 		mapProgram(0x06, root, "hostname");
 		// mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
