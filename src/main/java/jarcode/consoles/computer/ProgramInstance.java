@@ -18,8 +18,8 @@ public class ProgramInstance implements Runnable {
 	public final InputStream in;
 	public final OutputStream out;
 
-	final FSProvidedProgram provided;
-	final InterpretedProgram interpreted;
+	FSProvidedProgram provided;
+	public InterpretedProgram interpreted;
 
 	private final Thread thread = new Thread(this);
 

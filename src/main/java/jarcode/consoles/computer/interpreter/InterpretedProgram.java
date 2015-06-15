@@ -135,7 +135,8 @@ public class InterpretedProgram {
 		InterpretedProgram inst = new InterpretedProgram();
 		inst.restricted = false;
 		inst.contextTerminal = terminal;
-		inst.runRaw(instance.out, instance.in, args, terminal.getComputer(), instance, program);
+		instance.interpreted = inst;
+		inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program);
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -246,6 +247,10 @@ public class InterpretedProgram {
 	public void compileAndExecute(String raw) {
 		try {
 
+			if (Consoles.debug)
+				Consoles.getInstance().getLogger().info("[DEBUG] compiling and running program " +
+						"(charlen: " + raw.length() + ")");
+
 			if (contextTerminal == null) {
 				contextTerminal = computer.getTerminal(this);
 			}
@@ -279,12 +284,6 @@ public class InterpretedProgram {
 			// Load our debugging library, which is used to terminate the program
 			globals.load(interruptLib);
 
-			// Block some functions
-			globals.set("load", LuaValue.NIL);
-			globals.set("loadfile", LuaValue.NIL);
-			// require should be used instead
-			globals.set("dofile", LuaValue.NIL);
-
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
@@ -299,6 +298,12 @@ public class InterpretedProgram {
 			// install
 			LoadState.install(globals);
 			LuaC.install(globals);
+
+			// Block some functions
+			globals.set("load", LuaValue.NIL);
+			globals.set("loadfile", LuaValue.NIL);
+			// require should be used instead
+			globals.set("dofile", LuaValue.NIL);
 
 			// load functions from our pool
 			for (Map.Entry<String, LibFunction> entry : pool.functions.entrySet()) {

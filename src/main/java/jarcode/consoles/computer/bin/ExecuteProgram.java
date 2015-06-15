@@ -44,6 +44,7 @@ public class ExecuteProgram extends FSProvidedProgram {
 		catch (IOException e) {
 			println("Failed to read lua program from plugin folder: " + path);
 			print(e.getClass().getSimpleName());
+			e.printStackTrace();
 		}
 	}
 }
