@@ -58,7 +58,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x14, new MapProgram());
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
-		program(0x16, new DestroyProgram());
+		program(0x17, new RelocateProgram());
 	}
 
 	private static void program(int id, FSProvidedProgram providedProgram) {
