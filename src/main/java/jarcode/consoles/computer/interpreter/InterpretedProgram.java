@@ -591,6 +591,9 @@ public class InterpretedProgram {
 	protected void delay(long ms) {
 		if (restricted) ProgramUtils.sleep(ms);
 	}
+	public void resetInterrupt() {
+		interruptLib.update();
+	}
 
 	//
 	// Below are all functions visible to the Lua program (identified by the 'lua$' prefix)
@@ -685,6 +688,7 @@ public class InterpretedProgram {
 		try {
 			while (locked.get() && !terminated()) {
 				Thread.sleep(10);
+				interruptLib.update();
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
