@@ -17,7 +17,7 @@ import static jarcode.consoles.computer.ProgramUtils.*;
 				"Only the owner of this computer can authorize deletion. All data is " +
 				"lost when the computer is deleted."
 )
-public class DeleteProgram extends FSProvidedProgram {
+public class DestroyProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
 		schedule(() -> {

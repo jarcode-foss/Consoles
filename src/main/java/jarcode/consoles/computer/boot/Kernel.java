@@ -40,7 +40,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x02, new ShowDirectoryProgram());
 		program(0x03, new WriteProgram());
 		program(0x04, new CatProgram());
-		program(0x05, new DeleteProgram());
+		program(0x05, new DestroyProgram());
 		program(0x06, new HostnameProgram());
 		program(0x07, new ClearProgram());
 		program(0x08, new FlashProgram());
@@ -58,6 +58,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x14, new MapProgram());
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
+		program(0x16, new DestroyProgram());
 	}
 
 	private static void program(int id, FSProvidedProgram providedProgram) {
@@ -124,7 +125,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x02, root, "dir", "ls");
 		mapProgram(0x03, root, "write");
 		mapProgram(0x04, root, "cat");
-		mapProgram(0x05, root, "delete", "remove");
+		mapProgram(0x05, root, "destroy");
 		mapProgram(0x06, root, "hostname");
 		// mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
@@ -142,6 +143,7 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x14, root, "map");
 		mapProgram(0x15, root, "skript");
 		mapProgram(0x16, root, "exec");
+		mapProgram(0x17, root, "relocate");
 
 		LuaDefaults.loadInto(computer);
 	}
