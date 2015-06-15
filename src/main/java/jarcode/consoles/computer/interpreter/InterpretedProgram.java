@@ -291,6 +291,11 @@ public class InterpretedProgram {
 					.filter((lib) -> !lib.isRestricted || !restricted)
 					.forEach((lib) -> globals.load(lib.buildLibrary()));
 
+			if (!restricted) {
+				globals.load(new CoroutineLib());
+				globals.load(new OsLib());
+			}
+
 			// install
 			LoadState.install(globals);
 			LuaC.install(globals);
@@ -644,6 +649,9 @@ public class InterpretedProgram {
 				Lua.libraries.values().stream()
 						.filter((lib) -> lib.isRestricted)
 						.forEach((lib) -> globals.load(lib.buildLibrary()));
+
+				globals.load(new CoroutineLib());
+				globals.load(new OsLib());
 			}
 			else {
 				print("\nlua: insufficient permissions");
