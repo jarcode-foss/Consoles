@@ -63,7 +63,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 		}
 	}
 
-	private CommandSender getSender(CommandBlockListenerAbstract inst) {
+	private static CommandSender getSender(CommandBlockListenerAbstract inst) {
 		try {
 			return (CommandSender) SENDER.get(inst);
 		}
@@ -134,7 +134,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 
 	public void a(World world) {
 		if (consoleListener != null) {
-			sendMessage(new ChatComponentText(consoleListener.execute(getSender(underlying), getCommand())));
+			sendMessage(new ChatComponentText(consoleListener.execute(sender, getCommand())));
 			setResult(0);
 			return;
 		}
@@ -152,7 +152,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			minecraftserver.getCommandHandler();
 			try {
 				setChatComponent(null);
-				setResult(executeCommand(this, getSender(underlying), getCommand()));
+				setResult(executeCommand(this, sender, getCommand()));
 			} catch (Throwable var6) {
 				var6.printStackTrace();
 			}
