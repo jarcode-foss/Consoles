@@ -355,6 +355,7 @@ public abstract class Computer implements Runnable {
 	}
 
 	// ALL cleanup should be done in here
+	// turns out we don't actually have to do much.
 	public void destroy(boolean delete) {
 		console.remove();
 		if (taskId != -1)

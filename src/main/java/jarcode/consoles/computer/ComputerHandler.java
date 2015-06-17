@@ -12,10 +12,7 @@ import jarcode.consoles.internal.ManagedConsole;
 import jarcode.consoles.util.Position2D;
 import net.minecraft.server.v1_8_R3.NBTTagCompound;
 import net.minecraft.server.v1_8_R3.NBTTagList;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
@@ -31,6 +28,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -431,13 +429,30 @@ public class ComputerHandler implements Listener {
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (isComputer(e.getItemInHand())) {
+			String hostname = getHostname(e.getItemInHand());
+			if (build(e.getPlayer(), e.getBlockPlaced().getLocation(), getHostname(e.getItemInHand()))) {
 
-			try {
-				build(e.getPlayer(), e.getBlockPlaced().getLocation(), getHostname(e.getItemInHand()));
-			}
-			finally {
+				// fix for removing computers from creative inventories
+				if (e.getPlayer().getGameMode() == GameMode.CREATIVE) {
+					Inventory inv = e.getPlayer().getInventory();
+					for (int t = 0; t < inv.getSize(); t++) {
+
+						ItemStack stack = inv.getItem(t);
+						if (isComputer(stack) && getHostname(stack).equals(hostname)) {
+							if (stack.getAmount() >= 2) {
+								stack.setAmount(stack.getAmount() - 1);
+								inv.setItem(t, stack);
+							} else
+								inv.setItem(t, null);
+						}
+					}
+				}
+
 				Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
 						() -> e.getBlock().setType(Material.AIR));
+			}
+			else {
+				e.setCancelled(true);
 			}
 		}
 	}
@@ -457,12 +472,12 @@ public class ComputerHandler implements Listener {
 				.filter(computer -> computer.getOwner().equals(uuid))
 				.collect(Collectors.toList());
 	}
-	private void build(Player player, Location location, String hostname) {
+	private boolean build(Player player, Location location, String hostname) {
 
 		if (getComputers(player.getUniqueId()).size() >= Consoles.maxComputers
 				&& !player.hasPermission("computer.limit.ignore")) {
 			player.sendMessage(ChatColor.RED + "You can't have more than " + Consoles.maxComputers + " computers!");
-			return;
+			return false;
 		}
 
 		BlockFace face = direction(player);
@@ -496,11 +511,13 @@ public class ComputerHandler implements Listener {
 
 				ComputerHandler.getInstance().register(computer);
 			}
+			return true;
 		} catch (ConsoleCreateException e) {
 			player.sendMessage(ChatColor.RED + "You can't build a computer there!");
 			if (Consoles.debug)
 				e.printStackTrace();
 			unregister(computer, false);
+			return false;
 		}
 	}
 	private String findHostname(Player player) {

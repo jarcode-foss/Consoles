@@ -21,6 +21,7 @@ public class ManagedComputer extends Computer {
 	public void destroy(boolean delete) {
 		super.destroy(delete);
 		ComputerHandler.getInstance().unregister(this, delete);
+		save();
 	}
 
 	@Override
