@@ -58,7 +58,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x14, new MapProgram());
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
-		program(0x17, new RelocateProgram());
+		program(0x17, new DestroyProgram());
 	}
 
 	private static void program(int id, FSProvidedProgram providedProgram) {
@@ -143,7 +143,6 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x14, root, "map");
 		mapProgram(0x15, root, "skript");
 		mapProgram(0x16, root, "exec");
-		mapProgram(0x17, root, "relocate");
 
 		LuaDefaults.loadInto(computer);
 	}

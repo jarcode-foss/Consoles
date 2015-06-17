@@ -486,11 +486,12 @@ public class ComputerHandler implements Listener {
 
 			// update metadata if this was created with an existing hostname
 			if (hostname != null) {
-				boolean ret = ComputerData.updateMeta(hostname, (meta) -> {
+				boolean r1 = ComputerData.updateMeta(hostname, (meta) -> {
 					meta.face = face;
 					meta.location = location;
 				});
-				if (!ret)
+				boolean r2 = ComputerData.updateHeader(hostname, (data) -> data.built = true);
+				if (!r1 || !r2)
 					Consoles.getInstance().getLogger().warning("Failed to write to metadata file for host: " + hostname);
 
 				ComputerHandler.getInstance().register(computer);
@@ -601,5 +602,7 @@ public class ComputerHandler implements Listener {
 			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getHostname());
 		if (!delete && !inactiveHostnames.contains(computer.getHostname()))
 			inactiveHostnames.add(computer.getHostname());
+		if (!delete)
+			ComputerData.updateHeader(computer.getHostname(), (data) -> data.built = false);
 	}
 }

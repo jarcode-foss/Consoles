@@ -1,6 +1,9 @@
 package jarcode.consoles.computer.interpreter;
 
 import jarcode.consoles.Consoles;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.DebugLib;
 

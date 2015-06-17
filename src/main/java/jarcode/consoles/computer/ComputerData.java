@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 // this class represents a serialized computer
 public class ComputerData {
@@ -66,15 +67,20 @@ public class ComputerData {
 	private transient ConsoleMeta meta;
 	private transient String hostname;
 
-	private UUID owner;
+	public UUID owner;
+	public boolean built = true;
 
 	// sets up a ComputerData object that is prepared to load from a folder
-	public static ComputerData fromFolder(File folder) throws IOException {
+	public static ComputerData fromFolder(File folder, Function<ComputerData, Boolean> predicate) throws IOException {
 		File header = new File(folder.getAbsolutePath() + File.separator + "header.json");
 		File fs = new File(folder.getAbsolutePath() + File.separator + "fs.dat");
 		File metadata = new File(folder.getAbsolutePath() + File.separator + "metadata.dat");
 		validateFiles(header, fs, metadata);
-		ComputerData data = GSON.fromJson(new FileReader(header), ComputerData.class);
+		FileReader reader = new FileReader(header);
+		ComputerData data = GSON.fromJson(reader, ComputerData.class);
+		reader.close();
+		if (predicate != null && !predicate.apply(data))
+			return null;
 		data.meta = readMetadata(new FileInputStream(metadata));
 		data.filesystem = fs;
 		data.hostname = folder.getName();
@@ -127,9 +133,11 @@ public class ComputerData {
 			for (File entry : files) {
 				if (entry.isDirectory()) {
 					try {
-						ComputerData data = fromFolder(entry);
-						list.add(data.toComputer(true));
-						loaded++;
+						ComputerData data = fromFolder(entry, d -> d.built);
+						if (data != null) {
+							list.add(data.toComputer(true));
+							loaded++;
+						}
 					}
 					catch (IOException e) {
 						Consoles.getInstance().getLogger().severe("Failed to load computer:");
@@ -141,6 +149,28 @@ public class ComputerData {
 		}
 		else Consoles.getInstance().getLogger().severe("Could not load saved computers, failed to obtain files");
 		return list;
+	}
+	public static boolean updateHeader(String hostname, Consumer<ComputerData> transformer) {
+		File target = new File(computerFolder.getAbsolutePath() + File.separatorChar + hostname);
+		if (target.exists() && target.isDirectory()) {
+			try {
+				File header = new File(target.getAbsolutePath() + File.separator + "header.json");
+				validateFiles(header);
+				FileReader reader = new FileReader(header);
+				ComputerData data = GSON.fromJson(reader, ComputerData.class);
+				reader.close();
+				transformer.accept(data);
+				FileWriter writer = new FileWriter(header);
+				writer.write(GSON.toJson(data, ComputerData.class));
+				writer.close();
+				return true;
+			}
+			catch (IOException e) {
+				Consoles.getInstance().getLogger().severe("Failed to load computer:");
+				e.printStackTrace();
+			}
+		}
+		return false;
 	}
 	public static boolean updateMeta(String hostname, Consumer<ConsoleMeta> transformer) {
 		File target = new File(computerFolder.getAbsolutePath() + File.separatorChar + hostname);
@@ -164,7 +194,7 @@ public class ComputerData {
 		File target = new File(computerFolder.getAbsolutePath() + File.separatorChar + hostname);
 		if (target.exists() && target.isDirectory()) {
 			try {
-				ComputerData data = fromFolder(target);
+				ComputerData data = fromFolder(target, null);
 				return data.toComputer(false);
 			}
 			catch (IOException e) {
@@ -204,7 +234,7 @@ public class ComputerData {
 	public ManagedComputer toComputer(boolean create) throws IOException {
 		ManagedComputer computer = new ManagedComputer(hostname, owner, meta.createConsole());
 		computer.load(filesystem);
-		try {
+		if (create) try {
 			computer.create(meta.face, meta.location);
 		} catch (ConsoleCreateException e) {
 			Consoles.getInstance().getLogger().severe("Failed to place computer (cancelled by external plugin)");

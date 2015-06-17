@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 rm target/Consoles.zip
-mvn clean --quiet
+for FILENAME in target/mc-consoles-*; do rm ${FILENAME} consoles.jar; done
 mvn package -Pbukkit -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
 mvn package -Pbungee -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
 cd target

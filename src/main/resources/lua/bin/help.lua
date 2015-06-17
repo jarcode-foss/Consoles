@@ -8,6 +8,7 @@ function main()
         write("help: /bin folder missing")
         return
     end
+    clear()
     print("Installed programs:")
     showEntries(providedList(bin))
     write("\t")

@@ -13,9 +13,9 @@ import static jarcode.consoles.computer.ProgramUtils.*;
 @ProvidedManual(
 		author = "Jarcode",
 		version = "1.3",
-		contents = "Opens a dialog that presents the option to delete the computer. " +
-				"Only the owner of this computer can authorize deletion. All data is " +
-				"lost when the computer is deleted."
+		contents = "Opens a dialog that presents the option to destroy (drop) the computer. " +
+				"Only the owner of this computer can authorize this. Data is saved with the dropped " +
+				"item."
 )
 public class DestroyProgram extends FSProvidedProgram {
 	@Override
@@ -27,7 +27,7 @@ public class DestroyProgram extends FSProvidedProgram {
 			delete.addEventListener(event -> {
 				Player player = event.getPlayer();
 				if (computer.getOwner().equals(player.getUniqueId()))
-					computer.destroy(true);
+					computer.destroy(false);
 				else {
 					player.sendMessage(ChatColor.YELLOW + "You have to be the owner to do that!");
 					computer.getConsole().removeComponent(pos);
