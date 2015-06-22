@@ -1,5 +1,11 @@
 package jarcode.consoles.computer.skript;
 
+// This class is old code, meant to provide skript integration.
+// I refuse to support skript anymore, the maven repository for
+// skript is down and the git repository has not seen a commit
+// in a long time.
+
+/*
 import ch.njol.skript.ScriptLoader;
 import ch.njol.skript.Skript;
 import jarcode.consoles.Consoles;
@@ -7,10 +13,12 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.*;
 import java.lang.reflect.Method;
+*/
 
 @SuppressWarnings("SpellCheckingInspection")
 public class ScriptUploader implements ScriptInterface {
 
+	/*
 	private final Method LOAD_SCRIPT;
 	private final Method UNLOAD_SCRIPT;
 
@@ -75,4 +83,5 @@ public class ScriptUploader implements ScriptInterface {
 	private enum State {
 		LOAD, UNLOAD
 	}
+	*/
 }

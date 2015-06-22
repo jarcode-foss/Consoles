@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
+
+# This script is used to build and package Consoles locally
+
+
 rm target/Consoles.zip
-for FILENAME in target/mc-consoles-*; do rm ${FILENAME} consoles.jar; done
-mvn package -Pbukkit -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
-mvn package -Pbungee -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
 cd target
-cd bukkit-final/
+for FILENAME in *.jar; do rm -f ${FILENAME}; done
+cd bukkit-final
+for FILENAME in *.jar; do rm -f ${FILENAME}; done
+cd ../../bungee/target/
+for FILENAME in *.jar; do rm -f ${FILENAME}; done
+cd ../..
+mvn package -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
+mvn package -pl bungee -am -Dmaven.test.skip=true | egrep -v "(^\[WARNING\])|(already added\, skipping)"
+cd target/bukkit-final/
 for FILENAME in *; do mv ${FILENAME} consoles.jar; done
 zip ../Consoles.zip consoles.jar
-cd ../bungee-final/
-for FILENAME in *; do mv ${FILENAME} bungee-consoles.jar; done
-zip ../Consoles.zip bungee-consoles.jar
+cd ../../bungee/target/
+for FILENAME in *.jar; do mv ${FILENAME} bungee-consoles.jar; done
+zip ../../target/Consoles.zip bungee-consoles.jar
 cd ../..

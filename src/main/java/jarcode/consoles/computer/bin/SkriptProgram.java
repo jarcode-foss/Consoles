@@ -26,13 +26,16 @@ import static jarcode.consoles.computer.ProgramUtils.*;
 				"will need to be authorized by a user with the permission \u00A7ecomputer.skript.upload\n\n" +
 				"The program will need to be provided with a file in the computer (with the skript), and an " +
 				"identifier for the script. If a script already exists with the given identifier, it will be " +
-				"overwritten."
+				"overwritten.\n\nSkript is no longer supported in Consoles version 1.8-beta and higher"
 )
 @SuppressWarnings("SpellCheckingInspection")
 
+@Deprecated
 public class SkriptProgram extends FSProvidedProgram {
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+		print("skript is no longer supported in Consoles version 1.8-beta and higher");
+		/*
 		String[] args = splitArguments(str);
 		if (args.length <= 1 || str.isEmpty()) {
 			print("skript [FILE] [IDENTIFIER]");
@@ -116,5 +119,6 @@ public class SkriptProgram extends FSProvidedProgram {
 				print("skript: exiting without taking any action");
 				break;
 		}
+		*/
 	}
 }

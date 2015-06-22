@@ -5,200 +5,127 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>jarcode</groupId>
     <artifactId>mc-consoles</artifactId>
+    <packaging>pom</packaging>
     <version>1.8-beta</version>
+    <modules>
+        <module>bungee</module>
+    </modules>
 
     <repositories>
-        <repository>
-            <id>bungeecord-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
+        <!-- dropping skript support, repository is down and the project is unmaintained
         <repository>
             <id>njol-repo</id>
             <url>http://maven.njol.ch/repo/</url>
         </repository>
+        -->
     </repositories>
 
-    <profiles>
-        <profile>
-            <id>bukkit</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/bukkit-config</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                    <resource>
-                        <directory>src/main/resources</directory>
-                    </resource>
-                </resources>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <version>2.5</version>
-                        <configuration>
-                            <classifier>bukkit</classifier>
-                        </configuration>
-                    </plugin>
+    <distributionManagement>
+        <repository>
+            <id>jarcode-site</id>
+            <url>sftp://jarcode.ca/maven2</url>
+        </repository>
+    </distributionManagement>
 
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>2.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${basedir}/target/classes</outputDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>bungee-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${basedir}/target/classes</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.1</version>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/config</directory>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <classifier>bukkit</classifier>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>default-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
                         <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
+                            <outputDirectory>${basedir}/target/classes</outputDirectory>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.2</version>
+                    </execution>
+                    <execution>
+                        <id>bungee-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
                         <configuration>
-                            <groups>
-                                <group>
-                                    <title>API Docs</title>
-                                    <packages>jarcode.consoles.api</packages>
-                                </group>
-                            </groups>
-                            <sourceFileExcludes>
-                                <!-- For some reason, I can't produce docs for some of these classes -->
-                                <exclude>jarcode/consoles/util/**</exclude>
-                                <exclude>jarcode/consoles/*.java</exclude>
-                                <exclude>jarcode/consoles/computer/**</exclude>
-                                <exclude>jarcode/consoles/bungee/**</exclude>
-                                <exclude>jarcode/bungee/**</exclude>
-                                <exclude>jarcode/consoles/event/**</exclude>
-                                <exclude>jarcode/consoles/command/**</exclude>
-                            </sourceFileExcludes>
-                            <failOnError>false</failOnError>
+                            <outputDirectory>${basedir}/target/classes</outputDirectory>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/bukkit-final</outputDirectory>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>bungee</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/bungee-config</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                    <resource>
-                        <directory>src/main/resources</directory>
-                    </resource>
-                </resources>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <version>2.5</version>
-                        <configuration>
-                            <classifier>bungee</classifier>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>2.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${basedir}/target/classes</outputDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>bungee-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${basedir}/target/classes</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.1</version>
-                        <configuration>
-                            <source>1.8</source>
-                            <target>1.8</target>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/bungee-final</outputDirectory>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.2</version>
+                <configuration>
+                    <groups>
+                        <group>
+                            <title>API Docs</title>
+                            <packages>jarcode.consoles.api</packages>
+                        </group>
+                    </groups>
+                    <sourceFileExcludes>
+                        <!-- For some reason, I can't produce docs for some of these classes -->
+                        <exclude>jarcode/consoles/util/**</exclude>
+                        <exclude>jarcode/consoles/*.java</exclude>
+                        <exclude>jarcode/consoles/computer/**</exclude>
+                        <exclude>jarcode/consoles/bungee/**</exclude>
+                        <exclude>jarcode/bungee/**</exclude>
+                        <exclude>jarcode/consoles/event/**</exclude>
+                        <exclude>jarcode/consoles/command/**</exclude>
+                    </sourceFileExcludes>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/bukkit-final</outputDirectory>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -225,11 +152,13 @@
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
+        <!-- dropping skript support, repository is down and the project is unmaintained
         <dependency>
             <groupId>ch.njol</groupId>
             <artifactId>skript</artifactId>
             <version>2.0.1</version>
             <scope>provided</scope>
         </dependency>
+        -->
     </dependencies>
 </project>

@@ -65,6 +65,8 @@ public class ConsoleHandler implements Listener {
 	private static final HashMap<String, BiConsumer<Plugin, Logger>> HOOK_INITIALIZERS = new HashMap<>();
 
 	static {
+		// removed skript support in versions 1.8+
+		/*
 		HOOK_INITIALIZERS.put("Skript", (plugin, logger) -> {
 			if (plugin != null) {
 				try {
@@ -75,6 +77,7 @@ public class ConsoleHandler implements Listener {
 				}
 			}
 		});
+		*/
 	}
 
 	static {
