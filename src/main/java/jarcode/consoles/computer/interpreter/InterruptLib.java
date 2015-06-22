@@ -1,13 +1,12 @@
 package jarcode.consoles.computer.interpreter;
 
 import jarcode.consoles.Consoles;
-import org.luaj.vm2.Globals;
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.DebugLib;
 
 import java.util.function.BooleanSupplier;
+
+import static jarcode.consoles.Lang.lang;
 
 /*
 
@@ -33,10 +32,10 @@ public class InterruptLib extends DebugLib {
 			off = 0;
 			// check if the program has been running too long without an interrupt
 			if (System.currentTimeMillis() - lastInterrupt > Consoles.maxTimeWithoutInterrupt)
-				throw new ProgramInterruptException("Program terminated (ran too long without interrupt)");
+				throw new ProgramInterruptException(lang.getString("program-term"));
 			// check if the program has been terminated
 			if (supplier.getAsBoolean() || Lua.killAll) {
-				throw new ProgramInterruptException("Program terminated");
+				throw new ProgramInterruptException(lang.getString("program-term"));
 			}
 		}
 		off++;

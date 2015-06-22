@@ -1,6 +1,5 @@
 package jarcode.consoles.computer;
 
-import jarcode.consoles.computer.interpreter.InterpretedProgram;
 import jarcode.consoles.internal.ConsoleFeed;
 import jarcode.consoles.computer.filesystem.*;
 import jarcode.consoles.computer.interpreter.SandboxProgram;

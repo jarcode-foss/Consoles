@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 This is for loading from the /lua resource folder.
@@ -61,14 +63,11 @@ public class LuaDefaults {
 					.findFirst().orElseGet(() -> null);
 			assert f != null;
 			boolean result = computer.getRoot().mkdir(dir);
-			if (!result)
-				Consoles.getInstance().getLogger().info("Failed to install: " + entry.getKey());
-			else {
+			if (result) {
 				try {
 					FSFolder folder = (FSFolder) computer.getRoot().get(dir);
 					folder.contents.put(f, Kernel.writtenFile(entry.getValue()));
 				} catch (FileNotFoundException e) {
-					Consoles.getInstance().getLogger().info("Failed to install: " + entry.getKey());
 					e.printStackTrace();
 				}
 			}

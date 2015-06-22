@@ -43,6 +43,8 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 This handles a bunch of things:
@@ -68,7 +70,7 @@ public class ConsoleHandler implements Listener {
 				try {
 					ScriptInterface.set(new ScriptUploader(plugin));
 				} catch (ScriptInterface.FailedHookException e) {
-					logger.warning("Failed to hook into Skript plugin!");
+					logger.warning(lang.getString("skript-fail"));
 					e.printStackTrace();
 				}
 			}
@@ -295,8 +297,9 @@ public class ConsoleHandler implements Listener {
 						World world = ((CraftWorld) chunk.getWorld()).getHandle();
 						nms.dead = false;
 						if (!world.addEntity(nms)) {
-							Consoles.getInstance().getLogger().severe("Failed to spawn console item frame: "
-									+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
+							Consoles.getInstance().getLogger().severe(lang.getString("item-spawn-fail"));
+							Consoles.getInstance().getLogger().severe(frame.getLocation().toString()
+									+ ", identifier: " + console.getIdentifier());
 						} else if (Consoles.debug) {
 							Consoles.getInstance().getLogger().info("Spawned item frame: "
 									+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
@@ -615,8 +618,8 @@ public class ConsoleHandler implements Listener {
 				// update context allocations
 				for (String context : allocations.keySet()) {
 					if (getIndexTable(context).containsKey(t))
-						Consoles.getInstance().getLogger().warning("Overwriting map index allocation for context: "
-								+ context);
+						Consoles.getInstance().getLogger().warning(
+								String.format(lang.getString("allocation-overwrite"),context));
 					mapIndex(context, t);
 				}
 				defaultAllocation.add(t);

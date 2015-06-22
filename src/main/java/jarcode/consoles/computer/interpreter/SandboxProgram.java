@@ -27,6 +27,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.Lang.lang;
+
 /**
 
 This class handles the creation and sandbox of the LuaVM
@@ -67,7 +69,7 @@ public abstract class SandboxProgram {
 			return exec(program, terminal, args);
 		}
 		catch (IOException e) {
-			Consoles.getInstance().getLogger().warning("Failed to read lua program from plugin folder: " + path);
+			Consoles.getInstance().getLogger().warning(String.format(lang.getString("program-load-fail"), path));
 			e.printStackTrace();
 			return false;
 		}
@@ -154,6 +156,8 @@ public abstract class SandboxProgram {
 
 	protected Terminal contextTerminal = null;
 
+	protected String defaultChunk = null;
+
 	// normal constructor for loading a program from a computer
 	public SandboxProgram(FSFile file, String path) {
 		this.file = file;
@@ -201,20 +205,29 @@ public abstract class SandboxProgram {
 				} else Thread.sleep(50);
 			}
 			if (terminated())
-				print(" [PARSE TERMINATED]");
+				print(" [" + lang.getString("parse-term") + "]");
 		}
 
 		// parse as a string
 		String raw = new String(buf.toByteArray(), CHARSET);
 
+		loadDefaultChunk();
 		compileAndExecute(raw);
 	}
 
 	protected abstract void map();
 
+	private void loadDefaultChunk() {
+		FSBlock block = computer.getBlock("/bin/default", "/");
+		if (block instanceof FSFile) {
+			defaultChunk = new LuaFile((FSFile) block, "/bin/default", "/", this::terminated, computer).read();
+		}
+	}
+
 	public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
 	                   ProgramInstance inst, String raw) {
 		setup(out, in, str, computer, inst);
+		loadDefaultChunk();
 		compileAndExecute(raw);
 	}
 
@@ -304,30 +317,51 @@ public abstract class SandboxProgram {
 			// globals at this point.
 			globals.finalizeEntries();
 
-			// our main program chunk
-			LuaValue chunk;
+			// our main program chunk and the default chunk
+			LuaValue chunk, def;
 
 			// the exit function, if it exists.
 			LuaValue exit = null;
 
-			try {
+			// if there is a default chunk/program to load into the globals, load it!
+			if (defaultChunk != null && !defaultChunk.isEmpty()) {
 
-				// try to load in the program
-				// this will try to compile the Lua string into Java bytecode
-				chunk = globals.load(raw);
+				// try to load the default chunk
+				def = loadChunk(defaultChunk);
 
+				// if the previous method returned a chunk, call it!
+				if (def != null) try {
+
+					// call the default chunk
+					def.call();
+
+				}
+				// if the program was interrupted by our debug/interrupt lib
+				catch (ProgramInterruptException ex) {
+
+					print("\n" + lang.getString("program-term"));
+
+					// we should return if it was interrupted in the default chunk, cleanup will
+					// still be done in the lower-most finally block.
+					return;
+				}
+				// error handling
+				//
+				// we don't return if we encountered an error in the default chunk,
+				// instead we continue and attempt to run the main chunk.
+				catch (LuaError err) {
+					handleLuaError(err);
+				}
 			}
-			// if we run into a compile error, print out the details and exit.
-			catch (LuaError err) {
-				if (Consoles.debug)
-					err.printStackTrace();
-				println("lua:" + ChatColor.RED + " compile error");
-				String msg = Arrays.asList(err.getMessage().split("\n")).stream()
-						.map(this::warning)
-						.collect(Collectors.joining("\n"));
-				print(msg);
+
+			// try to load the main chunk
+			chunk = loadChunk(raw);
+
+			// if the previous method returned null, it didn't compile (and handled the errors)
+			// we should just exit from here
+			if (chunk == null)
 				return;
-			}
+
 			// if we got to this point, the program compiled just fine.
 			try {
 
@@ -355,7 +389,7 @@ public abstract class SandboxProgram {
 			}
 			// if the program was interrupted by our debug/interrupt lib
 			catch (ProgramInterruptException ex) {
-				print("\nProgram terminated");
+				print("\n" + lang.getString("program-term"));
 			}
 			// if we encountered an error, we go through quite the process to handle it
 			catch (LuaError err) {
@@ -374,7 +408,7 @@ public abstract class SandboxProgram {
 					}
 					// again, if the exit function was interrupted.
 					catch (ProgramInterruptException ex) {
-						print("\nExit routine terminated");
+						print("\n" + lang.getString("exit-func-term"));
 					}
 					// if there was an error, handle it the same way.
 					catch (LuaError err) {
@@ -411,10 +445,32 @@ public abstract class SandboxProgram {
 				computer.setComponent(i, null);
 			}
 		}
-
-		// at the end of this method, in one way or another, our Lua program will have ended.
 	}
 
+	// loads a raw chunk and returns a LuaValue, handing errors accordingly
+	private LuaValue loadChunk(String raw) {
+		LuaValue chunk;
+		try {
+			// try to load in the program
+			// this will try to compile the Lua string into Java bytecode
+			chunk = globals.load(raw);
+
+		}
+		// if we run into a compile error, print out the details and exit.
+		catch (LuaError err) {
+			if (Consoles.debug)
+				err.printStackTrace();
+			println("lua:" + ChatColor.RED + " " + lang.getString("lua-compile-err"));
+			String msg = Arrays.asList(err.getMessage().split("\n")).stream()
+					.map(this::warning)
+					.collect(Collectors.joining("\n"));
+			print(msg);
+			return null;
+		}
+		return chunk;
+	}
+
+	// returns a dummy input stream
 	private InputStream dummyInputStream() {
 		return new InputStream() {
 			@Override
@@ -424,6 +480,7 @@ public abstract class SandboxProgram {
 		};
 	}
 
+	// returns a dummy print stream
 	private PrintStream dummyPrintStream() {
 		return new PrintStream(new OutputStream() {
 			@Override
@@ -444,9 +501,13 @@ public abstract class SandboxProgram {
 			i++;
 		return i;
 	}
+
 	public Computer getComputer() {
 		return computer;
 	}
+
+	// handles an uncaught LuaError that occured while attempting to run a lua program
+	// this can either print to the terminal, or dump the stack contents to a file (if too large)
 	private void handleLuaError(LuaError err) {
 
 		// print stack trace in console if in debug mode
@@ -462,7 +523,7 @@ public abstract class SandboxProgram {
 		do {
 			cont = false;
 			if (err.getCause() instanceof LuaError) {
-				errorBreakdown += "\n\nCaused by:\n" + err.getCause().getMessage();
+				errorBreakdown += "\n\n" + lang.getString("lua-dump-cause") +"\n" + err.getCause().getMessage();
 				cont = true;
 			}
 			else if (err.getCause() instanceof InvocationTargetException) {
@@ -479,7 +540,7 @@ public abstract class SandboxProgram {
 		while (cont);
 
 		// tell the user we encountered a runtime error
-		println("lua:" + ChatColor.RED + " runtime error");
+		println("lua:" + ChatColor.RED + " " + lang.getString("lua-runtime-err"));
 
 		// split into lines and color each line
 		String[] arr = Arrays.asList(errorBreakdown.split("\n")).stream()
@@ -528,14 +589,16 @@ public abstract class SandboxProgram {
 				String cd = terminal.getCurrentDirectory();
 				if (cd.endsWith("/"))
 					cd = cd.substring(0, cd.length() - 1);
-				println("lua:" + ChatColor.RED + " stack trace too large!");
-				print("lua:" + ChatColor.RED + " dumped: " + ChatColor.YELLOW + cd + "/" + "lua_dump" + i);
+				println("lua:" + ChatColor.RED + " " + lang.getString("lua-dump-size"));
+				print("lua:" + ChatColor.RED + " " + String.format(lang.getString("lua-dump-file"),
+						ChatColor.YELLOW + cd + "/" + "lua_dump" + i));
 			}
 		}
 		// if small enough, print the error directly in the terminal
 		else
 			print(msg);
 	}
+
 	private String warning(String str) {
 		return "\t" + ChatColor.YELLOW + str;
 	}

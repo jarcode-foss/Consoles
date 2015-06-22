@@ -12,6 +12,7 @@ import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.event.Listener;
 
+import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
 /*
@@ -42,6 +43,8 @@ public class Consoles extends WrappedPlugin {
 	public static String commandPrefix;
 	// debug mode
 	public static boolean debug = false;
+	// hide save messages
+	public static boolean hideSaveMessages = false;
 
 	static {
 		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
@@ -86,6 +89,7 @@ public class Consoles extends WrappedPlugin {
 		commandPrefix = getConfig().getString("command-prefix", "/").trim();
 		computersEnabled = getConfig().getBoolean("computers-enabled", true);
 		debug = getConfig().getBoolean("debug-mode", false);
+		hideSaveMessages = getConfig().getBoolean("hide-save-messages", false);
 		allowCrafting = allowCrafting && computersEnabled;
 
 		ConsoleHandler.getInstance().local = !forward;
@@ -120,7 +124,6 @@ public class Consoles extends WrappedPlugin {
 			SyncTaskScheduler.getInstance().end();
 		}
 		catch (InterruptedException e) {
-			getLogger().warning("Failed to end synchronized task scheduler!");
 			e.printStackTrace();
 		}
 	}

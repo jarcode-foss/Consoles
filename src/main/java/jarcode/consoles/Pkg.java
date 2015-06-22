@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 Class used to compare versions at runtime
@@ -38,7 +40,7 @@ public class Pkg {
 		for (Pkg ver : versions)
 			if (ver.name.equals(VERSION))
 				return;
-		throw new RuntimeException("Unsupported server NMS version: " + VERSION);
+		unsupported();
 	}
 
 	public static Field findField(Class source, Function<Pkg, String> finder) throws NoSuchFieldException {
@@ -60,10 +62,14 @@ public class Pkg {
 				.findFirst()
 				.orElseGet(() -> null);
 		if (name == null)
-			throw new RuntimeException("Unsupported server NMS version: " + VERSION);
+			unsupported();
 		Field field = source.getDeclaredField(name);
 		field.setAccessible(true);
 		return field;
+	}
+
+	private static void unsupported() {
+		throw new RuntimeException(String.format(lang.getString("unsupported"), VERSION));
 	}
 
 	private static Pkg forName(String name) {

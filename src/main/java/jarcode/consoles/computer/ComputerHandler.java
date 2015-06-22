@@ -45,6 +45,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.Lang.lang;
+
 import static jarcode.consoles.computer.ProgramUtils.*;
 
 public class ComputerHandler implements Listener {
@@ -79,18 +81,19 @@ public class ComputerHandler implements Listener {
 
 	// create default startup program
 	static {
+		File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
+				+ File.separatorChar + "startup.lua");
 		scope: try {
-			File file = new File(Consoles.getInstance().getDataFolder().getAbsolutePath()
-					+ File.separatorChar + "startup.lua");
 			if (!file.exists()) {
 				if (!file.createNewFile()) {
-					Consoles.getInstance().getLogger().warning("failed to create startup.lua file!");
+					Consoles.getInstance().getLogger().warning(String.format(lang.getString("file-create-fail"),
+							file.getAbsolutePath()));
 					break scope;
 				}
 			}
 			if (file.isDirectory()) {
-				Consoles.getInstance().getLogger().warning("startup.lua is a directory! Please " +
-						"delete it and re-make it as a file.");
+				Consoles.getInstance().getLogger().warning(String.format(lang.getString("file-create-fail"),
+						file.getAbsolutePath()));
 				break scope;
 			}
 			FileOutputStream out = new FileOutputStream(file);
@@ -110,7 +113,8 @@ public class ComputerHandler implements Listener {
 			writer.close();
 		}
 		catch (IOException e) {
-			Consoles.getInstance().getLogger().warning("Failed to create default startup.lua program:");
+			Consoles.getInstance().getLogger().warning(String.format(lang.getString("file-create-fail"),
+					file.getAbsolutePath()));
 			e.printStackTrace();
 		}
 	}
@@ -132,9 +136,9 @@ public class ComputerHandler implements Listener {
 	@SuppressWarnings("RedundantCast")
 	public static ItemStack newComputerStack(boolean glow, String hostname) {
 		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
-		meta.setDisplayName(ChatColor.GREEN + "Computer" + ChatColor.GRAY
+		meta.setDisplayName(ChatColor.GREEN + lang.getString("computer-item-name") + ChatColor.GRAY
 				+ (hostname != null ? " (" + hostname + ")" : ""));
-		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + "Place to build"));
+		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + lang.getString("computer-item-tooltip")));
 		ItemStack stack = null;
 		try {
 			stack = (ItemStack) ITEM_STACK_CREATE.newInstance(Material.STAINED_GLASS, 1, (short) 15, meta);
@@ -402,9 +406,11 @@ public class ComputerHandler implements Listener {
 	}
 
 	public void saveAll() {
-		Consoles.getInstance().getLogger().info("Saving computers...");
+		if (!Consoles.hideSaveMessages)
+			Consoles.getInstance().getLogger().info(lang.getString("saving-computers"));
 		long count = computers.stream().peek(Computer::save).count();
-		Consoles.getInstance().getLogger().info("Saved " + count + " computers");
+		if (!Consoles.hideSaveMessages)
+			Consoles.getInstance().getLogger().info(String.format(lang.getString("saved-computers"), count));
 	}
 
 	public void interact(Position2D pos, Player player, ManagedConsole console) {
@@ -457,13 +463,6 @@ public class ComputerHandler implements Listener {
 		}
 	}
 
-	@EventHandler
-	public void onCraft(CraftItemEvent e) {
-		if (isNamedComputer(e.getCurrentItem())) {
-			e.setCurrentItem(newComputerStack());
-		}
-	}
-
 	public List<Computer> getComputers() {
 		return Collections.unmodifiableList(computers);
 	}
@@ -476,7 +475,7 @@ public class ComputerHandler implements Listener {
 
 		if (getComputers(player.getUniqueId()).size() >= Consoles.maxComputers
 				&& !player.hasPermission("computer.limit.ignore")) {
-			player.sendMessage(ChatColor.RED + "You can't have more than " + Consoles.maxComputers + " computers!");
+			player.sendMessage(ChatColor.RED + String.format(lang.getString("computer-limit"),Consoles.maxComputers));
 			return false;
 		}
 
@@ -492,7 +491,7 @@ public class ComputerHandler implements Listener {
 			if (computer == null) {
 				computer = func.get();
 				hostname = null;
-				player.sendMessage(ChatColor.YELLOW + "Failed to load computer data, building factory computer...");
+				player.sendMessage(ChatColor.YELLOW + lang.getString("computer-load-fail"));
 			}
 		}
 
@@ -507,13 +506,14 @@ public class ComputerHandler implements Listener {
 				});
 				boolean r2 = ComputerData.updateHeader(hostname, (data) -> data.built = true);
 				if (!r1 || !r2)
-					Consoles.getInstance().getLogger().warning("Failed to write to metadata file for host: " + hostname);
+					Consoles.getInstance().getLogger().warning(String.format(lang.getString("metadata-write-fail"),
+							hostname));
 
 				ComputerHandler.getInstance().register(computer);
 			}
 			return true;
 		} catch (ConsoleCreateException e) {
-			player.sendMessage(ChatColor.RED + "You can't build a computer there!");
+			player.sendMessage(ChatColor.RED + lang.getString("computer-create-fail"));
 			if (Consoles.debug)
 				e.printStackTrace();
 			unregister(computer, false);
@@ -547,10 +547,6 @@ public class ComputerHandler implements Listener {
 			return zp < 0 ? BlockFace.SOUTH : BlockFace.NORTH;
 		}
 	}
-	private boolean isNamedComputer(ItemStack stack) {
-		ItemMeta meta = stack.getItemMeta();
-		return meta.getDisplayName() != null && meta.getDisplayName().startsWith(ChatColor.GREEN + "Computer");
-	}
 	private String getHostname(ItemStack stack) {
 
 		net.minecraft.server.v1_8_R3.ItemStack nms;
@@ -564,8 +560,8 @@ public class ComputerHandler implements Listener {
 
 	}
 	private boolean isComputer(ItemStack stack) {
-		ItemMeta meta = stack.getItemMeta();
-
+		if (stack.getType() != Material.STAINED_GLASS)
+			return false;
 		net.minecraft.server.v1_8_R3.ItemStack nms;
 		try {
 			nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get(stack);
@@ -573,8 +569,7 @@ public class ComputerHandler implements Listener {
 			throw new RuntimeException(e);
 		}
 		NBTTagCompound tag = nms.getTag();
-		return tag != null && meta.getDisplayName() != null && meta.getDisplayName().startsWith(ChatColor.GREEN + "Computer")
-				&& stack.getType() == Material.STAINED_GLASS && tag.hasKey("computer");
+		return tag != null && tag.hasKey("computer");
 	}
 	public boolean hostnameTaken(String hostname) {
 		return inactiveHostnames.contains(hostname) || computers.stream()

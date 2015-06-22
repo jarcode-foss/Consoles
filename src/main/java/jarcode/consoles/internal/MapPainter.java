@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 The class that handles tasks and requests for repainting and updates
@@ -33,7 +35,7 @@ public class MapPainter implements Runnable {
 			ArrayList<StackEntry> stack;
 			synchronized (LOCK) {
 				if (System.currentTimeMillis() - at > 20)
-					System.out.println("Warning, took more than 20ms to obtain rendering lock for painting thread!");
+					System.out.println(lang.getString("painter-lock1"));
 
 				while (this.stack.isEmpty()) {
 					try {
@@ -58,7 +60,7 @@ public class MapPainter implements Runnable {
 				at = System.currentTimeMillis();
 				synchronized (renderer.RENDERER_LOCK) {
 					if (System.currentTimeMillis() - at > 20)
-						System.out.println("Warning, took more than 20ms to obtain rendering lock for console!");
+						System.out.println(lang.getString("painter-lock2"));
 					if (entry.type == EntryType.TOGGLE) {
 						for (String context : entry.identifiers) {
 							renderer.getPixelBuffer().resetSwitches(context);
@@ -100,7 +102,7 @@ public class MapPainter implements Runnable {
 										at = System.currentTimeMillis();
 										renderer.paint();
 										if (System.currentTimeMillis() - at > 100)
-											System.out.println("Warning, took more than 100ms for paint (" +
+											System.out.println(lang.getString("painter-overload") + " (" +
 													(System.currentTimeMillis() - at) + "), class: " + renderer.getClass() +
 													", name: " + renderer.type + ", index: " + t + ", entry size: " +
 													entry.connections.length + ", stack size: " + stack.size()
@@ -124,7 +126,7 @@ public class MapPainter implements Runnable {
 									map.update(entry.connections[t], entry.identifiers[t]);
 								}
 								if (System.currentTimeMillis() - at > 20)
-									System.out.println("Warning, took more than 20ms to send packet!");
+									System.out.println(lang.getString("painter-packet-overload"));
 							}
 						}
 					}

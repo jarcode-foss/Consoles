@@ -4,8 +4,9 @@ import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaValue;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+
+import static jarcode.consoles.Lang.lang;
 
 public class EmbeddedGlobals extends Globals {
 
@@ -23,37 +24,41 @@ public class EmbeddedGlobals extends Globals {
 		if (str == null)
 			error("cannot index null");
 		else if (finalized.contains(get(str)))
-			error("cannot change final variable");
+			finalErr();
 		else super.set(str, value);
 	}
 	@Override
 	public void set(LuaValue arg, LuaValue value) {
 		if (finalized.contains(get(arg)))
-			error("cannot change final variable");
+			finalErr();
 		super.set(arg, value);
 	}
 	@Override
 	public void set(int i, LuaValue value) {
 		if (finalized.contains(get(i)))
-			error("cannot change final variable");
+			finalErr();
 		super.set(i, value);
 	}
+
 	@Override
 	public void set(String str, String value) {
 		if (finalized.contains(get(str)))
-			error("cannot change final variable");
+			finalErr();
 		else super.set(str, value);
 	}
 	@Override
 	public void set(int i, String value) {
 		if (finalized.contains(get(i)))
-			error("cannot change final variable");
+			finalErr();
 		super.set(i, value);
 	}
 	@Override
 	public void set(String str, int value) {
 		if (finalized.contains(get(str)))
-			error("cannot change final variable");
+			finalErr();
 		else super.set(str, value);
+	}
+	private static void finalErr() {
+		error(lang.getString("lua-final-var"));
 	}
 }

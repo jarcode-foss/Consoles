@@ -14,6 +14,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import static jarcode.consoles.Lang.lang;
+
 public class CommandDevice extends FSFile {
 
 	public CommandBlock block;
@@ -40,7 +42,7 @@ public class CommandDevice extends FSFile {
 								}
 							}
 						}
-						return "Sent to computer";
+						return lang.getString("command-sent");
 					}
 				});
 			} else throw new IllegalArgumentException("Command block already registered!");

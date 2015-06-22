@@ -7,6 +7,8 @@ import org.bukkit.block.CommandBlock;
 
 import java.lang.reflect.Field;
 
+import static jarcode.consoles.Lang.lang;
+
 // This is a vanilla command. I need to use this because command blocks send commands
 // as the console, and I need to get the command block that sent it.
 public class LinkCommand extends CommandAbstract {
@@ -34,22 +36,24 @@ public class LinkCommand extends CommandAbstract {
 
 			} catch (NoSuchFieldException | IllegalAccessException | ClassCastException e) {
 				e.printStackTrace();
-				throw new CommandException("Failed to obtain command block entity (" + e.getClass() + ":" + e.getCause() + ")");
+				throw new CommandException("Failed to obtain command block entity ("
+						+ e.getClass() + ":" + e.getCause() + ")");
 			}
 			BlockPosition pos = command.getPosition();
 			CommandBlock block = (CommandBlock) command.getWorld().getWorld()
 					.getBlockAt(pos.getX(), pos.getY(), pos.getZ()).getState();
 			if (args.length > 0) {
 				if (!ComputerHandler.getInstance().hostnameTaken(args[0]))
-					throw new CommandException("That computer doesn't exist");
+					throw new CommandException(lang.getString("command-link-fail"));
 				ComputerHandler.getInstance().request(args[0], block);
-				tile.sendMessage((new ChatComponentText("Sent link request.")));
+				tile.sendMessage((new ChatComponentText(lang.getString("command-link-sent"))));
 			}
 			else {
-				tile.sendMessage(new ChatComponentText("Usage: " + getUsage(iCommandListener)));
+				tile.sendMessage(new ChatComponentText(String.format(lang.getString("command-link-usage"),
+						getUsage(iCommandListener))));
 			}
 		}
-		else throw new CommandException("A command block has to execute this command!");
+		else throw new CommandException("invalid source");
 	}
 	// only command blocks are allowed to use this!
 	public boolean canUse(ICommandListener var1) {

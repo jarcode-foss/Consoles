@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
+import static jarcode.consoles.Lang.lang;
+
 // immutable, except for the termination state.
 public class ProgramInstance implements Runnable {
 
@@ -86,8 +88,8 @@ public class ProgramInstance implements Runnable {
 			}
 		}
 		catch (Throwable e) {
-			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  ", caused by " + e.getCause()));
-			Consoles.getInstance().getLogger().severe("Error while executing program:");
+			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  " (" + e.getCause()) + ")");
+			Consoles.getInstance().getLogger().severe(lang.getString("uncaught-program-error"));
 			if (Consoles.debug)
 				e.printStackTrace();
 		}

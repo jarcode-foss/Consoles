@@ -25,7 +25,6 @@ public class PacketUtils {
 					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPositionLook)
 					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPosition)
 					&& !(packet instanceof PacketPlayInFlying))
-				System.out.println("[PACKET] Packet from player " + name + ": " + packet.getClass());
 			return true;
 		});
 	}

@@ -47,6 +47,9 @@ computer-limit: 3
 # that may have been designated for a computer.
 command-prefix: /
 
+# If set to true, this will hide all 'Computers saving...' messages
+hide-save-messages: false
+
 # ------------------
 # Computer Functions
 # ------------------

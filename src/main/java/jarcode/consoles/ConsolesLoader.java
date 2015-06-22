@@ -11,6 +11,8 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 Alright, Consoles uses a plugin loader - which means the plugin actually loads itself. The reason
@@ -62,7 +64,7 @@ public class ConsolesLoader extends JavaPlugin {
 			map.put(plugin.getDescription().getName(), plugin);
 			plugins.add(plugin);
 		} catch (Throwable e) {
-			getLogger().severe("Failed to load underlying Consoles plugin!");
+			getLogger().severe(lang.getString("failed-load"));
 			e.printStackTrace();
 		}
 	}
@@ -88,7 +90,7 @@ public class ConsolesLoader extends JavaPlugin {
 			map.remove(getDescription().getName());
 			plugins.remove(this);
 		} catch (Throwable e) {
-			getLogger().severe("Failed to unload Consoles plugin loader!");
+			getLogger().severe(lang.getString("failed-unload"));
 			e.printStackTrace();
 		}
 	}

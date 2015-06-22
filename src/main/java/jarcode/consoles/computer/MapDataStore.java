@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static jarcode.consoles.Lang.lang;
+
 public class MapDataStore {
 
 	private static final Map<String, MapDataStore[]> levels = new HashMap<>();
@@ -69,7 +71,7 @@ public class MapDataStore {
 		}
 	}
 	public static void init(Plugin plugin, World world, int originX, int originZ) {
-		plugin.getLogger().info("loading map data for world: " + world.getName());
+		plugin.getLogger().info(String.format(lang.getString("loading-map-data"), world.getName()));
 		MapDataStore[] stores = new MapDataStore[LEVEL_COUNT];
 		for (int t = 0; t < stores.length; t++) {
 			stores[t] = new MapDataStore(world, originX, originZ, t);
@@ -79,13 +81,16 @@ public class MapDataStore {
 				File folder = new File(plugin.getDataFolder().getAbsolutePath() + File.separator + MAP_FOLDER);
 				if (!folder.exists())
 					if (!folder.mkdir())
-						plugin.getLogger().severe("Failed to make folder: " + folder.getAbsolutePath());
-				plugin.getLogger().info("map-" + t + "-" + world.getName() + ".dat does not exist, creating new file");
+						plugin.getLogger().severe(String.format(lang.getString("folder-create-fail"),
+								folder.getAbsolutePath()));
+				plugin.getLogger().info(String.format(lang.getString("file-create-fallback"),
+						"map-" + t + "-" + world.getName() + ".dat"));
 				try {
 					if (!file.createNewFile())
-						plugin.getLogger().severe("Failed to make file: " + file.getAbsolutePath());
+						plugin.getLogger().severe(String.format(lang.getString("file-create-fail"),
+								file.getAbsolutePath()));
 				} catch (IOException e) {
-					plugin.getLogger().severe("Failed to make file: " + file.getAbsolutePath());
+					plugin.getLogger().severe(String.format(lang.getString("file-create-fail"), file.getAbsolutePath()));
 					e.printStackTrace();
 				}
 			}
@@ -96,10 +101,10 @@ public class MapDataStore {
 	}
 
 	public static void save(Plugin plugin, World world) {
-		plugin.getLogger().info("Saving map data for " + world.getName());
+		plugin.getLogger().info(String.format(lang.getString("saving-map-data"), world.getName()));
 		MapDataStore[] stores = levels.get(world.getName());
 		if (stores == null) {
-			plugin.getLogger().warning("Could not find data stores for world '" + world.getName() + "', skipping");
+			plugin.getLogger().warning(String.format(lang.getString("missing-map-data"), world.getName()));
 			return;
 		}
 		for (int t = 0; t < stores.length; t++) {

@@ -34,6 +34,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static jarcode.consoles.Lang.lang;
+
 public abstract class Computer implements Runnable {
 
 	// Lua<->Java mappings
@@ -43,8 +45,6 @@ public abstract class Computer implements Runnable {
 		Lua.map(Computer::lua_messageOwner, "tellOwner");
 		ManualManager.load(Computer.class);
 	}
-
-	public static final String VERSION = "1.19.2";
 
 	static final Position2D STATUS_COMPONENT_POSITION = new Position2D(2, 2);
 	public static final Position2D ROOT_COMPONENT_POSITION = new Position2D(2, 2 + StatusBar.HEIGHT);
@@ -186,14 +186,7 @@ public abstract class Computer implements Runnable {
 		getCurrentTerminal().advanceLine();
 		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
-		String[] text = {
-				"Loading vmlinuz", null, " . ", null, " . ", null, " . ", null, " . ", null, "done\n",
-				"Loading initrd.gz", null, " . ", null, " . ", null, " . ", null, " . ", null, "done\n\n",
-				"Initializing filesystem", " . ", " . ", " . ", "done\n",
-				"Scanning devices", " . ", " . ", "\n\t[+] loaded /dev/pint0", null, "\n\t[+] loaded /dev/pcmd0\n",
-				"Loading drivers", null, " . ", null, " . ", null, " . ", null, "done\n",
-				"Blacklisting kernel modules", " . ", " . ", "done\n"
-		};
+		String[] text = lang.getString("computer-startup-messages").split("\0");
 		int i = 20;
 		for (String str : text) {
 			if (str != null) {
@@ -210,7 +203,8 @@ public abstract class Computer implements Runnable {
 					kernel = Kernel.install(Computer.this);
 					kernel.routine("install");
 				} catch (Exception e) {
-					printAfter("Failed to install kernel: " + e.getClass(), 2);
+					printAfter(String.format(lang.getString("computer-kernel-install-fail"),
+							e.getClass()), 2);
 					e.printStackTrace();
 					return;
 				}
@@ -261,7 +255,7 @@ public abstract class Computer implements Runnable {
 		try {
 			new ComputerData(this).save();
 		} catch (IOException e) {
-			Consoles.getInstance().getLogger().severe("Failed to save computer!");
+			Consoles.getInstance().getLogger().severe(lang.getString("computer-save-fail"));
 			e.printStackTrace();
 		}
 	}
@@ -312,19 +306,19 @@ public abstract class Computer implements Runnable {
 	}
 	public void requestDevice(CommandBlock block, ConsoleEventListener<ConsoleButton, ButtonEvent> listener) {
 		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();
-		ConsoleButton allow = new ConsoleButton(console, "Allow");
-		ConsoleButton deny = new ConsoleButton(console, "Deny");
+		ConsoleButton allow = new ConsoleButton(console, lang.getString("comp-allow"));
+		ConsoleButton deny = new ConsoleButton(console, lang.getString("comp-deny"));
 		Location loc = block.getLocation();
-		Position2D pos = dialog(String.format("Command block at (%s,%d,%d,%d) wants to connect to this console",
+		Position2D pos = dialog(String.format(lang.getString("computer-command-connect"),
 				loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
 				, allow, deny);
 		allow.addEventListener(event -> {
-			command.getCommandBlock().sendMessage(new ChatComponentText("Connection accepted"));
+			command.getCommandBlock().sendMessage(new ChatComponentText(lang.getString("command-connection-accept")));
 			addDeviceFile("cmd", new CommandDevice(block));
 			console.removeComponent(pos);
 		});
 		deny.addEventListener(event -> {
-			command.getCommandBlock().sendMessage(new ChatComponentText("Computer denied connection"));
+			command.getCommandBlock().sendMessage(new ChatComponentText(lang.getString("command-connection-deny")));
 			console.removeComponent(pos);
 		});
 		if (listener != null)
@@ -424,7 +418,7 @@ public abstract class Computer implements Runnable {
 		return dialog;
 	}
 	public void showDialog(String text) {
-		ConsoleButton button = new ConsoleButton(console, "Ok");
+		ConsoleButton button = new ConsoleButton(console, lang.getString("comp-ok"));
 		final ConsoleDialog dialog = ConsoleDialog.show(console, text, button);
 		button.addEventListener(event -> console.removeComponent(dialog));
 		console.repaint();
@@ -450,12 +444,12 @@ public abstract class Computer implements Runnable {
 		int v = view;
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
 			setScreenIndex(v);
-			status("switched to session: " + (v + 1));
+			status(String.format(lang.getString("computer-session-switch"), (v + 1)));
 		});
 		return true;
 	}
 	public void showDialogWithClose(String text, ConsoleComponent... children) {
-		ConsoleButton button = new ConsoleButton(console, "Close");
+		ConsoleButton button = new ConsoleButton(console, lang.getString("comp-close"));
 		ConsoleComponent[] arr = new ConsoleComponent[children.length + 1];
 		arr[0] = button;
 		System.arraycopy(children, 0, arr, 1, children.length);

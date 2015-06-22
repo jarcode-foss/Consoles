@@ -87,8 +87,6 @@ public class Kernel extends FSProvidedProgram {
 		activities.put("install", new FSProvidedProgram() {
 			@Override
 			public void run(String str, Computer computer) throws Exception {
-				Consoles.getInstance().getLogger().info("Flashing new computer: " + computer.getHostname()
-						+ ", owner:" + computer.getOwner());
 				FSFolder root = computer.getRoot();
 
 				FSFolder home = new FSFolder();

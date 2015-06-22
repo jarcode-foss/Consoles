@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static jarcode.consoles.Lang.lang;
+
 /*
 
 Handler class for managing, loading, and saving image consoles.
@@ -77,11 +79,11 @@ public class ImageConsoleHandler {
 		if (!file.exists()) {
 			File folder = plugin.getDataFolder();
 			if (!folder.exists() && !folder.mkdir()) {
-				plugin.getLogger().warning("Could not create plugin folder");
+				plugin.getLogger().warning(lang.getString("plugin-folder-create-fail"));
 			}
 			try {
 				if (!file.createNewFile()) {
-					plugin.getLogger().warning("Could not create JSON scoreboard file");
+					plugin.getLogger().warning(lang.getString("image-json-error"));
 				}
 				else {
 					FileOutputStream fos = null;
@@ -105,7 +107,7 @@ public class ImageConsoleHandler {
 			}
 			catch (IOException e) {
 				e.printStackTrace();
-				plugin.getLogger().warning("Could not create JSON images file");
+				plugin.getLogger().warning(lang.getString("image-json-error"));
 			}
 		}
 		instance = this;
@@ -147,7 +149,7 @@ public class ImageConsoleHandler {
 				try {
 					imageConsoles.add(new ImageConsole(new URL(urls.get(t)), face, loc, false));
 				} catch (MalformedURLException e) {
-					Bukkit.getLogger().severe("Could not load image console: ");
+					Bukkit.getLogger().severe(lang.getString("image-load-fail"));
 					e.printStackTrace();
 				}
 			}
