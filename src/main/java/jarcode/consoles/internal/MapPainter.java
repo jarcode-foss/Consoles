@@ -103,10 +103,11 @@ public class MapPainter implements Runnable {
 										renderer.paint();
 										if (System.currentTimeMillis() - at > 100)
 											System.out.println(lang.getString("painter-overload") + " (" +
-													(System.currentTimeMillis() - at) + "), class: " + renderer.getClass() +
-													", name: " + renderer.type + ", index: " + t + ", entry size: " +
-													entry.connections.length + ", stack size: " + stack.size()
-													+ ", identifiers: " + entry.identifiers[t]);
+													(System.currentTimeMillis() - at) + "), class: "
+													+ renderer.getClass() + ", name: " + renderer.type +
+													", index: " + t + ", entry size: " + entry.connections.length
+													+ ", stack size: " + stack.size() + ", identifiers: "
+													+ entry.identifiers[t]);
 									}
 									catch (Throwable e) {
 										e.printStackTrace();
@@ -115,7 +116,8 @@ public class MapPainter implements Runnable {
 										context = null;
 									}
 									paintedContexts.add(entry.identifiers[t]);
-									renderer.getPixelBuffer().switchRepaint(context, true);
+									// add this context back to our list of contexts we have already painted for
+									renderer.getPixelBuffer().switchRepaint(context);
 								}
 								at = System.currentTimeMillis();
 								for (ConsoleMapRenderer map : renderer.renderers()) {
