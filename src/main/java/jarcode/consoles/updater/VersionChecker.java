@@ -1,4 +1,4 @@
-package jarcode.updater;
+package jarcode.consoles.updater;
 
 import jarcode.consoles.Consoles;
 import org.apache.commons.io.IOUtils;

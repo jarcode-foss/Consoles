@@ -10,10 +10,9 @@ import jarcode.consoles.computer.MapDataStore;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
-import jarcode.updater.VersionChecker;
+import jarcode.consoles.updater.VersionChecker;
 import org.bukkit.event.Listener;
 
-import java.util.ResourceBundle;
 import java.util.function.Supplier;
 
 /*
