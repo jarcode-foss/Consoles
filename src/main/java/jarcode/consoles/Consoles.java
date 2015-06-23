@@ -46,6 +46,8 @@ public class Consoles extends WrappedPlugin {
 	public static boolean debug = false;
 	// hide save messages
 	public static boolean hideSaveMessages = false;
+	// updates
+	public static boolean checkForUpdates = true;
 
 	static {
 		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
@@ -91,6 +93,7 @@ public class Consoles extends WrappedPlugin {
 		computersEnabled = getConfig().getBoolean("computers-enabled", true);
 		debug = getConfig().getBoolean("debug-mode", false);
 		hideSaveMessages = getConfig().getBoolean("hide-save-messages", false);
+		checkForUpdates = getConfig().getBoolean("check-for-updates", true);
 		allowCrafting = allowCrafting && computersEnabled;
 
 		ConsoleHandler.getInstance().local = !forward;
@@ -115,7 +118,8 @@ public class Consoles extends WrappedPlugin {
 
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
-		getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 80L, 5 * 60 * 20L);
+		if (checkForUpdates)
+			getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 80L, 20 * 60 * 20L);
 	}
 
 	@Override
