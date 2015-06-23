@@ -20,7 +20,7 @@
     <distributionManagement>
         <repository>
             <id>jarcode-site</id>
-            <url>sftp://jarcode.ca/maven2</url>
+            <url>sftp://jarcode.ca/home/jarcode/maven2</url>
         </repository>
     </distributionManagement>
     <build>
