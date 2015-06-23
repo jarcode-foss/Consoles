@@ -10,6 +10,7 @@ import jarcode.consoles.computer.MapDataStore;
 import jarcode.consoles.computer.interpreter.Lua;
 import jarcode.consoles.util.MapInjector;
 import jarcode.consoles.util.sync.SyncTaskScheduler;
+import jarcode.updater.VersionChecker;
 import org.bukkit.event.Listener;
 
 import java.util.ResourceBundle;
@@ -114,6 +115,7 @@ public class Consoles extends WrappedPlugin {
 
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
+		getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 80L, 5 * 60 * 20L);
 	}
 
 	@Override
