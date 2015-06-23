@@ -2,11 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <properties>
+        <!-- the version for the main Consoles module -->
+        <global.version>1.9-beta</global.version>
+    </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>jarcode</groupId>
     <artifactId>mc-consoles</artifactId>
     <packaging>pom</packaging>
-    <version>1.8-beta</version>
+    <version>${global.version}</version>
     <modules>
         <module>bungee</module>
     </modules>

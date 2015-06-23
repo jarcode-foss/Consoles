@@ -45,17 +45,6 @@ public class ConsoleMessageHandler implements Listener {
 			}
 		}
 	}
-	public void isLookingAtConsole(ProxiedPlayer player, Consumer<Boolean> response) {
-		if (consumers.containsKey(player.getUniqueId())) {
-			Consumer<Boolean> consumer = consumers.get(player.getUniqueId());
-			consumers.put(player.getUniqueId(), (bool) -> {
-				consumer.accept(bool);
-				response.accept(bool);
-			});
-		}
-		else consumers.put(player.getUniqueId(), response);
-		execute(player, "check");
-	}
 	@EventHandler
 	@SuppressWarnings("unused")
 	public void onPlayerDisconnect(PlayerDisconnectEvent event) {
