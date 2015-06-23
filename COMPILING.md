@@ -8,16 +8,7 @@
 
 ### Compiling
 
-Maven will handle the rest of the work for you; running build.sh (for Linux and OSX) or build.bat (Windows) will produce artifacts if the source code compiles.
+Maven will handle the rest of the work for you; running `mvn package` will generate artifacts in the modules' respective target directories. Consoles will have an usable plugin jar in the `craftbukkit/target/final` folder, which has all the dependencies it needs to function.
 
-**note:** you may have to run `chmod a+x build.sh` to change file permissions before running the build script (Linux only).
-
-You will find the final .jar files for BungeeCord and Bukkit in the following folders:
-
-- `PROJECT/target/bukkit-final`
-- `PROJECT/target/bungee-final`
-
-Where `PROJECT` is the root repository folder, containing the `pom.xml` file.
-
-Do not try to use the jar files that are produced in the `target` folder, these artifacts _do not_ have dependencies packaged with them, so they will not work in a server.
+You can use the builds for bungee straight from the `bungee/target` folder (it does not require packaged dependencies), but if you try to use the jars in the `craftbukkit/target` folder (instead of the jars in the `final` folder`), you will be missing a lot of dependencies that don't come with craftbukkit/spigot!
 

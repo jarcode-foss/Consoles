@@ -19,14 +19,11 @@ import java.util.function.Predicate;
 public class PacketUtils {
 	public static boolean debugPackets(Player player) {
 		final String name = player.getName();
-		return registerInListener(Packet.class, player, packet -> {
-			if (!(packet instanceof PacketPlayInKeepAlive)
-					&& !(packet instanceof PacketPlayInFlying.PacketPlayInLook)
-					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPositionLook)
-					&& !(packet instanceof PacketPlayInFlying.PacketPlayInPosition)
-					&& !(packet instanceof PacketPlayInFlying))
-			return true;
-		});
+		return registerInListener(Packet.class, player, packet -> !(packet instanceof PacketPlayInKeepAlive)
+				&& !(packet instanceof PacketPlayInFlying.PacketPlayInLook)
+				&& !(packet instanceof PacketPlayInFlying.PacketPlayInPositionLook)
+				&& !(packet instanceof PacketPlayInFlying.PacketPlayInPosition)
+				&& !(packet instanceof PacketPlayInFlying));
 	}
 	/**
 	 * Register a listener for an incoming packet type. The type may be abstract.
