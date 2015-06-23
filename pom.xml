@@ -49,6 +49,7 @@
                 <configuration>
                     <classifier>bukkit</classifier>
                 </configuration>
+                <inherited>false</inherited>
             </plugin>
 
             <plugin>
@@ -77,6 +78,7 @@
                         </configuration>
                     </execution>
                 </executions>
+                <inherited>false</inherited>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -98,18 +100,9 @@
                             <packages>jarcode.consoles.api</packages>
                         </group>
                     </groups>
-                    <sourceFileExcludes>
-                        <!-- For some reason, I can't produce docs for some of these classes -->
-                        <exclude>jarcode/consoles/util/**</exclude>
-                        <exclude>jarcode/consoles/*.java</exclude>
-                        <exclude>jarcode/consoles/computer/**</exclude>
-                        <exclude>jarcode/consoles/bungee/**</exclude>
-                        <exclude>jarcode/bungee/**</exclude>
-                        <exclude>jarcode/consoles/event/**</exclude>
-                        <exclude>jarcode/consoles/command/**</exclude>
-                    </sourceFileExcludes>
                     <failOnError>false</failOnError>
                 </configuration>
+                <inherited>false</inherited>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -127,6 +120,7 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                 </configuration>
+                <inherited>false</inherited>
             </plugin>
             <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
