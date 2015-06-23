@@ -5,7 +5,26 @@ License: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
 ### Maven Repository
 
-The maven repository is no longer up. If you would like to host a maven repository for this project, let me know.
+Add this repository in your `pom.xml`:
+
+	<repositories>
+        <repository>
+            <id>jarcode-repo</id>
+            <url>http://jarcode.ca/maven2</url>
+        </repository>
+    </repositories>
+
+And then add the following dependency (where `VERSION` would be a valid version of Consoles, `1.8-beta` and up):
+
+    <dependency>
+        <groupId>jarcode</groupId>
+        <artifactId>mc-consoles</artifactId>
+        <version>VERSION</version>
+        <type>jar</type>
+        <scope>provided</scope>
+    </dependency>
+
+credit to wolfmitchell for website and repository hosting!
 
 The API provides:
 
