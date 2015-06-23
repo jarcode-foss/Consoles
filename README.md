@@ -26,6 +26,10 @@ And then add the following dependency (where `VERSION` would be a valid version 
 
 credit to wolfmitchell for website and repository hosting!
 
+### Builds
+
+I also deploy jars to the maven repository that have dependencies packed with them, which can be used as working builds of the plugin. Check out my [module browser](http://jarcode.ca/modules.php) on my website to browse through releases of Consoles (and other projects).
+
 ### API Overview
 
 The API provides:
