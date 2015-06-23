@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <properties>
         <!-- the version for the main Consoles module -->
-        <global.version>1.9-beta</global.version>
+        <global.version>1.10-beta</global.version>
     </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>jarcode</groupId>

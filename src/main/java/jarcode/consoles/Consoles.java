@@ -118,7 +118,7 @@ public class Consoles extends WrappedPlugin {
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
 		if (checkForUpdates)
-			getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 80L, 20 * 60 * 20L);
+			getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 30 * 20L, 20 * 60 * 20L);
 	}
 
 	@Override
