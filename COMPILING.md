@@ -21,5 +21,3 @@ Where `PROJECT` is the root repository folder, containing the `pom.xml` file.
 
 Do not try to use the jar files that are produced in the `target` folder, these artifacts _do not_ have dependencies packaged with them, so they will not work in a server.
 
-Also, the `build.sh` has the additional functionality of packaging the final jars into a .zip file at `target/Consoles.zip`, the `.bat` build script does not do this.
-
