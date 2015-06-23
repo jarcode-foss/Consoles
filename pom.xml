@@ -132,9 +132,11 @@
                         </goals>
                         <configuration>
                             <file>${project.build.directory}/final/${project.artifactId}-${project.version}-jar-with-dependencies.jar</file>
+                            <files>${project.build.directory}/${project.artifactId}-${project.version}.jar</files>
                         </configuration>
                     </execution>
                 </executions>
+                <inherited>false</inherited>
             </plugin>
         </plugins>
         <extensions>
