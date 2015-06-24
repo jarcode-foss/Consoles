@@ -8,7 +8,6 @@
         <version>${global.version}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>1.0a</version>
     <artifactId>bungee-consoles</artifactId>
     <description>The BungeeCord plugin module for the Consoles plugin.</description>
     <distributionManagement>
