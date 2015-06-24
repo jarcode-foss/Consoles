@@ -1,6 +1,8 @@
 package ca.jarcode.consoles;
 
 import ca.jarcode.classloading.loader.MinecraftVersionModifier;
+import ca.jarcode.classloading.loader.WrappedClassLoader;
+import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.classloading.loader.WrappedPluginLoader;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -46,7 +48,16 @@ public class ConsolesLoader extends JavaPlugin {
 	{
 		// inject our plugin loader
 		WrappedPluginLoader loader = WrappedPluginLoader.inject(this,
-				new MinecraftVersionModifier(this, COMPILED_VERSION));
+
+				// these are 'inherited' classes, because we replace the normal plugin class loader,
+				// causing our loader to be higher in the class loader tree, we have to pass references
+				// to classes we want to remain accessible by the new class loader.
+
+				// We don't have to do this for classes we haven't used yet, so only put classes here
+				// that need to be accessed by both the loader and Consoles itself.
+				new Class[] {
+						Lang.class
+				}, new MinecraftVersionModifier(this, COMPILED_VERSION));
 		try {
 			// load plugin through wrapper loader (direct loading)
 			Plugin plugin = loader.loadPlugin(this.getFile());

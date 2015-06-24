@@ -1,5 +1,6 @@
 package ca.jarcode.classloading.loader;
 
+import ca.jarcode.consoles.Lang;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -28,17 +29,7 @@ into the JVM as classes need to be resolved.
  */
 public final class WrappedClassLoader extends ClassLoader {
 
-	private static final HashMap<String, Class<?>> LOOKUP_TABLE = new HashMap<>();
-
-	static {
-		map(WrappedPlugin.class);
-		map(WrappedPluginLoader.class);
-		map(WrappedClassLoader.class);
-	}
-
-	private static void map(Class<?> type) {
-		LOOKUP_TABLE.put(type.getName(), type);
-	}
+	private final HashMap<String, Class<?>> inherited = new HashMap<>();
 
 	// These are mappings from the qualified java class name to the path of the class in the jar
 	private Map<String, String> classMap = new HashMap<>();
@@ -59,9 +50,12 @@ public final class WrappedClassLoader extends ClassLoader {
 
 	@SuppressWarnings("unchecked")
 	public WrappedClassLoader(InputStream in, WrappedPluginLoader loader, PluginDescriptionFile description,
-	                          File dataFolder, File file, ClassModifier... modifiers)
+	                          File dataFolder, File file, Class[] inheritedClasses, ClassModifier... modifiers)
 			throws InvalidPluginException, MalformedURLException {
 		super(WrappedClassLoader.class.getClassLoader().getParent());
+		Arrays.asList(inheritedClasses).forEach((t) -> inherited.put(t.getName(), t));
+		Arrays.asList(WrappedPlugin.class, WrappedPluginLoader.class, WrappedClassLoader.class)
+				.forEach((t) -> inherited.put(t.getName(), t));
 		this.loader = loader;
 		this.server = loader.server;
 		this.description = description;
@@ -187,8 +181,8 @@ public final class WrappedClassLoader extends ClassLoader {
 	public Class loadClass(String name) throws ClassNotFoundException {
 		try {
 			// prioritize classes under this loader
-			if (LOOKUP_TABLE.containsKey(name)) {
-				return LOOKUP_TABLE.get(name);
+			if (inherited.containsKey(name)) {
+				return inherited.get(name);
 			}
 			return findClass(name);
 		} catch (ClassNotFoundException e) {

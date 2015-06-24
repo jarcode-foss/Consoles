@@ -60,7 +60,7 @@ public final class WrappedPluginLoader implements PluginLoader {
 		return null;
 	}
 
-	public static WrappedPluginLoader inject(Plugin source, ClassModifier... modifiers) {
+	public static WrappedPluginLoader inject(Plugin source, Class[] inherited, ClassModifier... modifiers) {
 
 		final Server server = source.getServer();
 
@@ -71,7 +71,7 @@ public final class WrappedPluginLoader implements PluginLoader {
 				return (WrappedPluginLoader) loader;
 			}
 		}
-		WrappedPluginLoader loader = new WrappedPluginLoader(server, modifiers);
+		WrappedPluginLoader loader = new WrappedPluginLoader(server, inherited, modifiers);
 
 		// Inject the loader with its file filters
 		for (Pattern pattern : loader.getPluginFileFilters()) {
@@ -97,12 +97,16 @@ public final class WrappedPluginLoader implements PluginLoader {
 
 	// This is used to steal methods from the default plugin loader
 	private final JavaPluginLoader javaPluginLoader;
+
+	private final Class[] inherited;
+
 	@SuppressWarnings("deprecation")
-	public WrappedPluginLoader(Server instance, ClassModifier... modifiers) {
+	public WrappedPluginLoader(Server instance, Class[] inherited, ClassModifier... modifiers) {
 		Validate.notNull(instance, "Server cannot be null");
 		this.server = instance;
 		this.javaPluginLoader = new JavaPluginLoader(instance);
 		this.modifiers = modifiers;
+		this.inherited = inherited;
 	}
 
 	public PluginDescriptionFile getPluginDescription(File file) throws InvalidDescriptionException {
@@ -282,7 +286,7 @@ public final class WrappedPluginLoader implements PluginLoader {
 
 		WrappedClassLoader loader;
 		try {
-			loader = new WrappedClassLoader(is, this, description, dataFolder, file, modifiers);
+			loader = new WrappedClassLoader(is, this, description, dataFolder, file, inherited, modifiers);
 		}
 		catch (InvalidPluginException ex) {
 			throw ex;
