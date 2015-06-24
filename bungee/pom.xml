@@ -7,7 +7,7 @@
         <groupId>ca.jarcode</groupId>
         <version>${global.version}</version>
     </parent>
-    <version>1.0${global.version.type}</version>
+    <version>1.0${global.version.suffix}</version>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>bungee-consoles</artifactId>
     <description>The BungeeCord plugin module for the Consoles plugin.</description>
