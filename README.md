@@ -5,24 +5,7 @@ License: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
 ### Maven Repository
 
-Add this repository in your `pom.xml`:
-
-	<repositories>
-        <repository>
-            <id>jarcode-repo</id>
-            <url>http://jarcode.ca/maven2</url>
-        </repository>
-    </repositories>
-
-And then add the following dependency (where `VERSION` would be a valid version of Consoles, `1.8-beta` and up):
-
-    <dependency>
-        <groupId>jarcode</groupId>
-        <artifactId>mc-consoles</artifactId>
-        <version>VERSION</version>
-        <type>jar</type>
-        <scope>provided</scope>
-    </dependency>
+There is a maven repository up at [jarcode.ca/maven2](http://jarcode.ca/maven2), and you can view all the maven modules for consoles [in the repository browser](http://jarcode.ca/modules.php?m=ca_jarcode_mc-consoles).
 
 credit to wolfmitchell for website and repository hosting!
 
