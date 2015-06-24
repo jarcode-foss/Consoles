@@ -2,4 +2,4 @@
  load: STARTUP
  version: ${project.version}
  author: Jarcode
- main: jarcode.consoles.ConsolesLoader
+ main: ca.jarcode.consoles.ConsolesLoader
