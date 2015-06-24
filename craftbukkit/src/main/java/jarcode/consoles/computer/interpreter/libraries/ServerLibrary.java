@@ -78,7 +78,7 @@ public class ServerLibrary {
 			Bukkit.createWorld(new WorldCreator(name));
 			return true;
 		}
-		else return false;
+		else return false ;
 	}
 	private Plugin findPlugin(String name) {
 		for (Plugin p : Bukkit.getPluginManager().getPlugins()) {
