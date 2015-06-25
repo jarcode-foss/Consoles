@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static ca.jarcode.consoles.Lang.lang;
 
@@ -21,8 +22,24 @@ public class VersionChecker {
 	private static final Function<String, String> URL_PROVIDER =
 			(module) -> "http://jarcode.ca/versioncheck.php?m=" + module.replace(".", "_");
 
-	public static void check() {
+	private static Supplier<Thread> threadSupplier = () -> new Thread(VersionChecker::run);
+	private static Thread currentCheck = null;
+	private static int task = -1;
 
+	public static void check() {
+		if (currentCheck == null || !currentCheck.isAlive()) {
+			currentCheck = threadSupplier.get();
+			currentCheck.start();
+		}
+		else if (task == -1) {
+			task = Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(), () -> {
+				task = -1;
+				check();
+			}, 400L);
+		}
+	}
+
+	public static void run() {
 		String data = null;
 		int response = 0;
 		try {
