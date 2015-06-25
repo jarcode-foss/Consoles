@@ -77,7 +77,6 @@ public class Consoles extends WrappedPlugin {
 	public void onEnable() {
 
 		Lua.killAll = false; // if this plugin was reloaded
-		MapDataStore.init(this);
 		saveDefaultConfig();
 
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
@@ -94,6 +93,9 @@ public class Consoles extends WrappedPlugin {
 		hideSaveMessages = getConfig().getBoolean("hide-save-messages", false);
 		checkForUpdates = getConfig().getBoolean("check-for-updates", true);
 		allowCrafting = allowCrafting && computersEnabled;
+
+		if (computersEnabled)
+			MapDataStore.init(this);
 
 		ConsoleHandler.getInstance().local = !forward;
 
