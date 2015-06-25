@@ -443,7 +443,7 @@ public class ComputerHandler implements Listener {
 					for (int t = 0; t < inv.getSize(); t++) {
 
 						ItemStack stack = inv.getItem(t);
-						if (isComputer(stack) && getHostname(stack).equals(hostname)) {
+						if (stack != null && isComputer(stack) && getHostname(stack).equals(hostname)) {
 							if (stack.getAmount() >= 2) {
 								stack.setAmount(stack.getAmount() - 1);
 								inv.setItem(t, stack);
