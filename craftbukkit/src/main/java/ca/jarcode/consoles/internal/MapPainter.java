@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.Consoles;
 import net.minecraft.server.v1_8_R3.PlayerConnection;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
@@ -102,7 +103,8 @@ public class MapPainter implements Runnable {
 										at = System.currentTimeMillis();
 										renderer.paint();
 										if (System.currentTimeMillis() - at > 100)
-											System.out.println(lang.getString("painter-overload") + " (" +
+											Consoles.getInstance().getLogger()
+													.warning(lang.getString("painter-overload") + " (" +
 													(System.currentTimeMillis() - at) + "), class: "
 													+ renderer.getClass() + ", name: " + renderer.type +
 													", index: " + t + ", entry size: " + entry.connections.length
