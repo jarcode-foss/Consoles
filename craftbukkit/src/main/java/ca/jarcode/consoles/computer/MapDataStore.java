@@ -117,6 +117,9 @@ public class MapDataStore {
 	private static void loadFor(MapDataStore store, File file) {
 		try (FileInputStream in = new FileInputStream(file)) {
 			DataInputStream din = new DataInputStream(in);
+			// error suppression for blank files.
+			// I still need to fix this bug.
+			if (din.available() == 0) return;
 			int amt = din.readInt();
 			while (amt > 0) {
 				int x = din.readInt();
@@ -134,8 +137,7 @@ public class MapDataStore {
 	}
 
 	private static void saveFor(MapDataStore store, File file) {
-		try (FileOutputStream out = new FileOutputStream(file)){
-			DataOutputStream dout = new DataOutputStream(out);
+		try (DataOutputStream dout = new DataOutputStream(new FileOutputStream(file))) {
 			dout.writeInt(store.map.size());
 			for (Map.Entry<Position2D, ChunkMapper.PreparedMapSection> entry : store.map.entrySet()) {
 				dout.writeInt(entry.getKey().getX());
@@ -144,7 +146,6 @@ public class MapDataStore {
 					for (int j = 0; j < 128; j++)
 						dout.writeByte(entry.getValue().colors[t + (j * 128)]);
 			}
-			dout.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
