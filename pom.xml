@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <properties>
         <!-- Consoles version -->
-        <global.version.number>1.8-beta</global.version.number>
+        <global.version.number>1.8a-beta</global.version.number>
         <!-- the release type, set to '-SNAPSHOT' via commandline to work with snapshots -->
         <global.version.suffix/>
         <!-- full version string -->
