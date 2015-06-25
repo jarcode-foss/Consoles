@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>mc-consoles</artifactId>
     <version>${global.version}</version>
-    <description>The main plugin module for the Consoles plugin.</description>
+    <description>Craftbukkit plugin and API for working with programmable computers and map canvases</description>
     <build>
         <resources>
             <resource>

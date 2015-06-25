@@ -10,7 +10,7 @@
     <version>1.0${global.version.suffix}</version>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>bungee-consoles</artifactId>
-    <description>The BungeeCord plugin module for the Consoles plugin.</description>
+    <description>The BungeeCord plugin module for the Consoles bukkit plugin.</description>
     <distributionManagement>
         <repository>
             <id>jarcode-site</id>
