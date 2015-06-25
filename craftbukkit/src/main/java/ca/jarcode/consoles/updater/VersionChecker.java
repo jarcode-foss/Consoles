@@ -42,7 +42,11 @@ public class VersionChecker {
 		}
 		if (data != null) {
 			data = data.replace("\n", "").trim();
-			if (!Consoles.getInstance().getDescription().getVersion().equals(data)) {
+			String version = Consoles.getInstance().getDescription().getVersion();
+			if (version.endsWith("-SNAPSHOT")) {
+				version = version.substring(0, version.length() - 9);
+			}
+			if (!version.equals(data)) {
 				final String finalData = data;
 				Bukkit.getOnlinePlayers().stream()
 						.filter(player -> player.isOp() || player.hasPermission(PERMISSION)).forEach(player -> {
