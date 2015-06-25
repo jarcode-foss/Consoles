@@ -186,7 +186,7 @@ public abstract class Computer implements Runnable {
 		getCurrentTerminal().advanceLine();
 		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
-		String[] text = lang.getString("computer-startup-messages").split("\0");
+		String[] text = lang.getString("computer-startup-messages").split("\r");
 		int i = 20;
 		for (String str : text) {
 			if (str != null) {

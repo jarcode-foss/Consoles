@@ -17,7 +17,7 @@ import static ca.jarcode.consoles.Lang.lang;
 public class VersionChecker {
 
 	private static final String PERMISSION = "consoles.update";
-	private static final String MODULE = "jarcode.mc-consoles";
+	private static final String MODULE = "ca.jarcode.mc-consoles";
 	private static final Function<String, String> URL_PROVIDER =
 			(module) -> "http://jarcode.ca/versioncheck.php?m=" + module.replace(".", "_");
 

@@ -483,6 +483,9 @@ public class ComputerHandler implements Listener {
 
 		Supplier<ManagedComputer> func = () -> new ManagedComputer(findHostname(player), player.getUniqueId());
 
+		if (hostname.isEmpty())
+			hostname = null;
+
 		if (hostname == null)
 			computer = func.get();
 		else {
@@ -591,10 +594,11 @@ public class ComputerHandler implements Listener {
 	}
 	@EventHandler
 	public void onPluginDisable(PluginDisableEvent e) {
-		trackedBlocks.keySet().stream().map(Location::getBlock).forEach(b -> {
-			if (b != null && b.getType() != Material.REDSTONE_BLOCK)
-				b.setType(Material.REDSTONE_BLOCK);
-		});
+		if (e.getPlugin() instanceof Consoles)
+			trackedBlocks.keySet().stream().map(Location::getBlock).forEach(b -> {
+				if (b != null && b.getType() != Material.REDSTONE_BLOCK)
+					b.setType(Material.REDSTONE_BLOCK);
+			});
 	}
 	public void unregister(Computer computer, boolean delete) {
 		computers.remove(computer);
