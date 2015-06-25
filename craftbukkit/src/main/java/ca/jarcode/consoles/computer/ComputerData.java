@@ -124,7 +124,7 @@ public class ComputerData {
 	}
 
 	// loads and instantiates all the computers currently saved to disk
-	public static List<Computer> makeAll() {
+	public static List<Computer> makeAll(Consumer<String> inactiveHandler) {
 		Consoles.getInstance().getLogger().info("Loading computers...");
 		File[] files = computerFolder.listFiles();
 		List<Computer> list = new ArrayList<>();
@@ -137,6 +137,9 @@ public class ComputerData {
 						if (data != null) {
 							list.add(data.toComputer(true));
 							loaded++;
+						}
+						else {
+							inactiveHandler.accept(entry.getName());
 						}
 					}
 					catch (IOException e) {
@@ -195,6 +198,7 @@ public class ComputerData {
 		if (target.exists() && target.isDirectory()) {
 			try {
 				ComputerData data = fromFolder(target, null);
+				if (data == null) return null;
 				return data.toComputer(false);
 			}
 			catch (IOException e) {

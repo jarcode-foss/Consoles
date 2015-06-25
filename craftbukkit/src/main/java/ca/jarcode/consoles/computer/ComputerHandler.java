@@ -167,7 +167,7 @@ public class ComputerHandler implements Listener {
 	}
 
 	ShapedRecipe computerRecipe;
-	private ArrayList<String> inactiveHostnames = new ArrayList<>();
+	private ArrayList<String> inactiveHosts = new ArrayList<>();
 	private ArrayList<Computer> computers = new ArrayList<>();
 	private HashMap<String, CommandBlock> linkRequests = new HashMap<>();
 	private HashMap<Location, Computer> trackedBlocks = new LinkedHashMap<>();
@@ -189,7 +189,7 @@ public class ComputerHandler implements Listener {
 		ComputerData.init();
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(Consoles.getInstance(), this::saveAll, 6000, 6000);
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
-				() -> computers.addAll(ComputerData.makeAll()));
+				() -> computers.addAll(ComputerData.makeAll(inactiveHosts::add)));
 	}
 
 	// updates the computer's cache of tracked blocks that are behind it, re-indexing the array.
@@ -454,7 +454,7 @@ public class ComputerHandler implements Listener {
 				}
 
 				Bukkit.getScheduler().scheduleSyncDelayedTask(Consoles.getInstance(),
-						() -> e.getBlock().setType(Material.AIR));
+						() -> e.getBlockPlaced().setType(Material.AIR));
 			}
 			else {
 				e.setCancelled(true);
@@ -571,7 +571,7 @@ public class ComputerHandler implements Listener {
 		return tag != null && tag.hasKey("computer");
 	}
 	public boolean hostnameTaken(String hostname) {
-		return inactiveHostnames.contains(hostname) || computers.stream()
+		return inactiveHosts.contains(hostname) || computers.stream()
 				.filter(comp -> comp.getHostname().equals(hostname.toLowerCase()))
 				.findFirst()
 				.isPresent();
@@ -586,8 +586,8 @@ public class ComputerHandler implements Listener {
 	}
 	public void register(Computer computer) {
 		computers.add(computer);
-		if (inactiveHostnames.contains(computer.getHostname()))
-			inactiveHostnames.remove(computer.getHostname());
+		if (inactiveHosts.contains(computer.getHostname()))
+			inactiveHosts.remove(computer.getHostname());
 	}
 	@EventHandler
 	public void onPluginDisable(PluginDisableEvent e) {
@@ -611,8 +611,8 @@ public class ComputerHandler implements Listener {
 		}
 		if (delete && !ComputerData.delete(computer.getHostname()))
 			Consoles.getInstance().getLogger().warning("Failed to remove computer: " + computer.getHostname());
-		if (!delete && !inactiveHostnames.contains(computer.getHostname()))
-			inactiveHostnames.add(computer.getHostname());
+		if (!delete && !inactiveHosts.contains(computer.getHostname()))
+			inactiveHosts.add(computer.getHostname());
 		if (!delete)
 			ComputerData.updateHeader(computer.getHostname(), (data) -> data.built = false);
 	}

@@ -4,6 +4,7 @@ import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.computer.ManagedComputer;
+import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.internal.ConsoleCreateException;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -50,7 +51,16 @@ public class CommandComputer extends CommandBase {
 			computer.destroy(true);
 		}
 		else if (args[0].equalsIgnoreCase("give")) {
-			player.getInventory().addItem(ComputerHandler.newComputerStack());
+			if (args.length >= 2) {
+				String host = args[1];
+				if (!FSBlock.allowedBlockName(host)) {
+					sender.sendMessage(ChatColor.RED + "Invalid hostname");
+					return true;
+				}
+				player.getInventory().addItem(ComputerHandler.newComputerStack(true, host));
+			}
+			else
+				player.getInventory().addItem(ComputerHandler.newComputerStack());
 		}
 		else if (args[0].equalsIgnoreCase("create") && args.length >= 3) {
 			BlockFace face;
@@ -104,10 +114,10 @@ public class CommandComputer extends CommandBase {
 				location.getBlockY(), location.getBlockZ(), location.getWorld().getName());
 	}
 	private void printHelp(CommandSender sender) {
-		sender.sendMessage(ChatColor.GREEN + "Computer command usage:");
+		sender.sendMessage(ChatColor.GREEN + "Computer command usage" + ChatColor.GRAY + " [] = required, {} = optional");
 		sender.sendMessage(ChatColor.BLUE + "/computer list" + ChatColor.WHITE + " - " +
 				"shows all your computers");
-		sender.sendMessage(ChatColor.BLUE + "/computer give" + ChatColor.WHITE + " - " +
+		sender.sendMessage(ChatColor.BLUE + "/computer give {hostname}" + ChatColor.WHITE + " - " +
 				"gives you a computer");
 		sender.sendMessage(ChatColor.BLUE + "/computer remove [hostname]" + ChatColor.WHITE + " - " +
 				"removes the computer with the given hostname");
