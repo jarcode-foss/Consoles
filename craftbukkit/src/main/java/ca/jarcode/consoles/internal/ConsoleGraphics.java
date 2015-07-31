@@ -214,7 +214,7 @@ public class ConsoleGraphics implements CanvasGraphics {
 	}
 
 	@FunctionalInterface
-	public static interface CharacterModifier {
-		public void paint(int index, char c, MapFont.CharacterSprite sprite, int px, int py);
+	public interface CharacterModifier {
+		void paint(int index, char c, MapFont.CharacterSprite sprite, int px, int py);
 	}
 }

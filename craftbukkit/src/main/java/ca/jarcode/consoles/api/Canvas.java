@@ -8,12 +8,12 @@ public interface Canvas {
 	 *
 	 * @param identifier the identifier to set
 	 */
-	public void setIdentifier(String identifier);
+	void setIdentifier(String identifier);
 
 	/**
 	 * Removes this canvas and the console it belongs to.
 	 */
-	public void remove();
+	void remove();
 
 	/**
 	 * <p>Requests a repaint for this canvas. This does not guarantee that paint
@@ -27,7 +27,7 @@ public interface Canvas {
 	 * dimension changes), and are pulled from the buffer that stores the data
 	 * from the last paint for the given context</p>
 	 */
-	public void repaint();
+	void repaint();
 
 	/**
 	 * Places a component at the given position in this canvas. This will remove
@@ -36,21 +36,21 @@ public interface Canvas {
 	 * @param position the position to place at
 	 * @param object the component to place
 	 */
-	public void putComponent(Position2D position, CanvasComponent object);
+	void putComponent(Position2D position, CanvasComponent object);
 
 	/**
 	 * Removes the component at the specified position
 	 *
 	 * @param position the position to remove from
 	 */
-	public void removeComponent(Position2D position);
+	void removeComponent(Position2D position);
 
 	/**
 	 * Removes the first occurrence of this component in this canvas
 	 *
 	 * @param object the component to remove
 	 */
-	public void removeComponent(CanvasComponent object);
+	void removeComponent(CanvasComponent object);
 
 	/**
 	 * Places a component at the given position in this canvas. This will remove
@@ -60,7 +60,7 @@ public interface Canvas {
 	 * @param y y position
 	 * @param object the component to place
 	 */
-	public default void putComponent(int x, int y, CanvasComponent object) {
+	default void putComponent(int x, int y, CanvasComponent object) {
 		putComponent(new Position2D(x, y), object);
 	}
 
@@ -70,7 +70,7 @@ public interface Canvas {
 	 *
 	 * @param draw whether to draw the background for this canvas or not
 	 */
-	public void drawBackground(boolean draw);
+	void drawBackground(boolean draw);
 
 	/**
 	 * Returns a new component builder for this canvas
@@ -79,7 +79,7 @@ public interface Canvas {
 	 * @param height the height of the new component
 	 * @return a new {@link ca.jarcode.consoles.api.CanvasComponentBuilder}
 	 */
-	public default CanvasComponentBuilder newComponent(int width, int height) {
+	default CanvasComponentBuilder newComponent(int width, int height) {
 		return new CanvasComponentBuilder(this, width, height);
 	}
 }

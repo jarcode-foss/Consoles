@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 
 public @interface TypeManual {
-	public String value();
-	public String usage() default "?";
+	String value();
+	String usage() default "?";
 }

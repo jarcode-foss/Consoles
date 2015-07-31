@@ -12,5 +12,5 @@ public interface WrappedComponent {
 	 *
 	 * @return the underlying {@link ca.jarcode.consoles.internal.ConsoleComponent}
 	 */
-	public ConsoleComponent underlying();
+	ConsoleComponent underlying();
 }

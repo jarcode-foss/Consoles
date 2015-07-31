@@ -8,5 +8,5 @@ reference and call a function in Lua as a method parameter.
  */
 @FunctionalInterface
 public interface FunctionBind {
-	public Object call(Object... args);
+	Object call(Object... args);
 }

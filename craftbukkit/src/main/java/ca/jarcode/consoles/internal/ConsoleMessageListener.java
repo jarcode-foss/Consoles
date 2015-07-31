@@ -9,5 +9,5 @@ be from any command sender.
 
  */
 public interface ConsoleMessageListener {
-	public String execute(CommandSender sender, String text);
+	String execute(CommandSender sender, String text);
 }

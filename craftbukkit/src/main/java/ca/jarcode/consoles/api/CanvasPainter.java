@@ -13,5 +13,5 @@ public interface CanvasPainter {
 	 * @param g the graphics instance
 	 * @param context the context (player) to paint for
 	 */
-	public void paint(CanvasGraphics g, String context);
+	void paint(CanvasGraphics g, String context);
 }

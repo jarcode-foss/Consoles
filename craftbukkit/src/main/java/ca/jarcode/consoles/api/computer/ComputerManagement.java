@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.api.computer;
 
+import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.ComputerHandler;
 
@@ -14,7 +15,7 @@ public class ComputerManagement {
 	 * @return true if enabled, false if disabled.
 	 */
 	public static boolean computersAreEnabled() {
-		return ComputerHandler.getInstance() != null;
+		return Consoles.computersEnabled;
 	}
 
 	/**

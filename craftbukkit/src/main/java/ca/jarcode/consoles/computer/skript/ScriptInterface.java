@@ -11,9 +11,9 @@ import java.util.function.Consumer;
 @SuppressWarnings("unchecked")
 public interface ScriptInterface {
 
-	static Object[] FUNCTIONS = new Object[1];
+	Object[] FUNCTIONS = new Object[1];
 
-	static ScriptInterface HOOK = new ScriptInterface() {
+	ScriptInterface HOOK = new ScriptInterface() {
 
 		private ScriptInterface underlying = new ScriptInterface() {};
 
@@ -32,18 +32,18 @@ public interface ScriptInterface {
 		}
 	};
 
-	public static void set(ScriptInterface inst) {
+	static void set(ScriptInterface inst) {
 		((Consumer<ScriptInterface>) FUNCTIONS[0]).accept(inst);
 	}
 
-	public default boolean isHooked() {
+	default boolean isHooked() {
 		return false;
 	}
 
-	public default void upload(String script, String identifier)  {}
+	default void upload(String script, String identifier)  {}
 
 	@SuppressWarnings("UnusedDeclaration")
-	public static class FailedHookException extends Exception {
+	class FailedHookException extends Exception {
 		public FailedHookException(String message) {
 			super(message);
 		}

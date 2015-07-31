@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 
 public @interface Arg {
-	public String name();
-	public String info();
+	String name();
+	String info();
 }

@@ -19,8 +19,7 @@ public final class CanvasDialog implements CanvasComponent, CanvasPainter, Wrapp
 	 * Creates a dialog component. The component is not actually created until
 	 * it is added to a console. This component cannot be added to containers.
 	 * If you call methods from this method that query the properties of this
-	 * component before it has been added to a console, a {@link java.lang.NullPointerException}
-	 * will be thrown.
+	 * component before it has been added to a console, they will be ignored.
 	 *
 	 * @param text the text to display on the dialog
 	 * @param children the underlying components in this dialog, usually buttons.
@@ -31,47 +30,51 @@ public final class CanvasDialog implements CanvasComponent, CanvasPainter, Wrapp
 	}
 	@Override
 	public int getWidth() {
-		return underlying.getWidth();
+		return underlying == null ? -1 : underlying.getWidth();
 	}
 
 	@Override
 	public int getHeight() {
-		return underlying.getHeight();
+		return underlying == null ? -1 : underlying.getHeight();
 	}
 
 	@Override
 	public boolean isContained() {
-		return underlying.isContained();
+		return underlying == null || underlying.isContained();
 	}
 
 	@Override
 	public byte getBackground() {
-		return underlying.getBackground();
+		return underlying == null ? 0 : underlying.getBackground();
 	}
 
 	@Override
 	public void setBackground(byte bg) {
-		underlying.setBackground(bg);
+		if (underlying != null)
+			underlying.setBackground(bg);
 	}
 
 	@Override
 	public boolean enabled() {
-		return underlying.enabled();
+		return underlying != null && underlying.enabled();
 	}
 
 	@Override
 	public void setEnabled(boolean enabled) {
-		underlying.setEnabled(enabled);
+		if (underlying != null)
+			underlying.setEnabled(enabled);
 	}
 
 	@Override
 	public void handleClick(int x, int y, Player player) {
-		underlying.handleClick(x, y, player);
+		if (underlying != null)
+			underlying.handleClick(x, y, player);
 	}
 
 	@Override
 	public void paint(CanvasGraphics g, String context) {
-		underlying.paint(g, context);
+		if (underlying != null)
+			underlying.paint(g, context);
 	}
 
 	@Override

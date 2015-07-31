@@ -29,7 +29,8 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	private List<String> stack = new CopyOnWriteArrayList<>();
 	private int maxStackSize;
 	private int maxWidth;
-	private byte lastColor = 32;
+	private byte defaultTextColor = 32;
+	private byte lastColor = defaultTextColor;
 
 	{
 		stack.add("");
@@ -39,6 +40,10 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	public static ConsoleTextArea createOver(ConsoleRenderer renderer) {
 		return new ConsoleTextArea(renderer.getWidth() - 4, renderer.getHeight() - 4, renderer);
+	}
+
+	public void setDefaultTextColor(byte color) {
+		this.defaultTextColor = color;
 	}
 
 	public void placeOver(ConsoleRenderer renderer) {
@@ -168,6 +173,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	public void clear() {
 		stack.clear();
 		stack.add("");
+		lastColor = defaultTextColor;
 	}
 	@Override
 	public ConsoleMessageListener createListener() {

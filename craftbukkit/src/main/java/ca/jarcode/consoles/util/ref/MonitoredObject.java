@@ -2,5 +2,5 @@ package ca.jarcode.consoles.util.ref;
 
 @FunctionalInterface
 public interface MonitoredObject {
-	public void collect();
+	void collect();
 }

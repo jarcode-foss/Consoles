@@ -1,8 +1,6 @@
 package ca.jarcode.consoles;
 
 import ca.jarcode.classloading.loader.MinecraftVersionModifier;
-import ca.jarcode.classloading.loader.WrappedClassLoader;
-import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.classloading.loader.WrappedPluginLoader;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;

@@ -159,7 +159,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		else {
+		else if (creator != null) {
 			advanceLine();
 			print("Could not forward input to terminal (creator=" + creator + ", is=" + in + ", os=" + out + ")," +
 					" running: " + running + ", ended: " + ended + ", initialized: " + initialized);
@@ -277,14 +277,14 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 		}
 	}
 	public interface FeedEncoder {
-		public String get(byte[] read);
-		public byte[] encode(String text);
+		String get(byte[] read);
+		byte[] encode(String text);
 	}
 	public interface FeedCreator {
-		public void from(String input);
-		public String result();
-		public InputStream getInputStream();
-		public OutputStream getOutputStream();
-		public FeedEncoder getEncoder();
+		void from(String input);
+		String result();
+		InputStream getInputStream();
+		OutputStream getOutputStream();
+		FeedEncoder getEncoder();
 	}
 }

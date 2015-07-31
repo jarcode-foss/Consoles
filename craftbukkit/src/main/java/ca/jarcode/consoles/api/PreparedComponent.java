@@ -13,5 +13,5 @@ public interface PreparedComponent {
 	 *
 	 * @param renderer the renderer to build against.
 	 */
-	public void prepare(ConsoleRenderer renderer);
+	void prepare(ConsoleRenderer renderer);
 }

@@ -10,5 +10,5 @@ reference and call a function in Lua as a method parameter.
  */
 @FunctionalInterface
 public interface PartialFunctionBind {
-	public LuaValue call(Object... args);
+	LuaValue call(Object... args);
 }

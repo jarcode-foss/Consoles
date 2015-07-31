@@ -11,21 +11,21 @@ public interface CanvasContainer {
 	 * @param y y position
 	 * @param player the player who interacted
 	 */
-	public void onClick(int x, int y, Player player);
+	void onClick(int x, int y, Player player);
 
 	/**
 	 * Adds the given component to this container
 	 *
 	 * @param component the component to add
 	 */
-	public void add(CanvasComponent component);
+	void add(CanvasComponent component);
 
 	/**
 	 * Removes the given component from this container
 	 *
 	 * @param comp the component to remove
 	 */
-	public void remove(CanvasComponent comp);
+	void remove(CanvasComponent comp);
 
 	/**
 	 * Returns an array of all the components currently in
@@ -33,5 +33,5 @@ public interface CanvasContainer {
 	 *
 	 * @return an array of components
 	 */
-	public CanvasComponent[] components();
+	CanvasComponent[] components();
 }

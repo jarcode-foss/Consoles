@@ -19,5 +19,5 @@ public @interface LuaName {
 	 *
 	 * @return the name of the lua function
 	 */
-	public String name() default "?";
+	String name() default "?";
 }

@@ -15,5 +15,5 @@ public interface CanvasInteractListener {
 	 * @param y the y coordinate that the player interacted with
 	 * @param player the player who interacted with this component
 	 */
-	public void handle(int x, int y, Player player);
+	void handle(int x, int y, Player player);
 }

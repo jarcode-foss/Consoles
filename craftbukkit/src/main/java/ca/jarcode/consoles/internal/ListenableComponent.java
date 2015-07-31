@@ -9,5 +9,5 @@ An interface for components that can have listeners added to
 
  */
 public interface ListenableComponent<T extends ConsoleComponent, E extends ConsoleEvent<T>> {
-	public void addEventListener(ConsoleEventListener<T, E> listener);
+	void addEventListener(ConsoleEventListener<T, E> listener);
 }

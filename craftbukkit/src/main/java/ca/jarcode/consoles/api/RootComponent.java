@@ -12,5 +12,5 @@ public interface RootComponent {
 	 *
 	 * @param renderer the renderer to add to.
 	 */
-	public void place(ConsoleRenderer renderer);
+	void place(ConsoleRenderer renderer);
 }

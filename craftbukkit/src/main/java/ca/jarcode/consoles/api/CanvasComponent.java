@@ -8,49 +8,49 @@ public interface CanvasComponent {
 	 *
 	 * @return the width of this component
 	 */
-	public int getWidth();
+	int getWidth();
 
 	/**
 	 * Returns the height of this component
 	 *
 	 * @return the height of this component
 	 */
-	public int getHeight();
+	int getHeight();
 
 	/**
 	 * Returns whether this component belonged or belongs to a container
 	 *
 	 * @return true if this component belonged to a container, false if not
 	 */
-	public boolean isContained();
+	boolean isContained();
 
 	/**
 	 * Returns the background color for this component
 	 *
 	 * @return the background color
 	 */
-	public byte getBackground();
+	byte getBackground();
 
 	/**
 	 * Sets the background color for this component
 	 *
 	 * @param bg the background color
 	 */
-	public void setBackground(byte bg);
+	void setBackground(byte bg);
 
 	/**
 	 * Returns whether this component is enabled or not
 	 *
 	 * @return whether this component is enabled or not
 	 */
-	public boolean enabled();
+	boolean enabled();
 
 	/**
 	 * Sets whether this component is enabled or disabled
 	 *
 	 * @param enabled true for enabled, false for disabled
 	 */
-	public void setEnabled(boolean enabled);
+	void setEnabled(boolean enabled);
 
 	/**
 	 * Handles a click event for this component. If this component is a container,
@@ -60,5 +60,5 @@ public interface CanvasComponent {
 	 * @param y y position
 	 * @param player the player who interacted
 	 */
-	public void handleClick(int x, int y, Player player);
+	void handleClick(int x, int y, Player player);
 }
