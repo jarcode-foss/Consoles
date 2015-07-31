@@ -84,9 +84,9 @@ public class CopyProgram extends FSProvidedProgram {
 		FSFolder b = ((FSFolder) sourceBaseFolder);
 		FSFolder k = ((FSFolder) targetBaseFolder);
 		FSBlock a = b.contents.get(sourceFile);
-		k.contents.put(targetFile, copy(a));
+		k.contents.put(targetFile, copy(a, computer));
 	}
-	private FSStoredFile fileCopy(FSStoredFile file) throws IOException, InterruptedException {
+	private FSStoredFile fileCopy(FSStoredFile file, Computer computer) throws IOException, InterruptedException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		Charset charset = Charset.forName("UTF-8");
 		try (InputStream is = file.createInput()) {
@@ -105,19 +105,19 @@ public class CopyProgram extends FSProvidedProgram {
 			if (terminated())
 				print("\tterminated");
 		}
-		return writtenFile(new String(out.toByteArray(), charset));
+		return writtenFile(new String(out.toByteArray(), charset), computer);
 
 	}
-	private FSStoredFile writtenFile(String text) throws IOException {
-		FSStoredFile file = new FSStoredFile();
+	private FSStoredFile writtenFile(String text, Computer computer) throws IOException {
+		FSStoredFile file = new FSStoredFile(computer);
 		OutputStream out = file.createOutput();
 		out.write(text.getBytes(Charset.forName("UTF-8")));
 		out.close();
 		return file;
 	}
-	private FSBlock copy(FSBlock blk) throws IOException, InterruptedException {
+	private FSBlock copy(FSBlock blk, Computer computer) throws IOException, InterruptedException {
 		if (blk instanceof FSStoredFile) {
-			return fileCopy((FSStoredFile) blk);
+			return fileCopy((FSStoredFile) blk, computer);
 		}
 		else if (blk instanceof FSFolder) {
 			FSFolder a = (FSFolder) blk;
@@ -125,7 +125,7 @@ public class CopyProgram extends FSProvidedProgram {
 			for (Map.Entry<String, FSBlock> entry : a.contents.entrySet()) {
 				if (terminated())
 					break;
-				FSBlock block = copy(entry.getValue());
+				FSBlock block = copy(entry.getValue(), computer);
 				if (block != null)
 					folder.contents.put(entry.getKey(), block);
 			}

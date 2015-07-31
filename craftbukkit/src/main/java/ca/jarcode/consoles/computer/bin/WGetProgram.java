@@ -83,7 +83,7 @@ public class WGetProgram extends FSProvidedProgram {
 			con.setRequestProperty("Accept-Charset", "UTF-8");
 			con.setRequestProperty("User-Agent", "Mozilla/5.0"); // fake user agent for sites
 			is = con.getInputStream();
-			file = new FSStoredFile();
+			file = new FSStoredFile(computer);
 			out = file.createOutput();
 
 			int t = 0;

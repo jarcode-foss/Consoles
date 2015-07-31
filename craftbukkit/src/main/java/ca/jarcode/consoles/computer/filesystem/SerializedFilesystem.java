@@ -37,6 +37,7 @@ public class SerializedFilesystem {
 		// Notice devices don't get stored! This is the same in linux, they technically have no data, and represent
 		// IO for real devices hooked up to the machine, so these are created on startup.
 
+		// legacy files
 		register((byte) 0x01, new BlockSerializer<FSStoredFile>() {
 			@Override
 			public byte[] serialize(FSStoredFile type) {
@@ -46,6 +47,19 @@ public class SerializedFilesystem {
 			@Override
 			public FSStoredFile deserialize(byte[] data, UUID uuid) {
 				return new FSStoredFile(data, uuid);
+			}
+		});
+
+		// standard files, stored on the server itself
+		register((byte) 0x08, new BlockSerializer<FSStoredFile>() {
+			@Override
+			public byte[] serialize(FSStoredFile type) {
+				return new byte[0];
+			}
+
+			@Override
+			public FSStoredFile deserialize(byte[] data, UUID uuid) {
+				return new FSStoredFile(computer, uuid);
 			}
 		});
 		// this is a bit of an exception to our serialization process. We went users to be able to screw up their
@@ -122,8 +136,8 @@ public class SerializedFilesystem {
 		map.put(b, serializer);
 	}
 	private interface BlockSerializer <T extends FSBlock> {
-		public byte[] serialize(T type);
-		public T deserialize(byte[] data, UUID uuid);
+		byte[] serialize(T type);
+		T deserialize(byte[] data, UUID uuid);
 	}
 	private boolean serializerExists(byte id) {
 		return map.containsKey(id);

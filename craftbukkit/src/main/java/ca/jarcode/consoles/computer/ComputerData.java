@@ -25,7 +25,7 @@ public class ComputerData {
 
 	private static final Gson GSON;
 
-	private static File computerFolder;
+	static File computerFolder;
 
 
 	// file structure:

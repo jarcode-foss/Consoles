@@ -78,7 +78,7 @@ public class TouchProgram extends FSProvidedProgram {
 				print("touch: " + f.trim() + ": not a folder");
 			return null;
 		}
-		FSStoredFile file = new FSStoredFile();
+		FSStoredFile file = new FSStoredFile(computer);
 		((FSFolder) folder).contents.put(n, file);
 		return file;
 	}

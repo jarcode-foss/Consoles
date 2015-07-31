@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static ca.jarcode.consoles.Lang.lang;
 
@@ -159,6 +160,28 @@ public abstract class Computer implements Runnable {
 	}
 	public int getViewHeight() {
 		return getConsole().getHeight() - (2 + ROOT_COMPONENT_POSITION.getY());
+	}
+	public File linkFile(FSStoredFile stored) {
+		File parent = new File(ComputerData.computerFolder, getHostname()
+				+ File.separatorChar + "files");
+		File file = new File(parent, stored.uuid.toString() + ".dat");
+		validateExists(parent, File::mkdirs);
+		validateExists(file, File::createNewFile);
+		return file;
+	}
+	private void validateExists(File file, BlockCreator creator) {
+		if (!file.exists()) {
+			try {
+				if (!creator.create(file))
+					throw new RuntimeException("Failed to create file: " + file.getAbsolutePath());
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to create file: " + file.getAbsolutePath(), e);
+			}
+		}
+	}
+	@FunctionalInterface
+	private interface BlockCreator {
+		boolean create(File file) throws IOException;
 	}
 	public void load(File file) throws IOException {
 		try {

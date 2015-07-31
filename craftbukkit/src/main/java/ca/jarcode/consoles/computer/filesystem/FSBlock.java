@@ -17,7 +17,7 @@ public abstract class FSBlock {
 
 	// this is for serialization of filesystems. There might be duplicate objects in the filesystem tree,
 	// so this is what we use to identify them when recreating the tree
-	final UUID uuid;
+	public final UUID uuid;
 
 	// instead of serializing these with classes, we assign ids in the block implementations to refer to types
 	final byte id;

@@ -99,7 +99,7 @@ public class Kernel extends FSProvidedProgram {
 				root.contents.put("tmp", new FSFolder());
 				root.contents.put("X11", x11);
 				home.contents.put("admin", new FSFolder());
-				FSStoredFile file = writtenFile("One can only dream.");
+				FSStoredFile file = writtenFile("One can only dream.", computer);
 				x11.contents.put("xorg.conf", file);
 				flashPrograms();
 			}
@@ -144,8 +144,8 @@ public class Kernel extends FSProvidedProgram {
 
 		LuaDefaults.loadInto(computer);
 	}
-	public static FSStoredFile writtenFile(String text) {
-		FSStoredFile file = new FSStoredFile();
+	public static FSStoredFile writtenFile(String text, Computer computer) {
+		FSStoredFile file = new FSStoredFile(computer);
 		try {
 			OutputStream out = file.createOutput();
 			out.write(text.getBytes(Charset.forName("UTF-8")));
