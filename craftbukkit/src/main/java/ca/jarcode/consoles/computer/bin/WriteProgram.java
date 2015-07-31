@@ -93,6 +93,7 @@ public class WriteProgram extends FSProvidedProgram {
 				if (is.read(arr) != arr.length) {
 					println("error: did not read all expected bytes");
 				}
+				is.close();
 				text += new String(arr, Charset.forName("UTF-8"));
 			}
 			if ((Boolean) properties.get("force") || file.locked()) {

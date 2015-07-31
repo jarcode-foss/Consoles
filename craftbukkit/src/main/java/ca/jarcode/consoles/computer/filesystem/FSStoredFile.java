@@ -84,10 +84,15 @@ public class FSStoredFile extends FSFile {
 		return new ByteArrayInputStream(data);
 	}
 
-	// you cannot 'release' a file, you can only delete it!
-	// this is for devices that need to be mounted/unmounted, like command blocks.
 	@Override
-	public void release() {}
+	public void release() {
+		try {
+			out.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		locked = false;
+	}
 
 	@Override
 	public boolean locked() {

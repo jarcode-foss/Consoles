@@ -3,6 +3,7 @@ package ca.jarcode.consoles.computer.interpreter.types;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
+import ca.jarcode.consoles.computer.filesystem.FSStoredFile;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
 import ca.jarcode.consoles.computer.manual.TypeManual;
@@ -94,5 +95,12 @@ public class LuaFile extends LuaBlock {
 				e.printStackTrace();
 		}
 		return null;
+	}
+
+	@FunctionManual("If this is a normal file, this will close all active streams for the given file. If this is not " +
+			"a normal file, this call is discarded.")
+	public void close() {
+		if (file instanceof FSStoredFile)
+			file.release();
 	}
 }
