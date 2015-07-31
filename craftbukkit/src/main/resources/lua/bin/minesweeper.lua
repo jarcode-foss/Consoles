@@ -80,11 +80,9 @@ local function start()
 
         -- grab interaction events, store them into array
         local actions = {}
-        local index = 1;
         local at = buffer:pollCoords()
         while (at ~= nil) do
-            actions[index] = at;
-            index = index + 1
+            table.insert(actions,at)
             at = buffer:pollCoords()
         end
 
