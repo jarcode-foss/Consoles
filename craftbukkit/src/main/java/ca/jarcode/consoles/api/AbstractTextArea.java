@@ -3,7 +3,7 @@ package ca.jarcode.consoles.api;
 import ca.jarcode.consoles.internal.ConsoleTextArea;
 import org.bukkit.map.MapFont;
 
-public abstract class AbstractTextArea<T extends ConsoleTextArea> extends AbstractWrappedComponent<T> implements TextComponent {
+abstract class AbstractTextArea<T extends ConsoleTextArea> extends AbstractWrappedComponent<T> implements TextComponent {
 
 	public AbstractTextArea(int w, int h) {
 		super(w, h);
