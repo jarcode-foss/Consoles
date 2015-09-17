@@ -1,5 +1,5 @@
  name: ComputersLoader
- depend: ConsolesLoader
+ depend: [ConsolesLoader]
  load: STARTUP
  version: ${project.version}
  author: Jarcode
