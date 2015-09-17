@@ -7,7 +7,6 @@ import ca.jarcode.consoles.messaging.ConsoleBungeeHook;
 import ca.jarcode.consoles.command.*;
 import ca.jarcode.consoles.util.MapInjector;
 import ca.jarcode.consoles.util.sync.SyncTaskScheduler;
-import ca.jarcode.consoles.updater.VersionChecker;
 import org.bukkit.event.Listener;
 
 import java.util.function.Supplier;
