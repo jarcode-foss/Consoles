@@ -26,8 +26,6 @@ public class Consoles extends WrappedPlugin {
 	public static short startingId;
 	// debug mode
 	public static boolean debug = false;
-	// updates
-	public static boolean checkForUpdates = true;
 
 	static {
 		if (!Consoles.class.getClassLoader().getClass().getSimpleName().equals("WrappedClassLoader")) {
@@ -62,7 +60,6 @@ public class Consoles extends WrappedPlugin {
 
 		startingId = (short) getConfig().getInt("starting-map-index", 5000);
 		debug = getConfig().getBoolean("debug-mode", false);
-		checkForUpdates = getConfig().getBoolean("check-for-updates", true);
 
 		ConsoleHandler.getInstance().local = !forward;
 
@@ -77,8 +74,6 @@ public class Consoles extends WrappedPlugin {
 
 		ImageConsoleHandler imageHandler = new ImageConsoleHandler();
 		getServer().getScheduler().scheduleSyncDelayedTask(this, imageHandler::load);
-		if (checkForUpdates)
-			getServer().getScheduler().scheduleSyncRepeatingTask(this, VersionChecker::check, 30 * 20L, 20 * 60 * 20L);
 	}
 
 	@Override

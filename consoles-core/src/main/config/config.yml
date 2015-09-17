@@ -25,6 +25,3 @@ starting-map-index: 5000
 # If you think there is something wrong with a Lua function call into
 # Consoles, you can enable this to get the full stack trace.
 debug-mode: false
-
-# Whether to check if new updates are available or not.
-check-for-updates: true
