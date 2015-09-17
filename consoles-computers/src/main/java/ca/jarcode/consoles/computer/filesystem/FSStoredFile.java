@@ -23,12 +23,15 @@ public class FSStoredFile extends FSFile {
 	public FSStoredFile(Computer source) {
 		super(ID);
 		streamFactory = () -> fileStream(source.linkFile(this));
+		out = streamFactory.get();
 	}
 	public FSStoredFile(Computer source, UUID uuid) {
 		super(ID, uuid);
 		streamFactory = () -> fileStream(source.linkFile(this));
+		out = streamFactory.get();
 	}
 	// legacy
+	@Deprecated
 	public FSStoredFile(byte[] data) {
 		super(ID);
 		streamFactory = this::memoryStream;
@@ -41,6 +44,7 @@ public class FSStoredFile extends FSFile {
 		}
 	}
 	// legacy
+	@Deprecated
 	public FSStoredFile(byte[] data, UUID uuid) {
 		super(ID, uuid);
 		streamFactory = this::memoryStream;
