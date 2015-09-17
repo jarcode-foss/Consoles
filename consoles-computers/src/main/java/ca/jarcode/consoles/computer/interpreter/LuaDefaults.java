@@ -37,7 +37,7 @@ public class LuaDefaults {
 			Enumeration<? extends ZipEntry> entries = file.entries();
 			while (entries.hasMoreElements()) {
 				ZipEntry entry = entries.nextElement();
-				if (entry.getName().startsWith("lua/") && entry.getName().endsWith(".lua")) {
+				if (entry.getName().startsWith("src/main/resources/lua/") && entry.getName().endsWith(".lua")) {
 					InputStream stream = file.getInputStream(entry);
 					String content = IOUtils.readLines(stream).stream().collect(Collectors.joining("\n"));
 					stream.close();
