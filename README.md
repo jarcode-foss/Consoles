@@ -1,5 +1,5 @@
 # Consoles
-A powerful plugin that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
+A powerful set of plugins that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
 
 License for `consoles-api`: [LGPL Version 3](http://www.gnu.org/licenses/lgpl-3.0.en.html)
 
@@ -35,11 +35,10 @@ Behind the scenes, this API:
 
 Non-API features:
 
-- Fully programmable Computers. Refer to the wiki.
+- Fully programmable Computers (separate plugin). Refer to the wiki.
 - Reliable image rendering from URLs!
 
 Notes:
- - May not be compatible with ProtocolLib. If this is the case, I will add support by either using ProtocolLib as an alternative packet listener, or by applying my packet wrapper after ProtocolLib does its instrumentation shenanigans.
  - This replaces maps, and _completely_ removes handheld map functionality. Fake map handlers/items are injected to ensure that the normal map system does not send packets and map out world regions.
  - This plugin/API is strictly for _map canvases_, which are sets of (modified) item frames in a grid containing maps that can display pixels in its own screen coordinates, for each player.
  - My code _heavily_ depends on NMS calls for various reasons. Builds of this plugin simply will be dependant on certain craftbukkit/spigot versions. If you don't like this, you can write the ~10 wrapper classes for all my NMS calls yourself.
