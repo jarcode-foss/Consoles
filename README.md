@@ -2,6 +2,7 @@
 A powerful plugin that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
 
 License for `consoles-api`: [LGPL Version 3](http://www.gnu.org/licenses/lgpl-3.0.en.html)
+
 License for `consoles-core`, `consoles-computer`, and `consoles-bungee`: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
 
 ### Maven Repository
