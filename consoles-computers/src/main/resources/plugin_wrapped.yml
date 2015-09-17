@@ -1,0 +1,5 @@
+ name: ConsolesComputers
+ load: STARTUP
+ version: ${project.version}
+ author: Jarcode
+ main: ca.jarcode.consoles.computer.Computers

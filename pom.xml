@@ -3,21 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <properties>
-        <!-- Consoles version -->
-        <global.version.number>1.8a-beta</global.version.number>
         <!-- the release type, set to '-SNAPSHOT' via commandline to work with snapshots -->
         <global.version.suffix/>
-        <!-- full version string -->
-        <global.version>${global.version.number}${global.version.suffix}</global.version>
+        <global.version>1.0</global.version>
     </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.jarcode</groupId>
     <artifactId>consoles</artifactId>
     <packaging>pom</packaging>
-    <version>${global.version}</version>
+    <version>1.0</version>
     <modules>
-        <module>bungee</module>
-        <module>craftbukkit</module>
+        <module>consoles-bungee</module>
+        <module>consoles-core</module>
+        <module>consoles-api</module>
+        <module>consoles-computers</module>
     </modules>
 
     <repositories>

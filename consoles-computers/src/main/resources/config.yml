@@ -1,0 +1,31 @@
+# ------------------
+#     Computers
+# ------------------
+
+# Enable the crafting of computers
+allow-comptuer-crafting: true
+
+# Computer crafting limit for normal players
+# The permissions computer.limit.ignore will override this
+computer-limit: 3
+
+# Command prefix when sending commands to a computer. You may want to
+# change this for BungeeCord servers, as it will interrupt commands
+# that may have been designated for a computer.
+command-prefix: /
+
+# If set to true, this will hide all 'Computers saving...' messages
+hide-save-messages: false
+
+
+# ------------------
+# Computer Functions
+# ------------------
+
+# Custom frame rendering for Lua programs, disable if you do not want players to use this.
+frame-rendering: true
+
+# Maximum time (in miliseconds) that a program can run without calling a blocking function
+# You can tweak this to be lower if you want to avoid program threads from using too
+# many server resources.
+max-time-without-interrupt: 7000

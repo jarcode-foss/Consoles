@@ -1,0 +1,114 @@
+package ca.jarcode.consoles;
+
+import ca.jarcode.classloading.loader.MinecraftVersionModifier;
+import ca.jarcode.classloading.loader.WrappedPluginLoader;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.SimplePluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Map;
+
+import static ca.jarcode.consoles.Lang.lang;
+
+/*
+
+Alright, Consoles uses a plugin loader - which means the plugin actually loads itself. The reason
+why we do this is to actually do some hacks during class loading to attempt at cross-version compatibility.
+
+So, package versions are instantly corrected at runtime, but this doesn't mean everything will work in other
+versions, it just means we're going to try to get it to work.
+
+When we need to, we can switch on Pkg.VERSION to check the package naming of the server, thus allowing us
+to write code specific for each version.
+
+The goal of this system to to provide support for server versions 1.8.3 and higher, and fields and methods
+that have multiple names across versions will be replaced with reflection over time.
+
+ */
+@SuppressWarnings("unchecked")
+public class ConsolesLoader extends JavaPlugin {
+
+	// This is the version we compile against, which should be the latest spigot/CB build.
+	public static final String COMPILED_VERSION = "v1_8_R3";
+
+	private static Object grab(Class from, Object inst, String name)
+			throws IllegalAccessException, NoSuchFieldException {
+		Field field = from.getDeclaredField(name);
+		field.setAccessible(true);
+		return field.get(inst);
+	}
+
+	private Runnable enableTask;
+
+	{
+		// inject our plugin loader
+		WrappedPluginLoader loader = WrappedPluginLoader.inject(this,
+
+				// these are 'inherited' classes, because we replace the normal plugin class loader,
+				// causing our loader to be higher in the class loader tree, we have to pass references
+				// to classes we want to remain accessible by the new class loader.
+
+				// We don't have to do this for classes we haven't used yet, so only put classes here
+				// that need to be accessed by both the loader and Consoles itself.
+				new Class[] {
+						Lang.class
+				}, new MinecraftVersionModifier(this, COMPILED_VERSION));
+		try {
+			// load plugin through wrapper loader (direct loading)
+			Plugin plugin = loader.loadPlugin(this.getFile());
+
+			// we'll use this to enable our plugin later
+			enableTask = () -> loader.enablePlugin(plugin);
+
+			// we still need to properly register the plugin in the plugin manager,
+			// so we use some reflection hacks to do so.
+			forceRegisterPlugin(plugin);
+		} catch (Throwable e) {
+			getLogger().severe(lang.getString("failed-load"));
+			e.printStackTrace();
+		}
+	}
+
+	public static void forceRegisterPlugin(Plugin plugin) throws NoSuchFieldException, IllegalAccessException {
+		PluginManager manager = Bukkit.getServer().getPluginManager();
+		// grab the lookup name map and plugin list
+		Map<String, Plugin> map = (Map<String, Plugin>) grab(SimplePluginManager.class, manager, "lookupNames");
+		List<Plugin> plugins = (List<Plugin>) grab(SimplePluginManager.class, manager, "plugins");
+		// add our plugin to the manager!
+		map.put(plugin.getDescription().getName(), plugin);
+		plugins.add(plugin);
+	}
+
+	public static void disableAndUnloadPlugin(Plugin plugin) {
+
+		// disable our plugin normally
+		Bukkit.getServer().getPluginManager().disablePlugin(plugin);
+
+		PluginManager manager = Bukkit.getServer().getPluginManager();
+
+		try {
+			// grab the lookup name map and plugin list, just like before
+			Map<String, Plugin> map = (Map<String, Plugin>) grab(SimplePluginManager.class, manager, "lookupNames");
+			List<Plugin> plugins = (List<Plugin>) grab(SimplePluginManager.class, manager, "plugins");
+
+			// remove this plugin from the mappings and the plugin list
+			map.remove(plugin.getDescription().getName());
+			plugins.remove(plugin);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onEnable() {
+		enableTask.run();
+
+		// now this plugin is relatively useless to keep running, so we're going
+		// to disable and unload it.
+		disableAndUnloadPlugin(this);
+	}
+}
