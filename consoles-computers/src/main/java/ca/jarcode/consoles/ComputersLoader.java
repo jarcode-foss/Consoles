@@ -2,6 +2,7 @@ package ca.jarcode.consoles;
 
 import ca.jarcode.classloading.loader.MinecraftVersionModifier;
 import ca.jarcode.classloading.loader.WrappedPluginLoader;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -10,25 +11,39 @@ import org.bukkit.plugin.java.JavaPlugin;
 @SuppressWarnings("unused")
 public class ComputersLoader extends JavaPlugin {
 
+	private static final String CORE_PLUGIN_NAME = "ConsolesCore";
+
 	private Runnable enableTask;
 
-	{
-		WrappedPluginLoader loader = WrappedPluginLoader.inject(this, new Class[] {},
-				new MinecraftVersionModifier(this, ConsolesLoader.COMPILED_VERSION));
+	private final boolean CORE_INSTALLED;
 
-		try {
-			Plugin plugin = loader.loadPlugin(this.getFile());
-			enableTask = () -> loader.enablePlugin(plugin);
-			ConsolesLoader.forceRegisterPlugin(plugin);
-		} catch (Throwable e) {
-			e.printStackTrace();
+	{
+		CORE_INSTALLED = Bukkit.getPluginManager().getPlugin(CORE_PLUGIN_NAME) != null;
+
+		if (CORE_INSTALLED) {
+			WrappedPluginLoader loader = WrappedPluginLoader.inject(this, new Class[] {},
+					new MinecraftVersionModifier(this, ConsolesLoader.COMPILED_VERSION));
+
+			try {
+				Plugin plugin = loader.loadPlugin(this.getFile());
+				enableTask = () -> loader.enablePlugin(plugin);
+				ConsolesLoader.forceRegisterPlugin(plugin);
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
 
 	@Override
 	public void onEnable() {
-		enableTask.run();
-		ConsolesLoader.disableAndUnloadPlugin(this);
+		if (CORE_INSTALLED) {
+			enableTask.run();
+			ConsolesLoader.disableAndUnloadPlugin(this);
+		}
+		else {
+			getLogger().severe("This plugin requires the core console plugin to function, please install it.");
+			getPluginLoader().disablePlugin(this);
+		}
 	}
 }

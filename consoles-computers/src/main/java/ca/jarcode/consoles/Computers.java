@@ -1,5 +1,6 @@
 package ca.jarcode.consoles;
 
+import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.computer.MapDataStore;
@@ -12,9 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
 
-public class Computers extends JavaPlugin {
-
-	private static final String CORE_PLUGIN_NAME = "ConsolesCore";
+public class Computers extends WrappedPlugin {
 
 	private static Computers INSTANCE = null;
 
@@ -41,12 +40,6 @@ public class Computers extends JavaPlugin {
 
 	public void onEnable() {
 
-		if (Bukkit.getPluginManager().getPlugin(CORE_PLUGIN_NAME) == null) {
-			getLogger().severe("This plugin requires the core console plugin to function, please install it.");
-			getPluginLoader().disablePlugin(this);
-			return;
-		}
-
 		Lua.killAll = false; // if this plugin was reloaded
 		saveDefaultConfig();
 
@@ -62,7 +55,7 @@ public class Computers extends JavaPlugin {
 		register(ComputerHandler::new);
 
 		try {
-			Consoles consoles = (Consoles) Bukkit.getPluginManager().getPlugin(CORE_PLUGIN_NAME);
+			Consoles consoles = Consoles.getInstance();
 			consoles.getCommandHandler().addCommand(CommandComputer.class);
 			ConsoleHandler.getInstance().interactionHooks.add((x, y, player, console) -> {
 				ComputerHandler handler = ComputerHandler.getInstance();
