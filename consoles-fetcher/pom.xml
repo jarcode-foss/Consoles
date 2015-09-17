@@ -2,43 +2,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <properties>
-        <!-- the release type, set to '-SNAPSHOT' via commandline to work with snapshots -->
-        <global.version.suffix/>
-        <global.version>1.0</global.version>
-    </properties>
+    <parent>
+        <artifactId>consoles</artifactId>
+        <groupId>ca.jarcode</groupId>
+        <version>1.0</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>ca.jarcode</groupId>
-    <artifactId>consoles</artifactId>
-    <packaging>pom</packaging>
+
+    <artifactId>consoles-fetcher</artifactId>
     <version>1.0</version>
-    <modules>
-        <module>consoles-bungee</module>
-        <module>consoles-core</module>
-        <module>consoles-api</module>
-        <module>consoles-computers</module>
-        <module>consoles-fetcher</module>
-    </modules>
 
-    <repositories>
-        <!-- dropping skript support, repository is down and the project is unmaintained
-        <repository>
-            <id>njol-repo</id>
-            <url>http://maven.njol.ch/repo/</url>
-        </repository>
-        -->
-        <repository>
-            <id>bungeecord-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>jarcode-site</id>
-            <url>sftp://jarcode.ca/home/jarcode/maven2</url>
-        </repository>
-    </distributionManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.8.7-R0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -58,7 +38,6 @@
                 <configuration>
                     <skipTests>true</skipTests>
                 </configuration>
-                <inherited>false</inherited>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -67,7 +46,6 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
-                <inherited>false</inherited>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -76,15 +54,7 @@
                 <configuration>
                     <skip>true</skip>
                 </configuration>
-                <inherited>false</inherited>
             </plugin>
         </plugins>
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>1.0-beta-6</version>
-            </extension>
-        </extensions>
     </build>
 </project>
