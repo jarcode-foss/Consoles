@@ -3,6 +3,7 @@ package ca.jarcode.consoles;
 import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.computer.ComputerHandler;
+import ca.jarcode.consoles.computer.GeneralListener;
 import ca.jarcode.consoles.computer.MapDataStore;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
@@ -52,7 +53,7 @@ public class Computers extends WrappedPlugin {
 
 		MapDataStore.init(this);
 
-		register(ComputerHandler::new);
+		register(ComputerHandler::new, GeneralListener::new);
 
 		try {
 			Consoles consoles = Consoles.getInstance();

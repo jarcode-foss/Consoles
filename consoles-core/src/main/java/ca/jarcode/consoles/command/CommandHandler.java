@@ -4,6 +4,7 @@ import ca.jarcode.consoles.Consoles;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.server.ServerCommandEvent;
@@ -99,7 +100,7 @@ public class CommandHandler implements Listener {
 		return commands;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH)
 	@SuppressWarnings("unused")
 	public void onPreCommand(PlayerCommandPreprocessEvent e) {
 

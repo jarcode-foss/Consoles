@@ -26,7 +26,7 @@ public class GeneralListener implements Listener {
 	}
 
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	@SuppressWarnings("unused")
 	public void onChat(AsyncPlayerChatEvent e) {
 		if (e.getMessage().startsWith(Computers.commandPrefix) && !Computers.commandPrefix.equals("/")) {

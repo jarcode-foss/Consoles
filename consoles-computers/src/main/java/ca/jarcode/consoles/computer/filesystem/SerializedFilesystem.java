@@ -37,7 +37,7 @@ public class SerializedFilesystem {
 		// Notice devices don't get stored! This is the same in linux, they technically have no data, and represent
 		// IO for real devices hooked up to the machine, so these are created on startup.
 
-		// legacy files
+		// legacy files, these cram the data into the actually filesystem index and that was a bad idea
 		register((byte) 0x01, new BlockSerializer<FSStoredFile>() {
 			@Override
 			public byte[] serialize(FSStoredFile type) {

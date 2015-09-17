@@ -189,7 +189,7 @@ public abstract class Computer implements Runnable {
 	}
 	public void load(File file) throws IOException {
 		try {
-			// create temp kernel instance for loading fs
+			// create kernel instance for loading fs
 			kernel = Kernel.install(Computer.this);
 			// create instance
 			SerializedFilesystem fs = new SerializedFilesystem(this);
@@ -262,6 +262,9 @@ public abstract class Computer implements Runnable {
 
 					// repaint
 					console.repaint();
+
+					// save!
+					save();
 				});
 
 				// run server-wide startup program
