@@ -10,15 +10,12 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>consoles-core</artifactId>
     <version>${global.version}${global.version.suffix}</version>
-    <description>Craftbukkit plugin and API for working with programmable computers and map canvases</description>
+    <description>Craftbukkit server plugin that adds programmable map canvases to the server. Implements consoles-api.</description>
     <build>
         <resources>
             <resource>
                 <directory>src/main/config</directory>
                 <filtering>true</filtering>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
             </resource>
             <resource>
                 <directory>src/main/java</directory>
