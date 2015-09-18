@@ -1,6 +1,8 @@
-package ca.jarcode.consoles.util;
+package ca.jarcode.consoles.v1_8_R3;
 
-import ca.jarcode.consoles.internal.ConsoleMessageListener;
+import ca.jarcode.consoles.api.nms.CommandExecutor;
+import ca.jarcode.consoles.api.nms.CommandInternals;
+import net.minecraft.server.v1_8_R3.ChatComponentText;
 import net.minecraft.server.v1_8_R3.CommandBlockListenerAbstract;
 import net.minecraft.server.v1_8_R3.TileEntityCommand;
 import org.bukkit.block.CommandBlock;
@@ -8,34 +10,37 @@ import org.bukkit.craftbukkit.v1_8_R3.block.CraftCommandBlock;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.function.BooleanSupplier;
 
 /*
 
 Util class for hacking at command blocks.
 
  */
-public class CommandBlockUtils {
+public class CommandBlockUtils implements CommandInternals {
 
-	public static final Field COMMAND_LISTENER;
+	public final Field COMMAND_LISTENER;
 
-	static {
+	{
 		try {
 			COMMAND_LISTENER = TileEntityCommand.class.getDeclaredField("a");
 			COMMAND_LISTENER.setAccessible(true);
-			overrideFinal(CommandBlockUtils.COMMAND_LISTENER);
+			overrideFinal(COMMAND_LISTENER);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static boolean isRegistered(CommandBlock block) {
+	@Override
+	public boolean isRegistered(CommandBlock block) {
 		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 		CommandBlockListenerAbstract obj = entity.getCommandBlock();
 		return obj instanceof CommandBlockListenerWrapper && ((CommandBlockListenerWrapper) obj).listening();
 	}
 
-	public static boolean registerListener(CommandBlock block, ConsoleMessageListener listener) {
+	@Override
+	public boolean registerListener(CommandBlock block, CommandExecutor listener) {
 		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 		CommandBlockListenerAbstract obj = entity.getCommandBlock();
 		if (obj instanceof CommandBlockListenerWrapper && !isRegistered(block)) {
@@ -45,12 +50,24 @@ public class CommandBlockUtils {
 		else return false;
 	}
 
-	public static boolean wrap(CommandBlock block) {
+	@Override
+	public void sendMessage(CommandBlock block, String message) {
+		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();
+		command.getCommandBlock().sendMessage(new ChatComponentText(message));
+	}
+
+	@Override
+	public void registerBlockCommand(BlockCommand listener) {
+		VanillaBlockCommand.registerLinkCommand(listener);
+	}
+
+	@Override
+	public boolean wrap(CommandBlock block, BooleanSupplier commandBlocksEnabled) {
 		try {
 			TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 			CommandBlockListenerAbstract obj = entity.getCommandBlock();
 			if (!(obj instanceof CommandBlockListenerWrapper)) {
-				COMMAND_LISTENER.set(entity, new CommandBlockListenerWrapper(obj, entity));
+				COMMAND_LISTENER.set(entity, new CommandBlockListenerWrapper(obj, commandBlocksEnabled, entity));
 				return true;
 			}
 			else return false;
@@ -61,7 +78,8 @@ public class CommandBlockUtils {
 		return false;
 	}
 
-	public static boolean restoreCommandBlock(CommandBlock block) {
+	@Override
+	public boolean restore(CommandBlock block) {
 		TileEntityCommand entity = ((CraftCommandBlock) block).getTileEntity();
 		Object obj = entity.getCommandBlock();
 		if (obj instanceof CommandBlockListenerWrapper) {
@@ -71,7 +89,7 @@ public class CommandBlockUtils {
 		else return false;
 	}
 
-	public static void overrideFinal(Field field) throws NoSuchFieldException, IllegalAccessException {
+	public void overrideFinal(Field field) throws NoSuchFieldException, IllegalAccessException {
 		Field modifiersField = Field.class.getDeclaredField("modifiers");
 		modifiersField.setAccessible(true);
 		// remove the final flag on the security int/bytes

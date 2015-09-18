@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>consoles-computers</artifactId>
+    <packaging>pom</packaging>
     <version>${global.version}${global.version.suffix}</version>
     <description>Extension to consoles-core, adds programmable computers to a server as a craftbukkit plugin.</description>
 
@@ -91,7 +92,7 @@
         <dependency>
             <groupId>ca.jarcode</groupId>
             <artifactId>consoles-api</artifactId>
-            <version>1.1</version>
+            <version>1.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -106,9 +107,15 @@
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
-            <artifactId>spigot</artifactId>
-            <version>1.8.8-R0.1-SNAPSHOT</version>
+            <artifactId>spigot-api</artifactId>
+            <version>${global.spigot.version}</version>
             <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ca.jarcode</groupId>
+            <artifactId>consoles-nms-api</artifactId>
+            <version>1.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

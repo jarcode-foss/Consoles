@@ -1,20 +1,14 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.messaging.ConsoleBungeeHook;
-import ca.jarcode.consoles.util.*;
-import net.minecraft.server.v1_8_R3.*;
-import net.minecraft.server.v1_8_R3.DataWatcher.WatchableObject;
-import net.minecraft.server.v1_8_R3.World;
 import org.bukkit.*;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.CommandBlock;
-import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftItemFrame;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -56,9 +50,6 @@ public class ConsoleHandler implements Listener {
 
 	private static final ConsoleHandler INSTANCE;
 
-	private static final Field PACKET_LIST;
-	private static final Field PACKET_ENTITY_ID;
-
 	private static final HashMap<String, BiConsumer<Plugin, Logger>> HOOK_INITIALIZERS = new HashMap<>();
 
 	static {
@@ -75,18 +66,6 @@ public class ConsoleHandler implements Listener {
 			}
 		});
 		*/
-	}
-
-	static {
-		try {
-			PACKET_LIST = PacketPlayOutEntityMetadata.class.getDeclaredField("b");
-			PACKET_LIST.setAccessible(true);
-			PACKET_ENTITY_ID = PacketPlayOutEntityMetadata.class.getDeclaredField("a");
-			PACKET_ENTITY_ID.setAccessible(true);
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	static {
@@ -127,10 +106,7 @@ public class ConsoleHandler implements Listener {
 		void fired(int x, int y, Player player, ManagedConsole renderer);
 	}
 
-	public boolean commandBlocksEnabled = ((CraftServer) Bukkit.getServer()).getServer().getEnableCommandBlock();
-
-	// tracked map packets (these are not blocked!)
-	private List<PacketPlayOutMap> packets = new ArrayList<>();
+	public boolean commandBlocksEnabled = ConsolesNMS.internals.commandBlocksEnabled();
 
 	private ConsoleBungeeHook hook;
 
@@ -143,7 +119,7 @@ public class ConsoleHandler implements Listener {
 
 	public ConsoleHandler() {
 
-		((CraftServer) Bukkit.getServer()).getServer().getPropertyManager().setProperty("enable-command-block", true);
+		ConsolesNMS.internals.setCommandBlocksEnabled(true);
 
 		HOOK_INITIALIZERS.entrySet().forEach((entry) -> {
 			Plugin plugin = Bukkit.getPluginManager().getPlugin(entry.getKey());
@@ -240,7 +216,8 @@ public class ConsoleHandler implements Listener {
 	@EventHandler
 	public void wrapCommandBlocks(PlayerInteractEvent e) {
 		if (e.getClickedBlock() != null && e.getClickedBlock().getState() instanceof CommandBlock) {
-			CommandBlockUtils.wrap((CommandBlock) e.getClickedBlock().getState());
+			ConsolesNMS.commandInternals.wrap((CommandBlock) e.getClickedBlock().getState(),
+					() -> ConsoleHandler.getInstance().commandBlocksEnabled);
 		}
 	}
 	@EventHandler
@@ -254,14 +231,12 @@ public class ConsoleHandler implements Listener {
 	}
 	@EventHandler
 	public void onChunkUnload(ChunkUnloadEvent e) {
-		World world = ((CraftWorld) e.getWorld()).getHandle();
 		for (Entity entity : e.getChunk().getEntities()) {
 			for (ManagedConsole console : consoles) {
 				console.bukkitEntities().stream()
 						.filter(frame -> entity == frame)
 						.forEach(frame -> {
-							EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
-							world.removeEntity(nms);
+							ConsolesNMS.internals.forceRemoveFrame(frame, e.getWorld());
 							if (Consoles.debug) {
 								Consoles.getInstance().getLogger().info("Removed item frame: "
 										+ frame.getLocation().toString() + ", identifier: " + console.getIdentifier());
@@ -273,8 +248,7 @@ public class ConsoleHandler implements Listener {
 	@EventHandler
 	public void restoreProperties(PluginDisableEvent e) {
 		if (e.getPlugin() == Consoles.getInstance()) {
-			((CraftServer) Bukkit.getServer()).getServer()
-					.getPropertyManager().setProperty("enable-command-block", commandBlocksEnabled);
+			ConsolesNMS.internals.setCommandBlocksEnabled(commandBlocksEnabled);
 		}
 	}
 	@EventHandler
@@ -300,10 +274,7 @@ public class ConsoleHandler implements Listener {
 					})
 					.filter(frame -> !Arrays.asList(chunk.getEntities()).contains(frame))
 					.forEach(frame -> {
-						EntityItemFrame nms = ((CraftItemFrame) frame).getHandle();
-						World world = ((CraftWorld) chunk.getWorld()).getHandle();
-						nms.dead = false;
-						if (!world.addEntity(nms)) {
+						if (!ConsolesNMS.internals.forceAddFrame(frame, chunk.getWorld())) {
 							Consoles.getInstance().getLogger().severe(lang.getString("item-spawn-fail"));
 							Consoles.getInstance().getLogger().severe(frame.getLocation().toString()
 									+ ", identifier: " + console.getIdentifier());
@@ -377,68 +348,15 @@ public class ConsoleHandler implements Listener {
 
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {
+		ConsolesNMS.packetInternals.registerMetadataPacketTranslator(e.getPlayer());
+		ConsolesNMS.packetInternals.registerMapPacketFilter(e.getPlayer());
+		/*
 		PacketUtils.registerOutListener(PacketPlayOutEntityMetadata.class, e.getPlayer(),
 				packet -> handleMetadataPacket(packet, e.getPlayer().getName()));
 		PacketUtils.registerOutListener(PacketPlayOutMap.class, e.getPlayer(), this::handleMapPacket);
+		*/
 	}
 
-	public PacketPlayOutMap newMapPacket() {
-		PacketPlayOutMap packet = new PacketPlayOutMap();
-		packets.add(packet);
-		return packet;
-	}
-
-	// we're going to block all map packets other than the ones we send. This is
-	// a last stand defence against other plugins that may send map packets manually.
-
-	// Most packets should be blocked by our fake map items and trackers, so this
-	// won't do much in normal servers.
-	private boolean handleMapPacket(PacketPlayOutMap packet) {
-		if (packets.contains(packet)) {
-			packets.remove(packet);
-			return true;
-		}
-		else return false;
-	}
-	// this baby translates map IDs in outgoing packets according to the player
-	@SuppressWarnings("unchecked")
-	private boolean handleMetadataPacket(PacketPlayOutEntityMetadata packet, String context) {
-		// get list of objects
-		List<WatchableObject> list = (List<WatchableObject>) get(PACKET_LIST, packet);
-		// create object mappings of the above list
-		HashMap<Integer, WatchableObject> objects = new HashMap<>();
-		for (WatchableObject aList : list) {
-			objects.put(aList.a(), aList);
-		}
-		// get entity id
-		int id;
-		try {
-			id = PACKET_ENTITY_ID.getInt(packet);
-		} catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-		// if the map/packet contains an item stack, and is for a console entity
-		if (objects.containsKey(8) && isConsoleEntity(id)) {
-			// get stack from the map
-			ItemStack stack = (ItemStack) objects.get(8).b();
-			// global map id
-			short global = (short) stack.getData();
-			// player context map id
-			short translated = translateIndex(context, global);
-			// set data of item stack
-			if (translated != -1)
-				stack.setData(translated);
-			else return false;
-		}
-		// block other map metadata
-		else if (objects.containsKey(8) && objects.get(8).b() instanceof ItemStack) {
-			ItemStack stack = (ItemStack) objects.get(8).b();
-			if (stack.getItem() == Items.FILLED_MAP || stack.getItem() == Items.MAP) {
-				return false;
-			}
-		}
-		return true;
-	}
 	public short[] getContextIds(Player player) {
 		synchronized (ALLOCATION_LOCK) {
 			if (!allocations.containsKey(player.getName())) return new short[0];

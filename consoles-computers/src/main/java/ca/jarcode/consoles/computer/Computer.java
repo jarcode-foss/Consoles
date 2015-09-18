@@ -2,6 +2,7 @@ package ca.jarcode.consoles.computer;
 
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.api.*;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.devices.CommandDevice;
 import ca.jarcode.consoles.computer.filesystem.*;
@@ -16,14 +17,11 @@ import ca.jarcode.consoles.internal.ConsoleButton;
 import ca.jarcode.consoles.internal.ConsoleComponent;
 import ca.jarcode.consoles.internal.ConsoleDialog;
 import ca.jarcode.consoles.internal.ManagedConsole;
-import net.minecraft.server.v1_8_R3.ChatComponentText;
-import net.minecraft.server.v1_8_R3.TileEntityCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
-import org.bukkit.craftbukkit.v1_8_R3.block.CraftCommandBlock;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -335,7 +333,6 @@ public abstract class Computer implements Runnable {
 		}
 	}
 	public void requestDevice(CommandBlock block, ConsoleEventListener<ConsoleButton, ButtonEvent> listener) {
-		TileEntityCommand command = ((CraftCommandBlock) block).getTileEntity();
 		ConsoleButton allow = new ConsoleButton(console, lang.getString("comp-allow"));
 		ConsoleButton deny = new ConsoleButton(console, lang.getString("comp-deny"));
 		Location loc = block.getLocation();
@@ -343,12 +340,12 @@ public abstract class Computer implements Runnable {
 				loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
 				, allow, deny);
 		allow.addEventListener(event -> {
-			command.getCommandBlock().sendMessage(new ChatComponentText(lang.getString("command-connection-accept")));
+			ConsolesNMS.commandInternals.sendMessage(block, lang.getString("command-connection-accept"));
 			addDeviceFile("cmd", new CommandDevice(block));
 			console.removeComponent(pos);
 		});
 		deny.addEventListener(event -> {
-			command.getCommandBlock().sendMessage(new ChatComponentText(lang.getString("command-connection-deny")));
+			ConsolesNMS.commandInternals.sendMessage(block, lang.getString("command-connection-deny"));
 			console.removeComponent(pos);
 		});
 		if (listener != null)
@@ -385,7 +382,7 @@ public abstract class Computer implements Runnable {
 		if (taskId != -1)
 			Bukkit.getScheduler().cancelTask(taskId);
 		console.getLocation().getWorld().dropItemNaturally(console.getLocation(),
-				delete ? ComputerHandler.newComputerStack() : ComputerHandler.newComputerStack(true, hostname));
+				delete ? ComputerHandler.newComputerStack() : ComputerHandler.newComputerStack(hostname));
 	}
 	public Kernel getKernel() {
 		return kernel;

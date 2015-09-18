@@ -3,6 +3,7 @@ package ca.jarcode.consoles.computer;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.ConsoleCreateException;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.computer.filesystem.SerializedFilesystem;
 import ca.jarcode.consoles.internal.ConsoleMeta;
 import ca.jarcode.consoles.util.LocalPosition;
@@ -94,7 +95,7 @@ public class ComputerData {
 		if (!folder.exists())
 			return false;
 		try {
-			FileUtils.deleteDirectory(folder);
+			ConsolesNMS.internals.forceDeleteDirectory(folder);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;

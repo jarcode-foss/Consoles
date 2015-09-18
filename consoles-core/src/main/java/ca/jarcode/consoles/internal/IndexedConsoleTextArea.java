@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.api.nms.CommandExecutor;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
@@ -247,7 +248,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 
 	@Override
-	public ConsoleMessageListener createListener() {
+	public CommandExecutor createListener() {
 		return (sender, text) -> {
 			println(ChatColor.translateAlternateColorCodes('&', text));
 			repaint();

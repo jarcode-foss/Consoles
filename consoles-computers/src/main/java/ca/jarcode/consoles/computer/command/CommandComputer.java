@@ -58,7 +58,7 @@ public class CommandComputer extends CommandBase {
 					sender.sendMessage(ChatColor.RED + "Invalid hostname");
 					return true;
 				}
-				player.getInventory().addItem(ComputerHandler.newComputerStack(true, host));
+				player.getInventory().addItem(ComputerHandler.newComputerStack(host));
 			}
 			else
 				player.getInventory().addItem(ComputerHandler.newComputerStack());

@@ -1,6 +1,7 @@
 package ca.jarcode.consoles;
 
 import ca.jarcode.classloading.loader.WrappedPlugin;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.images.ImageConsoleHandler;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import ca.jarcode.consoles.messaging.ConsoleBungeeHook;
@@ -32,8 +33,6 @@ public class Consoles extends WrappedPlugin {
 			System.exit(0);
 			throw new RuntimeException();
 		}
-		MapInjector.injectTypes();
-		MapInjector.clearNBTMapFiles();
 	}
 
 	public static Consoles getInstance() {
@@ -43,10 +42,7 @@ public class Consoles extends WrappedPlugin {
 	{
 		instance = this;
 
-		// set up package name
-		String version = getServer().getClass().getPackage().getName();
-		version = version.substring(version.lastIndexOf('.') + 1);
-		Pkg.setVersion(version);
+		NMSHandler.init();
 	}
 
 	private CommandHandler commandHandler;
@@ -61,6 +57,9 @@ public class Consoles extends WrappedPlugin {
 		debug = getConfig().getBoolean("debug-mode", false);
 
 		ConsoleHandler.getInstance().local = !forward;
+
+		ConsolesNMS.mapInternals.injectTypes();
+		ConsolesNMS.mapInternals.clearVanillaMapFiles();
 
 		commandHandler = new CommandHandler(
 				CommandConsole.class, CommandImage.class

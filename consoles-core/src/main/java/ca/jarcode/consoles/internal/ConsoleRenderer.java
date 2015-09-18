@@ -1,5 +1,7 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
+import ca.jarcode.consoles.api.nms.GeneralInternals;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
@@ -8,14 +10,10 @@ import ca.jarcode.consoles.api.*;
 import ca.jarcode.consoles.util.LocalPosition;
 import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.util.Region;
-import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftItemFrame;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
@@ -82,9 +80,6 @@ public abstract class ConsoleRenderer implements Canvas {
 	// accessed from the painting thread only.
 	private HashMap<String, Boolean> bgCheck = new HashMap<>();
 
-	// NMS direction that this console faces
-	EnumDirection d;
-
 	// locked when data is being written to the background cache or the pixel buffer,
 	// or when components are being added/removed.
 	protected final Object RENDERER_LOCK = new Object();
@@ -127,25 +122,21 @@ public abstract class ConsoleRenderer implements Canvas {
 				// set up bounding boxes, orientation, and NMS direction enums based on the face
 				switch (face) {
 					case NORTH:
-						d = EnumDirection.NORTH;
 						xm = (width - length) - 1;
 						bounds = new Region(local, local.copy().add(width - 1, height - 1, 0));
 						vertical = false;
 						break;
 					case SOUTH:
-						d = EnumDirection.SOUTH;
 						xm = length;
 						bounds = new Region(local, local.copy().add(width - 1, height - 1, 0));
 						vertical = false;
 						break;
 					case EAST:
-						d = EnumDirection.EAST;
 						zm = (width - length) - 1;
 						bounds = new Region(local, local.copy().add(0, height - 1, width - 1));
 						vertical = true;
 						break;
 					case WEST:
-						d = EnumDirection.WEST;
 						zm = length;
 						bounds = new Region(local, local.copy().add(0, height - 1, width - 1));
 						vertical = true;
@@ -157,21 +148,15 @@ public abstract class ConsoleRenderer implements Canvas {
 				synchronized (RENDERER_LOCK) {
 					renderers.add(renderer);
 				}
-				// get NMS world
-				net.minecraft.server.v1_8_R3.World mcWorld = ((CraftWorld) pos.getWorld()).getHandle();
-				// create item frame entity
-				EntityItemFrame itemFrame = new EntityItemFrame(mcWorld, new BlockPosition(
-						pos.getBlockX() + xm, pos.getBlockY() + (height - y) - 1, pos.getBlockZ() + zm), d);
-				if (pos.getWorld().isChunkLoaded(itemFrame.getBlockPosition().getX() / 16,
-						itemFrame.getBlockPosition().getZ() / 16))
-				// add the entity if chunk is loaded
-				mcWorld.addEntity(itemFrame);
-				// set item in frame
-				itemFrame.setItem(CraftItemStack.asNMSCopy(new ItemStack(Material.MAP, 1, index)));
+
+				GeneralInternals.InitResult result = ConsolesNMS.internals.initFrame(pos.getWorld(),
+						pos.getBlockX() + xm, pos.getBlockY() + (height - y) - 1, pos.getBlockZ() + zm,
+						index, face);
+
 				// add to entity list
-				frames.add((ItemFrame) itemFrame.getBukkitEntity());
+				frames.add(result.getEntity());
 				// map the map ids to the entity ids
-				entityMap.put(index, itemFrame.getId());
+				entityMap.put(index, result.getEntityId());
 				index++;
 			}
 		}
@@ -203,8 +188,8 @@ public abstract class ConsoleRenderer implements Canvas {
 
 		// where our plane (screen) is in world-space, as x = c or z = c.
 		// we add 1/16 to the pane, because consoles pop out by 1/16th of a block.
-		double c = vertical ? pos.getX() + (d == EnumDirection.WEST ? 1 - (1/16D) : (1/16D))
-				: pos.getZ() + (d == EnumDirection.NORTH ? 1 - (1/16D) : (1/16D));
+		double c = vertical ? pos.getX() + (face == BlockFace.WEST ? 1 - (1/16D) : (1/16D))
+				: pos.getZ() + (face == BlockFace.NORTH ? 1 - (1/16D) : (1/16D));
 
 		// now we need two points for this process, which we use from the above
 		// we're supposed to use v1 - v0 here, but that's just (v0 + h) - v0, simplifying to h.
@@ -219,7 +204,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		Location local = intersect.clone().subtract(pos);
 		// return 2D screen coordinates, relative to its top-left origin and multiply by 128.
 		int y = getHeight() - (int) Math.round(local.getY() * 128);
-		boolean b = (d == EnumDirection.EAST || d == EnumDirection.NORTH);
+		boolean b = (face == BlockFace.EAST || face == BlockFace.NORTH);
 		int inv = b ? getWidth() : 0;
 		int[] arr = vertical ?
 				new int[] {b ? (inv - (int) Math.round(local.getZ() * 128)) : (int) Math.round(local.getZ() * 128), y}
@@ -227,13 +212,13 @@ public abstract class ConsoleRenderer implements Canvas {
 		if (arr[0] < 0 || arr[0] >= getWidth() || arr[1] < 0 || arr[1] >= getHeight())
 			return null;
 		// players shouldn't be able to interact in the opposite direction, or behind the console, so let's fix that.
-		if (d == EnumDirection.NORTH && (zp < 0 || eye.getZ() > c))
+		if (face == BlockFace.NORTH && (zp < 0 || eye.getZ() > c))
 			return null;
-		if (d == EnumDirection.SOUTH && (zp > 0 || eye.getZ() < c))
+		if (face == BlockFace.SOUTH && (zp > 0 || eye.getZ() < c))
 			return null;
-		if (d == EnumDirection.EAST && (xp > 0 || eye.getX() < c))
+		if (face == BlockFace.EAST && (xp > 0 || eye.getX() < c))
 			return null;
-		if (d == EnumDirection.WEST && (xp < 0 || eye.getX() > c))
+		if (face == BlockFace.WEST && (xp < 0 || eye.getX() > c))
 			return null;
 		// too far away!
 		if (intersect.distance(eye) > distance)
@@ -241,6 +226,8 @@ public abstract class ConsoleRenderer implements Canvas {
 		else return arr;
 	}
 	// this is a way to obtain a map view by ID, regardless if it exists or not.
+	// from before the NMS abstraction update
+	/*
 	@Deprecated
 	@SuppressWarnings("deprecation")
 	private MapView getView(short i, World world) {
@@ -254,6 +241,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		}
 		return view;
 	}
+	*/
 	public ConsoleMapRenderer[] renderers() {
 		return renderers.toArray(new ConsoleMapRenderer[renderers.size()]);
 	}
@@ -345,14 +333,6 @@ public abstract class ConsoleRenderer implements Canvas {
 	}
 	public List<ItemFrame> bukkitEntities() {
 		return frames;
-	}
-	@SuppressWarnings("Convert2streamapi")
-	public List<EntityItemFrame> entities() {
-		ArrayList<EntityItemFrame> list = new ArrayList<>();
-		for (ItemFrame frame : frames) {
-			list.add(((CraftItemFrame) frame).getHandle());
-		}
-		return list;
 	}
 	ConsolePixelBuffer getPixelBuffer() {
 		return screen;

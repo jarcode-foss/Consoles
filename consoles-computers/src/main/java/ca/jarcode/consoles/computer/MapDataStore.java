@@ -1,16 +1,15 @@
 package ca.jarcode.consoles.computer;
 
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
+import ca.jarcode.consoles.api.nms.MapInternals;
 import ca.jarcode.consoles.event.bukkit.MapUpdateEvent;
 import ca.jarcode.consoles.util.Allocation;
-import ca.jarcode.consoles.util.ChunkMapper;
 import ca.jarcode.consoles.util.InstanceListener;
 import ca.jarcode.consoles.api.Position2D;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockEvent;
@@ -125,7 +124,7 @@ public class MapDataStore {
 			while (amt > 0) {
 				int x = din.readInt();
 				int y = din.readInt();
-				ChunkMapper.PreparedMapSection section = new ChunkMapper.PreparedMapSection();
+				MapInternals.PreparedMapSection section = new MapInternals.PreparedMapSection();
 				for (int t = 0; t < 128; t++)
 					for (int j = 0; j < 128; j++)
 						section.colors[t + (j * 128)] = din.readByte();
@@ -140,7 +139,7 @@ public class MapDataStore {
 	private static void saveFor(MapDataStore store, File file) {
 		try (DataOutputStream dout = new DataOutputStream(new FileOutputStream(file))) {
 			dout.writeInt(store.map.size());
-			for (Map.Entry<Position2D, ChunkMapper.PreparedMapSection> entry : store.map.entrySet()) {
+			for (Map.Entry<Position2D, MapInternals.PreparedMapSection> entry : store.map.entrySet()) {
 				dout.writeInt(entry.getKey().getX());
 				dout.writeInt(entry.getKey().getY());
 				for (int t = 0; t < 128; t++)
@@ -180,7 +179,7 @@ public class MapDataStore {
 
 	// map of all the sections, the position corresponds with the corner of the
 	// map (in global coordinates), the section only contains the memory.
-	public final HashMap<Position2D, ChunkMapper.PreparedMapSection> map = new HashMap<>();
+	public final HashMap<Position2D, MapInternals.PreparedMapSection> map = new HashMap<>();
 	public final int originX, originZ;
 	public final int scale;
 	public final int sectionSize, middleOffset;
@@ -198,8 +197,8 @@ public class MapDataStore {
 	}
 
 	// global coordinates
-	public ChunkMapper.PreparedMapSection getAt(int x, int y) {
-		Map.Entry<Position2D, ChunkMapper.PreparedMapSection> ret = map.entrySet().stream()
+	public MapInternals.PreparedMapSection getAt(int x, int y) {
+		Map.Entry<Position2D, MapInternals.PreparedMapSection> ret = map.entrySet().stream()
 				.filter(entry -> new Allocation(entry.getKey().getX(),
 						entry.getKey().getY(), sectionSize, sectionSize).inside(x, y))
 				.findFirst()
@@ -207,7 +206,7 @@ public class MapDataStore {
 		return ret == null ? null : ret.getValue();
 	}
 	// global coordinates
-	public Map.Entry<Position2D, ChunkMapper.PreparedMapSection> createAt(int x, int y) {
+	public Map.Entry<Position2D, MapInternals.PreparedMapSection> createAt(int x, int y) {
 
 		// here, we're aligning our maps to a grid according to the origin this
 		// infinite map view was created with.
@@ -222,7 +221,7 @@ public class MapDataStore {
 				originZ + (yo * sectionSize)
 		);
 
-		ChunkMapper.PreparedMapSection section = new ChunkMapper.PreparedMapSection();
+		MapInternals.PreparedMapSection section = new MapInternals.PreparedMapSection();
 		map.put(corner, section);
 		return new AbstractMap.SimpleEntry<>(corner, section);
 	}
@@ -247,7 +246,7 @@ public class MapDataStore {
 		// update all other sections
 		map.entrySet().stream()
 				.forEach(entry -> {
-					if (ChunkMapper.updateSection(entry.getValue(), ((CraftWorld) world).getHandle(),
+					if (ConsolesNMS.mapInternals.updateSection(entry.getValue(), world,
 							entry.getKey().getX() + middleOffset,
 							entry.getKey().getY() + middleOffset,
 							x, y, scale))

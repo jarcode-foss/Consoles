@@ -1,11 +1,10 @@
 package ca.jarcode.consoles.api.impl;
 
 import ca.jarcode.consoles.api.*;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.internal.*;
-import net.minecraft.server.v1_8_R3.PacketPlayOutMap;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 public class InternalFunctions {
@@ -21,10 +20,16 @@ public class InternalFunctions {
 		InternalHooks.INTERNAL_FREE = global -> ConsoleHandler.getInstance().free(global, 1);
 		InternalHooks.INTERNAL_TRANSLATE = (player, global) ->
 				ConsoleHandler.getInstance().translateIndex(player.getName(), global);
+		InternalHooks.INTERNAL_TRANSLATE_STRING = (player, global) ->
+				ConsoleHandler.getInstance().translateIndex(player, global);
 		InternalHooks.INTERNAL_SEND_PACKET = (data, player, id) -> {
-			PacketPlayOutMap packet = ConsoleMapRenderer.createUpdatePacket(data, id);
-			((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
+			Object packet = ConsolesNMS.packetInternals.createMapPacket(data, id);
+			ConsolesNMS.packetInternals.getConnection(player).sendPacket(packet);
 		};
+		InternalHooks.INTERNAL_IS_CONSOLE_ENTITY = (entity) ->
+				ConsoleHandler.getInstance().isConsoleEntity(entity);
+		InternalHooks.INTERNAL_IS_CONSOLE_ENTITY_ID = (id) ->
+				ConsoleHandler.getInstance().isConsoleEntity(id);
 
 	}
 

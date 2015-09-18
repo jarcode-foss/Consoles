@@ -3,6 +3,7 @@ package ca.jarcode.consoles.computer;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.ConsoleCreateException;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
@@ -11,11 +12,8 @@ import ca.jarcode.consoles.internal.ConsoleComponent;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import ca.jarcode.consoles.internal.ManagedConsole;
 import ca.jarcode.consoles.api.Position2D;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
-import net.minecraft.server.v1_8_R3.NBTTagList;
 import org.bukkit.*;
 import org.bukkit.block.*;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,9 +29,6 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,9 +44,6 @@ public class ComputerHandler implements Listener {
 
 	private static ComputerHandler instance;
 
-	private static final Field ITEM_STACK_HANDLE;
-	private static final Constructor ITEM_STACK_CREATE;
-
 	// register lua functions in this class
 	static {
 		Lua.map(ComputerHandler::lua_redstone, "redstone");
@@ -59,20 +51,6 @@ public class ComputerHandler implements Listener {
 		Lua.map(ComputerHandler::lua_redstoneInputLength, "redstoneInputLength");
 		Lua.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
 		ManualManager.load(ComputerHandler.class);
-	}
-
-	// get constructor and handle for craftbukkit's item stack.
-	static {
-		try {
-			ITEM_STACK_HANDLE = CraftItemStack.class.getDeclaredField("handle");
-			ITEM_STACK_HANDLE.setAccessible(true);
-			ITEM_STACK_CREATE =
-					CraftItemStack.class.getDeclaredConstructor(Material.class, int.class, short.class, ItemMeta.class);
-			ITEM_STACK_CREATE.setAccessible(true);
-		}
-		catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	// create default startup program
@@ -120,40 +98,27 @@ public class ComputerHandler implements Listener {
 	}
 
 	public static ItemStack newComputerStack() {
-		return newComputerStack(true, null);
+		return newComputerStack(null);
 	}
 
 	@SuppressWarnings("RedundantCast")
-	public static ItemStack newComputerStack(boolean glow, String hostname) {
+	public static ItemStack newComputerStack(String hostname) {
 		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
 		meta.setDisplayName(ChatColor.GREEN + lang.getString("computer-item-name") + ChatColor.GRAY
 				+ (hostname != null ? " (" + hostname + ")" : ""));
 		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + lang.getString("computer-item-tooltip")));
-		ItemStack stack = null;
-		try {
-			stack = (ItemStack) ITEM_STACK_CREATE.newInstance(Material.STAINED_GLASS, 1, (short) 15, meta);
-		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		if (glow) {
-			net.minecraft.server.v1_8_R3.ItemStack nms;
-			try {
-				nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get((CraftItemStack) stack);
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
-			}
-			NBTTagCompound comp = nms.getTag();
-			comp.set("ench", new NBTTagList());
-			// this is why I go through the effort to set custom NBT tags
-			// this prevents players from creating a computer without crafting
-			// it, unless they are setting the NBT tags explicitly - which
-			// would mean they are probably an admin.
-			comp.setBoolean("computer", true);
 
-			if (hostname != null)
-				comp.setString("hostname", hostname);
-			nms.setTag(comp);
-		}
+		ItemStack stack = ConsolesNMS.internals.itemStackBuild(Material.STAINED_GLASS, 1, (short) 15, meta);
+
+		ConsolesNMS.internals.fakeEnchantItem(stack);
+		// this is why I go through the effort to set custom NBT tags
+		// this prevents players from creating a computer without crafting
+		// it, unless they are setting the NBT tags explicitly - which
+		// would mean they are probably an admin.
+		ConsolesNMS.internals.setItemNBTBoolean(stack, "computer", true);
+
+		if (hostname != null)
+			ConsolesNMS.internals.setItemNBTString(stack, "hostname", hostname);
 		return stack;
 	}
 
@@ -541,28 +506,12 @@ public class ComputerHandler implements Listener {
 		}
 	}
 	private String getHostname(ItemStack stack) {
-
-		net.minecraft.server.v1_8_R3.ItemStack nms;
-		try {
-			nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get(stack);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-		NBTTagCompound tag = nms.getTag();
-		return tag == null ? null : tag.getString("hostname");
-
+		return ConsolesNMS.internals.getItemNBTString(stack, "hostname");
 	}
 	private boolean isComputer(ItemStack stack) {
-		if (stack.getType() != Material.STAINED_GLASS)
-			return false;
-		net.minecraft.server.v1_8_R3.ItemStack nms;
-		try {
-			nms = (net.minecraft.server.v1_8_R3.ItemStack) ITEM_STACK_HANDLE.get(stack);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
-		NBTTagCompound tag = nms.getTag();
-		return tag != null && tag.hasKey("computer");
+		return stack.getType() == Material.STAINED_GLASS
+				&& ConsolesNMS.internals.hasItemNBTTag(stack)
+				&& ConsolesNMS.internals.getItemNBTBoolean(stack, "computer");
 	}
 	public boolean hostnameTaken(String hostname) {
 		return inactiveHosts.contains(hostname) || computers.stream()

@@ -1,8 +1,10 @@
 package ca.jarcode.consoles.api;
 
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -36,16 +38,54 @@ import java.util.function.Supplier;
  */
 public class InternalHooks {
 
+	/**
+	 * Handle for implementing code
+	 */
 	public static Supplier<Short> INTERNAL_ALLOC = null;
+	/**
+	 * Handle for implementing code
+	 */
 	public static Consumer<Short> INTERNAL_FREE = null;
+	/**
+	 * Handle for implementing code
+	 */
 	public static TranslateFunction INTERNAL_TRANSLATE = null;
-	public static SendMapPacketFunction INTERNAL_SEND_PACKET;
+	/**
+	 * Handle for implementing code
+	 */
+	public static TranslateStringFunction INTERNAL_TRANSLATE_STRING = null;
+	/**
+	 * Handle for implementing code
+	 */
+	public static SendMapPacketFunction INTERNAL_SEND_PACKET = null;
+	/**
+	 * Handle for implementing code
+	 */
+	public static Function<ItemFrame, Boolean> INTERNAL_IS_CONSOLE_ENTITY = null;
+	/**
+	 * Handle for implementing code
+	 */
+	public static Function<Integer, Boolean> INTERNAL_IS_CONSOLE_ENTITY_ID = null;
 
+	/**
+	 * Interface for implementing code
+	 */
 	@FunctionalInterface
 	public interface TranslateFunction {
 		int translate(Player player, short global);
 	}
 
+	/**
+	 * Interface for implementing code
+	 */
+	@FunctionalInterface
+	public interface TranslateStringFunction {
+		int translate(String player, short global);
+	}
+
+	/**
+	 * Interface for implementing code
+	 */
 	@FunctionalInterface
 	public interface SendMapPacketFunction {
 		void sendMapPacket(byte[] data, Player player, int id);
@@ -81,6 +121,17 @@ public class InternalHooks {
 	}
 
 	/**
+	 * Translates a global map ID to the client ID for a given player
+	 *
+	 * @param player the player to translate for
+	 * @param global the global ID to lookup
+	 * @return the client map ID for the given player
+	 */
+	public static int translate(String player, short global) {
+		return INTERNAL_TRANSLATE_STRING.translate(player, global);
+	}
+
+	/**
 	 * Sends a map packet to the given player, with the given data. Consoles will translate
 	 * the map ID to the client map ID when sending the packet.
 	 *
@@ -91,5 +142,25 @@ public class InternalHooks {
 	 */
 	public static void sendMapPacket(byte[] data, Player player, int id) {
 		INTERNAL_SEND_PACKET.sendMapPacket(data, player, id);
+	}
+
+	/**
+	 * Returns whether the supplied item frame is part of a console or not
+	 *
+	 * @param entity the entity to check
+	 * @return whether the {@link org.bukkit.entity.ItemFrame} is part of a console
+	 */
+	public static boolean isConsoleEntity(ItemFrame entity) {
+		return INTERNAL_IS_CONSOLE_ENTITY.apply(entity);
+	}
+
+	/**
+	 * Returns whether the supplied entity id is part of a console or not
+	 *
+	 * @param id the entity ID to check
+	 * @return whether the entity id corresponds to a console entity (item frame)
+	 */
+	public static boolean isConsoleEntity(int id) {
+		return INTERNAL_IS_CONSOLE_ENTITY_ID.apply(id);
 	}
 }

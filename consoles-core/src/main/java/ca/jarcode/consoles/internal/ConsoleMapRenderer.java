@@ -1,12 +1,8 @@
 package ca.jarcode.consoles.internal;
 
-import ca.jarcode.consoles.Consoles;
-import ca.jarcode.consoles.util.MapInjector;
-import net.minecraft.server.v1_8_R3.*;
-import org.bukkit.*;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
+import ca.jarcode.consoles.api.nms.ClientConnection;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 
 /*
@@ -16,58 +12,6 @@ and update triggers.
 
  */
 public class ConsoleMapRenderer {
-
-	// we ignore a decent amount of fields there because we can leave them as their defaults (0).
-	private static final Field MAP_ID;
-	private static final Field MAP_ICONS;
-	private static final Field MAP_WIDTH;
-	private static final Field MAP_HEIGHT;
-	private static final Field MAP_DATA;
-
-	static {
-		try {
-			// set up fields that we access when creating new packets
-			MAP_ID = PacketPlayOutMap.class.getDeclaredField("a");
-			MAP_ICONS = PacketPlayOutMap.class.getDeclaredField("c");
-			MAP_WIDTH = PacketPlayOutMap.class.getDeclaredField("f");
-			MAP_HEIGHT = PacketPlayOutMap.class.getDeclaredField("g");
-			MAP_DATA = PacketPlayOutMap.class.getDeclaredField("h");
-			MAP_ID.setAccessible(true);
-			MAP_ICONS.setAccessible(true);
-			MAP_WIDTH.setAccessible(true);
-			MAP_HEIGHT.setAccessible(true);
-			MAP_DATA.setAccessible(true);
-		}
-		catch (Throwable e) {
-			throw new RuntimeException("Could not initialize packet fields");
-		}
-	}
-
-	// faster way of creating maps
-	// we avoid copying a buffer when creating the packet using reflection,
-	// so we can use the pixel buffer's sections directly.
-	public static PacketPlayOutMap createUpdatePacket(byte[] data, int id) {
-		if (data == null) return null;
-		PacketPlayOutMap map = ConsoleHandler.getInstance().newMapPacket();
-		try {
-			// map damage value
-			MAP_ID.set(map, id);
-			// initialize the icon array in the packet with an empty array
-			// we don't use any map icons, so this is fine to do.
-			MAP_ICONS.set(map, new MapIcon[0]);
-			// we always send packets that update the entire map area,
-			// so the dimensions are always 128x128
-			MAP_WIDTH.set(map, 128);
-			MAP_HEIGHT.set(map, 128);
-			// pass through the byte array directly
-			// this avoids a considerable amount of overhead from sending packets
-			MAP_DATA.set(map, data);
-		}
-		catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		return map;
-	}
 
 	private ConsoleRenderer renderer;
 	private short id;
@@ -90,7 +34,7 @@ public class ConsoleMapRenderer {
 		if (update != null)
 			update.fire();
 	}
-	public boolean update(PlayerConnection connection, final String context) {
+	public boolean update(ClientConnection connection, final String context) {
 
 		if (!renderer.created()) return false;
 
@@ -112,7 +56,7 @@ public class ConsoleMapRenderer {
 				newContexts.put(context, clientId);
 			}
 			// create the packet
-			PacketPlayOutMap packet = createUpdatePacket(data, clientId);
+			Object packet = ConsolesNMS.packetInternals.createMapPacket(data, clientId);
 			// send the packet
 			if (packet != null)
 				connection.sendPacket(packet);
@@ -126,6 +70,8 @@ public class ConsoleMapRenderer {
 		else return -2;
 	}
 	// old code used to manually update the metadata of an item frame
+	// this was before I even split NMS code, but I'm keeping this around just in case
+	/*
 	@Deprecated
 	@SuppressWarnings("unused")
 	public void updateMap(final PlayerConnection connection, final short mapId) {
@@ -140,8 +86,5 @@ public class ConsoleMapRenderer {
 			connection.sendPacket(update);
 		});
 	}
-	public static ItemStack mapOf(short id) {
-		MapInjector.overrideMap(id);
-		return CraftItemStack.asNMSCopy(new org.bukkit.inventory.ItemStack(org.bukkit.Material.MAP, 1, id));
-	}
+	*/
 }

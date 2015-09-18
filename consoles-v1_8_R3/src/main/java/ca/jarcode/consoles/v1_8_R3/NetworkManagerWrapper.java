@@ -1,11 +1,11 @@
-package ca.jarcode.consoles.util;
+package ca.jarcode.consoles.v1_8_R3;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import ca.jarcode.consoles.util.unsafe.UnsafeTools;
 import net.minecraft.server.v1_8_R3.*;
+import sun.misc.Unsafe;
 
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
@@ -15,8 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Predicate;
-
-import static ca.jarcode.consoles.Pkg.*;
 
 /*
 
@@ -37,8 +35,6 @@ public class NetworkManagerWrapper extends NetworkManager {
 
 	static {
 		try {
-			verify(v1_8_R2, v1_8_R3);
-
 			CHANNEL_READ_0 = NetworkManager.class
 					.getDeclaredMethod("channelRead0", ChannelHandlerContext.class, Object.class);
 			CHANNEL_READ_0.setAccessible(true);
@@ -52,6 +48,18 @@ public class NetworkManagerWrapper extends NetworkManager {
 		}
 	}
 
+	public static Unsafe getUnsafe() {
+		try {
+			Field field = Unsafe.class.getDeclaredField("theUnsafe");
+			field.setAccessible(true);
+			return (Unsafe) field.get(null);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	/**
 	 * <p>Wraps a network manager in an instance of this class. The wrapper
 	 * contains uninitialized fields, and overloads every method to
@@ -62,6 +70,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 	 * @param manager the manager to wrap
 	 * @return a wrapped manager
 	 */
+	@SuppressWarnings("ConstantConditions")
 	public static NetworkManagerWrapper wrap(NetworkManager manager) {
 
 		// check protocol state, this wrapper is only meant for 'play'
@@ -75,7 +84,7 @@ public class NetworkManagerWrapper extends NetworkManager {
 			// create wrapper, and avoid calling <init> code and constructors
 			// this avoids creating pointless netty channels in the network manager
 			// that the wrapper extends
-			wrapper = UnsafeTools.allocateInstance(NetworkManagerWrapper.class);
+			wrapper = (NetworkManagerWrapper) getUnsafe().allocateInstance(NetworkManagerWrapper.class);
 		} catch (InstantiationException e) {
 			throw new RuntimeException(e);
 		}
@@ -83,29 +92,8 @@ public class NetworkManagerWrapper extends NetworkManager {
 		return wrapper;
 	}
 
-	// multi-version support
-	private static Field channelField() throws NoSuchFieldException {
-		return findField(NetworkManager.class, new Object[][] {
-				{v1_8_R3, "channel"},
-				{v1_8_R2, "k"}
-		});
-	}
-
-	private static void replaceChannel(NetworkManager from, NetworkManager to) {
-		try {
-			Field field = channelField();
-			field.set(to, field.get(from));
-		} catch (NoSuchFieldException | IllegalAccessException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-
 	private static Object getProtocol(NetworkManager from) {
-		try {
-			return ((Channel) channelField().get(from)).attr(c).get();
-		} catch (NoSuchFieldException | IllegalAccessException ex) {
-			throw new RuntimeException(ex);
-		}
+		return from.channel.attr(c).get();
 	}
 
 	private NetworkManager underlying;
@@ -119,7 +107,8 @@ public class NetworkManagerWrapper extends NetworkManager {
 		// copy references to public fields in original object
 
 		this.l = underlying.l;
-		replaceChannel(underlying, this);
+		// k in previous nms version
+		this.channel = underlying.channel;
 
 		this.spoofedUUID = underlying.spoofedUUID;
 		this.spoofedProfile = underlying.spoofedProfile;

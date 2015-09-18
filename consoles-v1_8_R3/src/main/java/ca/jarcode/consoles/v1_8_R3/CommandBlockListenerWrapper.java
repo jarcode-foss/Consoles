@@ -1,7 +1,6 @@
-package ca.jarcode.consoles.util;
+package ca.jarcode.consoles.v1_8_R3;
 
-import ca.jarcode.consoles.internal.ConsoleHandler;
-import ca.jarcode.consoles.internal.ConsoleMessageListener;
+import ca.jarcode.consoles.api.nms.CommandExecutor;
 import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.command.CommandSender;
 
@@ -9,8 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-
-import static ca.jarcode.consoles.Pkg.*;
+import java.util.function.BooleanSupplier;
 
 /*
 
@@ -26,12 +24,11 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			"link"
 	};
 
-	private ConsoleMessageListener consoleListener;
+	private CommandExecutor consoleListener;
+	private BooleanSupplier commandBlocksEnabled;
 
 	static {
 		try {
-			// these field names are sensitive, they have changed recently
-			verify(v1_8_R2, v1_8_R3);
 
 			COMMAND_RESULT = CommandBlockListenerAbstract.class.getDeclaredField("b");
 			CHAT_COMPONENT = CommandBlockListenerAbstract.class.getDeclaredField("d");
@@ -78,13 +75,15 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	@SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
 	private final TileEntityCommand this$0;
 
-	CommandBlockListenerWrapper(CommandBlockListenerAbstract underlying, TileEntityCommand command) {
+	CommandBlockListenerWrapper(CommandBlockListenerAbstract underlying,
+	                            BooleanSupplier commandBlocksEnabled, TileEntityCommand command) {
 		this.underlying = underlying;
+		this.commandBlocksEnabled = commandBlocksEnabled;
 		this.sender = getSender(underlying);
 		this.this$0 = command;
 	}
 
-	public void setConsoleListener(ConsoleMessageListener listener) {
+	public void setConsoleListener(CommandExecutor listener) {
 		consoleListener = listener;
 	}
 
@@ -138,7 +137,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 			setResult(0);
 			return;
 		}
-		if (!ConsoleHandler.getInstance().commandBlocksEnabled && !override()) {
+		if (!commandBlocksEnabled.getAsBoolean() && !override()) {
 			setChatComponent(new ChatComponentText("You cannot use server commands"));
 			h();
 			setResult(0);
@@ -164,13 +163,8 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	// I'm not sure what this method is for, but it's a check when handling vanilla commands
 	// in the minecraft server. It changed in the last version, so I'm just adding this fix.
 	public boolean underlyingCheck() {
-		String name = null;
-		verify();
-		if (version(v1_8_R2))
-			name = "N";
-		if (version(v1_8_R3))
-			name = "O";
-		assert name != null;
+		// this is "N" in previous version
+		String name = "O";
 		try {
 			Method method = MinecraftServer.class.getMethod(name);
 			return (Boolean) method.invoke(MinecraftServer.getServer());

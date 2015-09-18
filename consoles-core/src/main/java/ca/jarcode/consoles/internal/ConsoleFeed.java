@@ -2,6 +2,7 @@ package ca.jarcode.consoles.internal;
 
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.Position2D;
+import ca.jarcode.consoles.api.nms.CommandExecutor;
 import org.bukkit.Bukkit;
 
 import java.io.*;
@@ -172,7 +173,7 @@ public class ConsoleFeed extends ConsoleTextArea implements Runnable {
 	}
 
 	@Override
-	public ConsoleMessageListener createListener() {
+	public CommandExecutor createListener() {
 		return (sender, text) -> {
 			write(text);
 			return "Sent to console";

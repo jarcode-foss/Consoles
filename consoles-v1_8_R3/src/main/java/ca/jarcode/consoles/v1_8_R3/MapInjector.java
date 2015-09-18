@@ -1,9 +1,14 @@
-package ca.jarcode.consoles.util;
+package ca.jarcode.consoles.v1_8_R3;
 
+import ca.jarcode.consoles.api.nms.MapInternals;
 import net.minecraft.server.v1_8_R3.*;
+import net.minecraft.server.v1_8_R3.ItemStack;
+import net.minecraft.server.v1_8_R3.World;
 import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
+import org.bukkit.*;
 import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
+import org.bukkit.inventory.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +42,75 @@ public class MapInjector extends WorldMap {
 
 	private static final Field PERSISTENT_COLLECTION_MAP;
 
+	public static final MapInternals IMPL = new MapInternals() {
+		// this is another terrible method. Not as much as the second one, but still terrible
+		// there's no way to fix a map once it has been overridden, but the second method just kill map
+		// functionality entirely anyway.
+		public void overrideMap(int id) {
+			World mainWorld = ((CraftServer) Bukkit.getServer()).getServer().worlds.get(0);
+			try {
+				// register the fake map
+				MapInjector fake = new MapInjector(id);
+				mainWorld.a("map_" + id, fake);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		// don't try this at home
+		public void injectTypes() {
+			try {
+				Field field = Items.class.getDeclaredField("FILLED_MAP");
+
+				// reflect the reflect library. Yo dawg.
+				Field modifiersField = Field.class.getDeclaredField("modifiers");
+				modifiersField.setAccessible(true);
+				// remove the final flag on the security int/bytes
+				modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+				// replace the value
+				field.set(null, new FakeItemWorldMap());
+
+				// There are a number of things wrong with this, particularity that the JVM optimizes and works around
+				// the fact that fields are final or not. You can't do this on compile-time constants (like strings
+				// and primitives), and will not work under most security managers.
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		public void clearVanillaMapFiles() {
+			String worldName = ((CraftServer) Bukkit.getServer()).getServer()
+					.getPropertyManager().getString("level-name", "world");
+			File world = new File(Bukkit.getWorldContainer().getAbsolutePath() + File.separatorChar
+					+ worldName + File.separatorChar + "data");
+			if (!world.isDirectory()) return;
+			File[] arr = world.listFiles();
+			if (arr == null) return;
+			for (File file : arr) {
+				if (file.getName().startsWith("map_") && !file.isDirectory()) {
+					try {
+						FileUtils.forceDelete(file);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+
+		public Object mapItemNMS(short id) {
+			overrideMap(id);
+			return CraftItemStack.asNMSCopy(new org.bukkit.inventory.ItemStack(org.bukkit.Material.MAP, 1, id));
+		}
+
+		@Override
+		public boolean updateSection(PreparedMapSection section, org.bukkit.World world, int centerX,
+		                             int centerZ, int updateX, int updateZ, int scale) {
+			return ChunkMapper.updateSection(section, world, centerX, centerZ, updateX, updateZ, scale);
+		}
+	};
+
 	static {
 		try {
 			PERSISTENT_COLLECTION_MAP = PersistentCollection.class.getDeclaredField("a");
@@ -45,66 +119,6 @@ public class MapInjector extends WorldMap {
 		catch (Exception e) {
 			throw new RuntimeException();
 		}
-	}
-
-	// this is another terrible method. Not as much as the second one, but still terrible
-	// there's no way to fix a map once it has been overridden, but the second method just kill map
-	// functionality entirely anyway.
-	public static void overrideMap(int id) {
-		World mainWorld = ((CraftServer) Bukkit.getServer()).getServer().worlds.get(0);
-		try {
-			// register the fake map
-			MapInjector fake = new MapInjector(id);
-			mainWorld.a("map_" + id, fake);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	// don't try this at home
-	// very bad programming practise to do this, but there's really no other way to remove default render functionality.
-	// we're overriding a final static type to change the map packet managing and serialization/deserialization.
-	public static void injectTypes() {
-		try {
-			Field field = Items.class.getDeclaredField("FILLED_MAP");
-
-			// reflect the reflect library. Yo dawg.
-			Field modifiersField = Field.class.getDeclaredField("modifiers");
-			modifiersField.setAccessible(true);
-			// remove the final flag on the security int/bytes
-			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-			// replace the value
-			field.set(null, new FakeItemWorldMap());
-
-			// There are a number of things wrong with this, particularity that the JVM optimizes and works around
-			// the fact that fields are final or not. You can't do this on compile-time constants (like strings
-			// and primitives), and will not work under most security managers.
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static int clearNBTMapFiles() {
-		int failed = 0;
-		String worldName = ((CraftServer) Bukkit.getServer()).getServer()
-				.getPropertyManager().getString("level-name", "world");
-		File world = new File(Bukkit.getWorldContainer().getAbsolutePath() + File.separatorChar
-				+ worldName + File.separatorChar + "data");
-		if (!world.isDirectory()) return -1;
-		File[] arr = world.listFiles();
-		if (arr == null) return -2;
-		for (File file : arr) {
-			if (file.getName().startsWith("map_") && !file.isDirectory()) {
-				try {
-					FileUtils.forceDelete(file);
-				} catch (IOException e) {
-					failed++;
-				}
-			}
-		}
-		return failed;
 	}
 
 	private int id;

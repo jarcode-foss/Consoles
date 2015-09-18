@@ -5,7 +5,8 @@
     <properties>
         <!-- the release type, set to '-SNAPSHOT' via commandline to work with snapshots -->
         <global.version.suffix/>
-        <global.version>1.0</global.version>
+        <global.version>1.1</global.version>
+        <global.spigot.version>1.8.8-R0.1-SNAPSHOT</global.spigot.version>
     </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>ca.jarcode</groupId>
@@ -18,6 +19,9 @@
         <module>consoles-api</module>
         <module>consoles-computers</module>
         <module>consoles-fetcher</module>
+        <module>consoles-nms-api</module>
+        <module>consoles-v1_8_R3</module>
+        <module>consoles-v1_8_R2</module>
     </modules>
 
     <repositories>

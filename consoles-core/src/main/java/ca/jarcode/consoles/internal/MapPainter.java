@@ -1,9 +1,9 @@
 package ca.jarcode.consoles.internal;
 
 import ca.jarcode.consoles.Consoles;
-import net.minecraft.server.v1_8_R3.PlayerConnection;
+import ca.jarcode.consoles.api.nms.ClientConnection;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -166,10 +166,10 @@ public class MapPainter implements Runnable {
 		synchronized (LOCK) {
 			// repaint switch
 			stack.add(new StackEntry(renderer));
-			PlayerConnection[] arr = new PlayerConnection[close.size()];
+			ClientConnection[] arr = new ClientConnection[close.size()];
 			String[] names = new String[close.size()];
 			for (int t = 0; t < arr.length; t++) {
-				arr[t] = (((CraftPlayer) close.get(t)).getHandle().playerConnection);
+				arr[t] = ConsolesNMS.packetInternals.getConnection(close.get(t));
 				names[t] = close.get(t).getName();
 			}
 			// add update requests
@@ -215,7 +215,7 @@ public class MapPainter implements Runnable {
 
 		synchronized (LOCK) {
 			stack.add(new StackEntry(renderer,
-					new PlayerConnection[]{(((CraftPlayer) player).getHandle().playerConnection)},
+					new ClientConnection[]{ConsolesNMS.packetInternals.getConnection(player)},
 					new String[]{player.getName()}, false, force, paintIfNew));
 			LOCK.notify();
 		}
@@ -232,20 +232,20 @@ public class MapPainter implements Runnable {
 
 		synchronized (LOCK) {
 			stack.add(new StackEntry(renderer,
-					new PlayerConnection[] {(((CraftPlayer) player).getHandle().playerConnection)},
+					new ClientConnection[] {ConsolesNMS.packetInternals.getConnection(player)},
 					new String[] {player.getName()}, true, false, false));
 			LOCK.notify();
 		}
 	}
 	private class StackEntry {
 		ConsoleRenderer renderer;
-		PlayerConnection[] connections;
+		ClientConnection[] connections;
 		String[] identifiers;
 		boolean paint;
 		boolean paintIfNew;
 		boolean force;
 		EntryType type;
-		public StackEntry(ConsoleRenderer renderer, PlayerConnection[] connections,
+		public StackEntry(ConsoleRenderer renderer, ClientConnection[] connections,
 		                  String[] identifiers, boolean paint, boolean force, boolean paintIfNew) {
 			this.renderer = renderer;
 			this.connections = connections;

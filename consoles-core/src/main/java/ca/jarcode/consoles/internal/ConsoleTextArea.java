@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.api.nms.CommandExecutor;
 import com.google.common.base.Joiner;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.api.Position2D;
@@ -176,7 +177,7 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 		lastColor = defaultTextColor;
 	}
 	@Override
-	public ConsoleMessageListener createListener() {
+	public CommandExecutor createListener() {
 		return (sender, text) -> {
 			println(ChatColor.translateAlternateColorCodes('&', text));
 			repaint();

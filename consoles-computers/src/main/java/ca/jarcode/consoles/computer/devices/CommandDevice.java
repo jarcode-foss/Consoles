@@ -1,9 +1,9 @@
 package ca.jarcode.consoles.computer.devices;
 
+import ca.jarcode.consoles.api.nms.CommandExecutor;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.computer.LinkedStream;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
-import ca.jarcode.consoles.internal.ConsoleMessageListener;
-import ca.jarcode.consoles.util.CommandBlockUtils;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.command.CommandSender;
 
@@ -27,8 +27,8 @@ public class CommandDevice extends FSFile {
 		// device id
 		super((byte) 0x03);
 		synchronized (LOCK) {
-			if (!CommandBlockUtils.isRegistered(block)) {
-				CommandBlockUtils.registerListener(block, new ConsoleMessageListener() {
+			if (!ConsolesNMS.commandInternals.isRegistered(block)) {
+				ConsolesNMS.commandInternals.registerListener(block, new CommandExecutor() {
 					@Override
 					public String execute(CommandSender sender, String text) {
 						synchronized (LOCK) {
@@ -93,7 +93,7 @@ public class CommandDevice extends FSFile {
 	@Override
 	public void release() {
 		synchronized (LOCK) {
-			CommandBlockUtils.restoreCommandBlock(block);
+			ConsolesNMS.commandInternals.restore(block);
 		}
 	}
 

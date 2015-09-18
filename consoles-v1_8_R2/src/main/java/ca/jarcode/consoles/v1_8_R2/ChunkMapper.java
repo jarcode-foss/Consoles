@@ -1,9 +1,13 @@
-package ca.jarcode.consoles.util;
+package ca.jarcode.consoles.v1_8_R2;
 
+import ca.jarcode.consoles.api.nms.MapInternals;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multisets;
-import net.minecraft.server.v1_8_R3.*;
+import net.minecraft.server.v1_8_R2.*;
+import net.minecraft.server.v1_8_R2.Chunk;
+import net.minecraft.server.v1_8_R2.World;
+import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
 
 public class ChunkMapper {
 
@@ -11,8 +15,10 @@ public class ChunkMapper {
 	// I have not yet bothered to try to understand it completely. Most of this is
 	// difficult to read because of the decompiler used.
 	@SuppressWarnings({"unchecked", "ConstantConditions"})
-	public static boolean updateSection(PreparedMapSection section, World world, int centerX, int centerZ,
-	                                                     int updateX, int updateZ, int scale) {
+	public static boolean updateSection(MapInternals.PreparedMapSection section, org.bukkit.World bukkitWorld,
+	                                    int centerX, int centerZ,  int updateX, int updateZ, int scale) {
+
+		World world = ((CraftWorld) bukkitWorld).getHandle();
 
 		boolean updated = false;
 
@@ -151,15 +157,5 @@ public class ChunkMapper {
 			}
 		}
 		return updated;
-	}
-
-	// our 'fake' map, used as a 128x128 buffer for a map, so that we can
-	// use the above code just like it was used in the minecraft server
-	// previously
-	public static class PreparedMapSection {
-		// color data
-		public final byte[] colors = new byte[128 * 128];
-		// this is accessed from multiple threads, we need to synchronize
-		private final Object LOCK = new Object();
 	}
 }

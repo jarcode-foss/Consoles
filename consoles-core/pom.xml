@@ -9,6 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>consoles-core</artifactId>
+    <packaging>pom</packaging>
     <version>${global.version}${global.version.suffix}</version>
     <description>Craftbukkit server plugin that adds programmable map canvases to the server. Implements consoles-api.</description>
     <build>
@@ -78,15 +79,30 @@
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
-            <artifactId>spigot</artifactId>
-            <version>1.8.8-R0.1-SNAPSHOT</version>
+            <artifactId>spigot-api</artifactId>
+            <version>${global.spigot.version}</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>ca.jarcode</groupId>
             <artifactId>consoles-api</artifactId>
-            <version>1.1</version>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.jarcode</groupId>
+            <artifactId>consoles-nms-api</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.jarcode</groupId>
+            <artifactId>consoles-v1_8_R3</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>ca.jarcode</groupId>
+            <artifactId>consoles-v1_8_R2</artifactId>
+            <version>1.0</version>
         </dependency>
         <!-- dropping skript support, repository is down and the project is unmaintained
         <dependency>
