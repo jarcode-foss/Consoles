@@ -6,6 +6,7 @@
         <!-- the release type, set to '-SNAPSHOT' via commandline to work with snapshots -->
         <global.version.suffix/>
         <global.version>1.1</global.version>
+        <!-- this is the latest spigot build, just for the API. NMS modules all use their own versions -->
         <global.spigot.version>1.8.8-R0.1-SNAPSHOT</global.spigot.version>
     </properties>
     <modelVersion>4.0.0</modelVersion>
