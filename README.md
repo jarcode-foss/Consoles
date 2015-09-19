@@ -11,7 +11,7 @@ License for `consoles-fetcher`: see source file(s)
 
 ### Maven Repository
 
-There is a maven repository up at [jarcode.ca/maven2](http://jarcode.ca/maven2), and you can view all the maven modules for consoles [in the repository browser](http://jarcode.ca/modules.php?m=ca_jarcode_mc-consoles).
+There is a maven repository up at [jarcode.ca/maven2](http://jarcode.ca/maven2), and you can view all the maven modules for consoles [in the repository browser](http://jarcode.ca/modules.php).
 
 credit to wolfmitchell for website and repository hosting!
 
