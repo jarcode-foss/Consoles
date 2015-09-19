@@ -2,7 +2,7 @@
 
 ### Prerequisites
 
-- You will need several server builds installed to your local repository. You can generate these by running `BuildTools.jar` with the `--rev` argument, followed by the server version.
+- You will need several server builds installed to your local repository. You can generate these by running `BuildTools.jar` with the `--rev` argument, followed by the server version. The versions required are:
 
 	- 1.8.3-R0.1-SNAPSHOT (v1_8_R2)
 
