@@ -1,9 +1,11 @@
 # Consoles
 A powerful set of plugins that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
 
-License for `consoles-api`: [LGPL Version 3](http://www.gnu.org/licenses/lgpl-3.0.en.html)
+### Licensing
 
-License for `consoles-core`, `consoles-computer`, and `consoles-bungee`: [GPL Version 3](https://www.gnu.org/licenses/gpl.html)
+[LGPL Version 3](http://www.gnu.org/licenses/lgpl-3.0.en.html) for `consoles-api`
+
+[GPL Version 3](https://www.gnu.org/licenses/gpl.html) for `consoles-core`, `consoles-computer`, `consoles-bungee`, `consoles-nms-api`, and all NMS versioned consoles modules.
 
 License for `consoles-fetcher`: see source file(s)
 
