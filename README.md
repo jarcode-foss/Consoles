@@ -45,4 +45,4 @@ Non-API features:
 Notes:
  - This replaces maps, and _completely_ removes handheld map functionality. Fake map handlers/items are injected to ensure that the normal map system does not send packets and map out world regions.
  - This plugin/API is strictly for _map canvases_, which are sets of (modified) item frames in a grid containing maps that can display pixels in its own screen coordinates, for each player.
- - My code _heavily_ depends on NMS calls for various reasons. Builds of this plugin simply will be dependant on certain craftbukkit/spigot versions. If you don't like this, you can write the ~10 wrapper classes for all my NMS calls yourself.
+ - My code has very large NMS backends, which means writing support for older server versions and keeping this up to date will be difficult.
