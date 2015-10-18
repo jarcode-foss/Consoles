@@ -310,7 +310,7 @@ public abstract class SandboxProgram {
 			if (out == null)
 				globals.STDOUT = dummyPrintStream();
 			else
-				globals.STDOUT = new PrintStream(out);
+				globals.STDOUT = new PrintStream(out, false, "UTF-8");
 
 			// we handle errors with exceptions, so this will always be a dummy writer.
 			globals.STDERR = dummyPrintStream();
@@ -426,7 +426,10 @@ public abstract class SandboxProgram {
 			}
 		}
 		// cleanup code
-		finally {
+		catch (UnsupportedEncodingException e) {
+			// should never happen unless the JVM somehow doesn't support UTF-8 encoding (wat)
+			throw new RuntimeException(e);
+		} finally {
 
 			// unregister our pool
 			if (pool != null)
