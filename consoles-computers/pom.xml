@@ -10,7 +10,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>consoles-computers</artifactId>
-    <packaging>pom</packaging>
     <version>${global.version}${global.version.suffix}</version>
     <description>Extension to consoles-core, adds programmable computers to a serve as a craftbukkit plugin.</description>
 
@@ -23,14 +22,8 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-            <resource>
-                <directory>src/main/java</directory>
-                <includes>
-                    <include>**/*.properties</include>
-                </includes>
-                <filtering>true</filtering>
-            </resource>
         </resources>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -74,7 +67,7 @@
                         </goals>
                         <configuration>
                             <file>${project.build.directory}/final/${project.artifactId}-${project.version}-jar-with-dependencies.jar</file>
-                            <files>${project.build.directory}/${project.artifactId}-${project.version}.jar</files>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
                         </configuration>
                     </execution>
                 </executions>
@@ -86,7 +79,7 @@
         <dependency>
             <groupId>ca.jarcode</groupId>
             <artifactId>consoles-core</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

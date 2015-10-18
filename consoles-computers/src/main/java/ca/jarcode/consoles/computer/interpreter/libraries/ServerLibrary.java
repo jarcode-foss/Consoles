@@ -1,15 +1,9 @@
 package ca.jarcode.consoles.computer.interpreter.libraries;
 
-import ca.jarcode.consoles.computer.Computer;
-import ca.jarcode.consoles.computer.interpreter.FunctionBind;
-import ca.jarcode.consoles.computer.interpreter.Lua;
-import net.minecraft.server.v1_8_R3.*;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.WorldCreator;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
@@ -27,21 +21,6 @@ public class ServerLibrary {
 		if (command.startsWith("/"))
 			command = command.substring(1);
 		Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-	}
-	// executes a vanilla command with a custom sender. The function bind is called if a command result is set.
-	// Allows for target selectors like '@e'.
-	public LuaCommandResult run(String command, FunctionBind bind) {
-		if (command.startsWith("/"))
-			command = command.substring(1);
-		LuaCommandResult result = new LuaCommandResult();
-		Computer computer = Lua.context();
-		CommandBlockListenerAbstract.executeCommand(new VanillaSender(computer.getConsole().getLocation(),
-						bind == null ? null : () -> bind.call(result), result),
-				new BukkitSender(result), command);
-		return result;
-	}
-	public LuaCommandResult vanilla(String command) {
-		return run(command, null);
 	}
 	public Player[] bukkitPlayers() {
 		return Bukkit.getOnlinePlayers().stream().toArray(Player[]::new);
@@ -87,79 +66,6 @@ public class ServerLibrary {
 			}
 		}
 		return null;
-	}
-
-	private class VanillaSender implements ICommandListener {
-
-		private Location location;
-		private Runnable callback;
-		private LuaCommandResult result;
-
-		public VanillaSender(Location location, Runnable callback, LuaCommandResult result) {
-			super();
-			this.location = location;
-			this.callback = callback;
-			this.result = result;
-		}
-
-		@Override
-		public String getName() {
-			return "lua$listener";
-		}
-
-		@Override
-		public IChatBaseComponent getScoreboardDisplayName() {
-			return null;
-		}
-
-		@Override
-		public void sendMessage(IChatBaseComponent iChatBaseComponent) {
-			if (result != null) {
-				result.text.append(iChatBaseComponent.getText());
-				result.text.append('\n');
-			}
-		}
-
-		// not sure what this does, copied from command block listener
-		@Override
-		public boolean a(int i, String s) {
-			return i <= 2;
-		}
-
-		@Override
-		public BlockPosition getChunkCoordinates() {
-			return new BlockPosition(location.getBlockX() >> 4, location.getBlockY() >> 4, location.getBlockZ() >> 4);
-		}
-
-		@Override
-		public Vec3D d() {
-			return new Vec3D(location.getX(), location.getBlockY(), location.getZ());
-		}
-
-		@Override
-		public World getWorld() {
-			return ((CraftWorld) location.getWorld()).getHandle();
-		}
-
-		@Override
-		public Entity f() {
-			return null;
-		}
-
-		@Override
-		public boolean getSendCommandFeedback() {
-			return result != null;
-		}
-
-		@Override
-		public void a(CommandObjectiveExecutor.EnumCommandResult enumCommandResult, int i) {
-			if (result != null) {
-				result.state = enumCommandResult.a();
-				result.result = enumCommandResult.b();
-				if (callback != null)
-					callback.run();
-			}
-		}
 	}
 	private class BukkitSender implements CommandSender {
 

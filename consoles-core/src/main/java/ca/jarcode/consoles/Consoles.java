@@ -6,7 +6,6 @@ import ca.jarcode.consoles.images.ImageConsoleHandler;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import ca.jarcode.consoles.messaging.ConsoleBungeeHook;
 import ca.jarcode.consoles.command.*;
-import ca.jarcode.consoles.util.MapInjector;
 import ca.jarcode.consoles.util.sync.SyncTaskScheduler;
 import org.bukkit.event.Listener;
 

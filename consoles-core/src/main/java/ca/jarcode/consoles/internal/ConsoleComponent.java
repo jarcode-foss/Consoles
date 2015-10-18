@@ -2,7 +2,7 @@ package ca.jarcode.consoles.internal;
 
 import ca.jarcode.consoles.api.CanvasComponent;
 import ca.jarcode.consoles.api.CanvasPainter;
-import ca.jarcode.consoles.util.CommandBlockUtils;
+import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.entity.Player;
 
@@ -61,7 +61,7 @@ public abstract class ConsoleComponent implements CanvasComponent, CanvasPainter
 	}
 	public final void link(CommandBlock block) {
 		if (this instanceof WritableComponent) {
-			CommandBlockUtils.registerListener(block, ((WritableComponent) this).createListener());
+			ConsolesNMS.commandInternals.registerListener(block, ((WritableComponent) this).createListener());
 		}
 		else throw new IllegalArgumentException("Component must implement " + WritableComponent.class.getSimpleName());
 	}

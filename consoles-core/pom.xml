@@ -9,7 +9,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>consoles-core</artifactId>
-    <packaging>pom</packaging>
     <version>${global.version}${global.version.suffix}</version>
     <description>Craftbukkit server plugin that adds programmable map canvases to the server. Implements consoles-api.</description>
     <build>
@@ -26,6 +25,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -69,7 +69,7 @@
                         </goals>
                         <configuration>
                             <file>${project.build.directory}/final/${project.artifactId}-${project.version}-jar-with-dependencies.jar</file>
-                            <files>${project.build.directory}/${project.artifactId}-${project.version}.jar</files>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
                         </configuration>
                     </execution>
                 </executions>
