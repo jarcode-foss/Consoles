@@ -310,7 +310,7 @@ public abstract class SandboxProgram {
 			if (out == null)
 				globals.STDOUT = dummyPrintStream();
 			else
-				globals.STDOUT = new PrintStream(out, false, "UTF-8");
+				globals.STDOUT = new PrintStream(out, true, "UTF-8");
 
 			// we handle errors with exceptions, so this will always be a dummy writer.
 			globals.STDERR = dummyPrintStream();
