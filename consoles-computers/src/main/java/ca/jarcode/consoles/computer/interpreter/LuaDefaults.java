@@ -6,13 +6,13 @@ import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.filesystem.FSFolder;
-import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -37,9 +37,14 @@ public class LuaDefaults {
 			Enumeration<? extends ZipEntry> entries = file.entries();
 			while (entries.hasMoreElements()) {
 				ZipEntry entry = entries.nextElement();
-				if (entry.getName().startsWith("src/main/resources/lua/") && entry.getName().endsWith(".lua")) {
+				if (entry.getName().startsWith("lua/") && entry.getName().endsWith(".lua")) {
 					InputStream stream = file.getInputStream(entry);
-					String content = IOUtils.readLines(stream).stream().collect(Collectors.joining("\n"));
+					int size = stream.available();
+					int read = 0;
+					byte[] buf = new byte[size];
+					while (read < size)
+						read = stream.read(buf, read, size - read);
+					String content = new String(buf, StandardCharsets.UTF_8);
 					stream.close();
 					String formatted = entry.getName().substring(4, entry.getName().length() - 4);
 					if (Consoles.debug)
