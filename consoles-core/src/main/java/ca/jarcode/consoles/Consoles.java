@@ -1,6 +1,8 @@
 package ca.jarcode.consoles;
 
 import ca.jarcode.classloading.loader.WrappedPlugin;
+import ca.jarcode.consoles.api.InternalHooks;
+import ca.jarcode.consoles.api.impl.InternalFunctions;
 import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.images.ImageConsoleHandler;
 import ca.jarcode.consoles.internal.ConsoleHandler;
@@ -54,6 +56,9 @@ public class Consoles extends WrappedPlugin {
 
 		startingId = (short) getConfig().getInt("starting-map-index", 5000);
 		debug = getConfig().getBoolean("debug-mode", false);
+
+		// assigns a bunch of API function handles
+		InternalFunctions.assign();
 
 		ConsoleHandler.getInstance().local = !forward;
 
