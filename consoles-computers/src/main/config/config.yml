@@ -29,3 +29,7 @@ frame-rendering: true
 # You can tweak this to be lower if you want to avoid program threads from using too
 # many server resources.
 max-time-without-interrupt: 7000
+
+# Size (in kilobytes) of the chunks that wget downloads every 300ms. Increasing this value will result in higher
+# download speeds.
+wget-chunk-size: 2

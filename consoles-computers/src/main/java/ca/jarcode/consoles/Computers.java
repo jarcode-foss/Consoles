@@ -8,9 +8,7 @@ import ca.jarcode.consoles.computer.MapDataStore;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.internal.ConsoleHandler;
-import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Supplier;
 
@@ -30,6 +28,8 @@ public class Computers extends WrappedPlugin {
 	public static boolean hideSaveMessages = false;
 	// maximum time that a program is allowed to run before being interrupted
 	public static int maxTimeWithoutInterrupt = 7000;
+	// chunk size (in kilobytes) that wget downloads every 300ms
+	public static int wgetChunkSize = 2;
 
 	public static Computers getInstance() {
 		return INSTANCE;
@@ -50,6 +50,7 @@ public class Computers extends WrappedPlugin {
 		maxComputers = getConfig().getInt("computer-limit", 3);
 		hideSaveMessages = getConfig().getBoolean("hide-save-messages", false);
 		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", 7000);
+		wgetChunkSize = getConfig().getInt("wget-chunk-size", 2);
 
 		MapDataStore.init(this);
 

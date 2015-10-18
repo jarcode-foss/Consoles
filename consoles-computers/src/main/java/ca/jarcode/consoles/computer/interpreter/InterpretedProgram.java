@@ -5,9 +5,11 @@ import ca.jarcode.consoles.Lang;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.Computers;
+import ca.jarcode.consoles.computer.ProgramUtils;
 import ca.jarcode.consoles.computer.Terminal;
 import ca.jarcode.consoles.computer.bin.MakeDirectoryProgram;
 import ca.jarcode.consoles.computer.bin.TouchProgram;
+import ca.jarcode.consoles.computer.bin.WGetProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
 import ca.jarcode.consoles.computer.filesystem.FSFolder;
@@ -32,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static ca.jarcode.consoles.Lang.lang;
+import static ca.jarcode.consoles.computer.ProgramUtils.handleBlockCreate;
 import static ca.jarcode.consoles.computer.ProgramUtils.schedule;
 
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
@@ -173,6 +176,29 @@ public final class InterpretedProgram extends SandboxProgram {
 	@FunctionManual("Returns the computer's hostname as a string")
 	public String lua$hostname() {
 		return computer.getHostname();
+	}
+	@FunctionManual("Downloads a file from the given URL to the computer's disk using HTTP via the internet." +
+			"This function has various return values:\n\n" +
+			"\t\t&e-1&f - file exists on disk\n" +
+			"\t\t&e-2&f - invalid current directory\n" +
+			"\t\t&e-3&f - invalid file name\n" +
+			"\t\t&e-4&f - parent folder doesn't exist\n" +
+			"\t\t&e-5&f - parent folder isn't a folder\n" +
+			"\t\t&e-6&f - malformed URL\n" +
+			"\t\t&e-7&f - IO error while downloading\n" +
+			"\t\totherwise, this function will return 0")
+	public int lua$wget(
+			@Arg(name="url",info="URL of the file to downlaod") String url,
+			@Arg(name="path",info="path to download the file to") String path,
+			@Arg(name="overwrite",info="whether to overwrite the file if it exists") boolean overwrite) {
+		ProgramUtils.PreparedBlock block = handleBlockCreate(path, null, contextTerminal, overwrite);
+		if (block.err == null) {
+			int ret = WGetProgram.invoke(path, (FSFolder) block.blockParent, block.blockName,
+					null, terminated, contextTerminal);
+			if (ret == 0) return 0;
+			else return ret - 5;
+		}
+		else return block.err.code;
 	}
 	@FunctionManual("Finds a computer with the given hostname.")
 	public LuaComputer lua$findComputer(
@@ -383,7 +409,7 @@ public final class InterpretedProgram extends SandboxProgram {
 	public LuaFile lua$touch(
 			@Arg(name = "path", info = "the path to the file to create") String path) {
 		delay(10);
-		FSFile file = new TouchProgram(false).touch(path, computer, contextTerminal);
+		FSFile file = new TouchProgram(false).touch(path, contextTerminal);
 		return file != null ? new LuaFile(file, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}
@@ -413,7 +439,7 @@ public final class InterpretedProgram extends SandboxProgram {
 	public LuaFolder lua$mkdir(
 			@Arg(name = "path", info = "the path to the folder to create") String path) {
 		delay(10);
-		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, computer, contextTerminal);
+		FSFolder folder = new MakeDirectoryProgram(false).mkdir(path, contextTerminal);
 		return folder != null ? new LuaFolder(folder, path,
 				contextTerminal.getCurrentDirectory(), this::terminated, computer) : null;
 	}

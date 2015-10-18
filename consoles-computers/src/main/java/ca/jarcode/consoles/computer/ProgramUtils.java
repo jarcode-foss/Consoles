@@ -2,7 +2,10 @@ package ca.jarcode.consoles.computer;
 
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
+import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
+import ca.jarcode.consoles.computer.filesystem.FSFolder;
+import ca.jarcode.consoles.computer.interpreter.types.LuaFolder;
 import org.bukkit.Bukkit;
 import org.luaj.vm2.LuaError;
 
@@ -10,12 +13,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.*;
+import java.util.stream.Collectors;
 
 /*
 
@@ -117,6 +118,80 @@ public class ProgramUtils {
 			throw new LuaError(e);
 		}
 		return (T) result[0];
+	}
+
+	public static class PreparedBlock {
+		public FSFolder blockParent;
+		public String blockName;
+		public BlockPrepareError err;
+	}
+	public enum BlockPrepareError {
+		EXISTS(-1), INVALID_CURRENT_DIR(-2), INVALID_NAME(-3), PARENT_NOT_EXISTS(-4), PARENT_NOT_FOLDER(-5);
+		public int code;
+		BlockPrepareError(int code) {
+			this.code = code;
+		}
+	}
+
+	/**
+	 * Handles the creation of a block in a filesystem, with error handling and messages.
+	 *
+	 * @param path the path to create the block
+	 * @param messageHandler the handler for messages, null if unused
+	 * @param terminal context terminal
+	 * @param overwrite whether to overwrite a block if it exists
+	 * @return a prepared block
+	 */
+	public static PreparedBlock handleBlockCreate(String path, Consumer<String> messageHandler,
+	                                              Terminal terminal, boolean overwrite) {
+		PreparedBlock ret = new PreparedBlock();
+		FSBlock block = terminal.getComputer().getBlock(path, terminal.getCurrentDirectory());
+		if (block != null && !overwrite) {
+			if (messageHandler != null)
+				messageHandler.accept(path + ": file or folder exists");
+			ret.err = BlockPrepareError.EXISTS;
+			return ret;
+		}
+		block = terminal.getComputer().getBlock("", terminal.getCurrentDirectory());
+		if (!(block instanceof FSFolder)) {
+			if (messageHandler != null)
+				messageHandler.accept(path + ": invalid current directory");
+			ret.err = BlockPrepareError.INVALID_CURRENT_DIR;
+			return ret;
+		}
+		String[] arr = FSBlock.section(path, "/");
+		String f = Arrays.asList(arr).stream()
+				.limit(arr.length == 0 ? 0 : arr.length - 1)
+				.collect(Collectors.joining("/"));
+		if (f.trim().isEmpty() && path.startsWith("/"))
+			f = "/";
+		String n = Arrays.asList(arr).stream()
+				.filter(s -> !s.isEmpty())
+				.reduce((o1, o2) -> o2)
+				.get();
+		if (!FSBlock.allowedBlockName(n)) {
+			if (messageHandler != null)
+				messageHandler.accept(f.trim() + ": invalid block name");
+			ret.err = BlockPrepareError.INVALID_NAME;
+			return ret;
+		}
+		FSBlock folder = terminal.getComputer().getBlock(f, terminal.getCurrentDirectory());
+
+		if (folder == null) {
+			if (messageHandler != null)
+				messageHandler.accept(f.trim() + ": does not exist");
+			ret.err = BlockPrepareError.PARENT_NOT_EXISTS;
+			return ret;
+		}
+		if (!(folder instanceof FSFolder)) {
+			if (messageHandler != null)
+				messageHandler.accept(f.trim() + ": not a folder");
+			ret.err = BlockPrepareError.PARENT_NOT_FOLDER;
+			return ret;
+		}
+		ret.blockParent = (FSFolder) folder;
+		ret.blockName = n;
+		return ret;
 	}
 
 	/**

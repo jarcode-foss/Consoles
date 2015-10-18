@@ -572,7 +572,7 @@ public abstract class SandboxProgram {
 					i++;
 				}
 
-				FSFile fsfile = new TouchProgram(false).touch("lua_dump" + i, computer, contextTerminal);
+				FSFile fsfile = new TouchProgram(false).touch("lua_dump" + i, contextTerminal);
 				file = new LuaFile(fsfile, path, contextTerminal.getCurrentDirectory(),
 						this::terminated, computer);
 
