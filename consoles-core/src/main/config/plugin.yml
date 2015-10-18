@@ -1,5 +1,5 @@
- name: ConsolesLoader
+ name: ConsolesCore
  load: STARTUP
  version: ${project.version}
  author: Jarcode
- main: ca.jarcode.consoles.ConsolesLoader
+ main: ca.jarcode.consoles.Consoles

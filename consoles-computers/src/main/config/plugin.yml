@@ -1,6 +1,6 @@
- name: ComputersLoader
- depend: [ConsolesLoader]
+ name: ConsolesComputers
+ depend: [ConsolesCore]
  load: STARTUP
  version: ${project.version}
  author: Jarcode
- main: ca.jarcode.consoles.ComputersLoader
+ main: ca.jarcode.consoles.Computers

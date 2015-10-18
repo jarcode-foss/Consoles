@@ -1,7 +1,7 @@
 package ca.jarcode.consoles.computer.filesystem;
 
 import ca.jarcode.consoles.computer.Computer;
-import sun.misc.IOUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.UUID;
@@ -175,7 +175,9 @@ public class FSStoredFile extends FSFile {
 				@Override
 				public byte[] getData() {
 					try (FileInputStream in = new FileInputStream(file)) {
-						return IOUtils.readFully(in, -1, false);
+						byte[] data = new byte[in.available()];
+						IOUtils.readFully(in, data);
+						return data;
 					}
 					catch (IOException e) {
 						e.printStackTrace();

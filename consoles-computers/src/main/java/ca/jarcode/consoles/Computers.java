@@ -1,6 +1,5 @@
 package ca.jarcode.consoles;
 
-import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.computer.GeneralListener;
@@ -9,10 +8,12 @@ import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.function.Supplier;
 
-public class Computers extends WrappedPlugin {
+public class Computers extends JavaPlugin {
 
 	private static Computers INSTANCE = null;
 
@@ -31,6 +32,8 @@ public class Computers extends WrappedPlugin {
 	// chunk size (in kilobytes) that wget downloads every 300ms
 	public static int wgetChunkSize = 2;
 
+	public static File jarFile;
+
 	public static Computers getInstance() {
 		return INSTANCE;
 	}
@@ -40,6 +43,8 @@ public class Computers extends WrappedPlugin {
 	}
 
 	public void onEnable() {
+
+		jarFile = getFile();
 
 		Lua.killAll = false; // if this plugin was reloaded
 		saveDefaultConfig();

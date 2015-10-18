@@ -1,7 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter;
 
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.ComputersLoaderPassthrough;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.boot.Kernel;
@@ -31,7 +30,7 @@ public class LuaDefaults {
 	static {
 		SCRIPTS.clear();
 		try {
-			File jar = ComputersLoaderPassthrough.jarFile;
+			File jar = Computers.jarFile;
 			ZipFile file = new ZipFile(jar);
 			Enumeration<? extends ZipEntry> entries = file.entries();
 			while (entries.hasMoreElements()) {
