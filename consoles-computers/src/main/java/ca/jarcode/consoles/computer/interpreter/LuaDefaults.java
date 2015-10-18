@@ -1,7 +1,7 @@
 package ca.jarcode.consoles.computer.interpreter;
 
-import ca.jarcode.classloading.loader.WrappedPlugin;
 import ca.jarcode.consoles.Computers;
+import ca.jarcode.consoles.ComputersLoaderPassthrough;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.boot.Kernel;
@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -32,7 +31,7 @@ public class LuaDefaults {
 	static {
 		SCRIPTS.clear();
 		try {
-			File jar = new File(WrappedPlugin.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+			File jar = ComputersLoaderPassthrough.jarFile;
 			ZipFile file = new ZipFile(jar);
 			Enumeration<? extends ZipEntry> entries = file.entries();
 			while (entries.hasMoreElements()) {
@@ -52,7 +51,7 @@ public class LuaDefaults {
 					SCRIPTS.put(formatted, content);
 				}
 			}
-		} catch (URISyntaxException | IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

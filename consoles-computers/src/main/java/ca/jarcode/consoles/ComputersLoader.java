@@ -6,6 +6,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.net.URISyntaxException;
+
 // If this class is confusing, look at the loader for the core module
 
 @SuppressWarnings("unused")
@@ -21,9 +24,17 @@ public class ComputersLoader extends JavaPlugin {
 		CORE_INSTALLED = Bukkit.getPluginManager().getPlugin(CORE_PLUGIN_NAME) != null;
 
 		if (CORE_INSTALLED) {
-			WrappedPluginLoader loader = WrappedPluginLoader.inject(this, new Class[] {},
-					new MinecraftVersionModifier(this, ConsolesLoader.COMPILED_VERSION));
+			try {
+				ComputersLoaderPassthrough.jarFile =
+						new File(ComputersLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+			} catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
 
+			WrappedPluginLoader loader = WrappedPluginLoader.inject(this, new Class[] {
+							ComputersLoaderPassthrough.class
+					},
+					new MinecraftVersionModifier(this, ConsolesLoader.COMPILED_VERSION));
 			try {
 				Plugin plugin = loader.loadPlugin(this.getFile());
 				enableTask = () -> loader.enablePlugin(plugin);

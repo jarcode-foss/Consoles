@@ -104,6 +104,13 @@
             <artifactId>consoles-v1_8_R2</artifactId>
             <version>1.0</version>
         </dependency>
+        <!-- the NMS server has this packaged with it -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- dropping skript support, repository is down and the project is unmaintained
         <dependency>
             <groupId>ch.njol</groupId>

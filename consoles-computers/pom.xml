@@ -118,5 +118,12 @@
             <version>1.0</version>
             <scope>provided</scope>
         </dependency>
+        <!-- the NMS server has this packaged with it -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>
