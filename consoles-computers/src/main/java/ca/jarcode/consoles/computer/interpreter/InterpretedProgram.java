@@ -234,11 +234,17 @@ public final class InterpretedProgram extends SandboxProgram {
 			@Arg(name="size",info="Size of the array to register") int size) {
 		return new LuaArray(size);
 	}
-	@FunctionManual("Sets if the program is allowed to be terminated.")
+	@FunctionManual("Sets if the program is allowed to be terminated (ignored by the computer's owner).")
 	public void lua$ignoreTerminate(
 			@Arg(name="ignore",info="Sets if the program can ignore termination.") Boolean ignore) {
 		delay(20);
 		contextTerminal.setIgnoreUnauthorizedSigterm(ignore);
+	}
+	@FunctionManual("Sets if the computer allows the user to switch to other views (ignored by the computer's owner).")
+	public void lua$ignoreViewChange(
+			@Arg(name="ignore",info="Sets if the program can ignore view switches.") Boolean ignore) {
+		delay(20);
+		computer.setIgnoreUnauthorizedViewChange(ignore);
 	}
 	@FunctionManual("Returns the list of possible sounds the computer can play.")
 	public String[] lua$soundList() {

@@ -446,6 +446,7 @@ public abstract class SandboxProgram {
 				terminal.setHandlerInterrupt(null);
 				// hook to remove termination from users other than the owner
 				terminal.setIgnoreUnauthorizedSigterm(false);
+				computer.setIgnoreUnauthorizedViewChange(false);
 			}
 
 			// remove all components that were set to any screen session(s)

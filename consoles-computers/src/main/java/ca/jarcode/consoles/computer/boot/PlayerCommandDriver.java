@@ -44,7 +44,8 @@ public class PlayerCommandDriver extends Driver {
 							int i;
 							try {
 								i = Integer.parseInt(Character.toString(c));
-								computer.switchView(i);
+								Player p = Bukkit.getPlayer(player);
+								computer.switchView(i, p);
 							} catch (Throwable ignored) {}
 						}
 					}

@@ -75,6 +75,9 @@ public abstract class Computer implements Runnable {
 
 	private final Map<String, Consumer<String>> messageListeners = new ConcurrentHashMap<>();
 
+	// for programs
+	private volatile boolean ignoreUnauthorizedViewChange = false;
+
 	public Computer(String hostname, UUID owner, ManagedConsole console) {
 		this.hostname = hostname;
 		this.owner = owner;
@@ -157,6 +160,9 @@ public abstract class Computer implements Runnable {
 		bar.setText(status);
 		console.repaint();
 	}
+	public void setIgnoreUnauthorizedViewChange(boolean ignore) {
+		this.ignoreUnauthorizedViewChange = ignore;
+	}
 	public int getViewWidth() {
 		return getConsole().getWidth() - (2 + ROOT_COMPONENT_POSITION.getX());
 	}
@@ -233,8 +239,7 @@ public abstract class Computer implements Runnable {
 					e.printStackTrace();
 					return;
 				}
-			}
-			else {
+			} else {
 				kernel = boot("boot/vmlinuz", Kernel.class);
 			}
 			// register main task
@@ -463,7 +468,11 @@ public abstract class Computer implements Runnable {
 	public Terminal getCurrentTerminal() {
 		return getCurrentComponent() instanceof Terminal ? (Terminal) getCurrentComponent() : null;
 	}
-	// used by programs
+	public boolean switchView(int view, Player player) {
+		if (ignoreUnauthorizedViewChange && (player == null || !player.getUniqueId().equals(getOwner())))
+			return false;
+		return switchView(view, player);
+	}
 	public boolean switchView(int view) {
 		view--;
 		if (view < 0 || view >= feeds.length)
