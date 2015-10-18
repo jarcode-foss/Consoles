@@ -434,6 +434,21 @@ public class Lua {
 		else if (value.isuserdata()) {
 			return value.checkuserdata();
 		}
+		else if (type != null && type.isArray() && value.istable()) {
+			Class component = type.getComponentType();
+			LuaTable table = value.checktable();
+			int len = 0;
+			for (LuaValue key : table.keys()) {
+				if (key.isint() && key.checkint() > len)
+					len = key.checkint();
+			}
+			Object arr = Array.newInstance(component, len);
+			for (LuaValue key : table.keys()) {
+				if (key.isint())
+					Array.set(arr, key.checkint(), translate(component, table.get(key)));
+			}
+			return arr;
+		}
 		else throw new RuntimeException("Unsupported argument: " + type
 					+ ", lua: " + value.getClass().getSimpleName() + ", data: " + value.toString());
 	}
