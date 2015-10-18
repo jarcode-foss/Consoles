@@ -57,18 +57,19 @@ public class ComputerHandler implements Listener {
 	static {
 		File file = new File(Computers.getInstance().getDataFolder().getAbsolutePath()
 				+ File.separatorChar + "startup.lua");
-		scope: try {
+		create: try {
 			if (!file.exists()) {
 				if (!file.createNewFile()) {
 					Computers.getInstance().getLogger().warning(String.format(lang.getString("file-create-fail"),
 							file.getAbsolutePath()));
-					break scope;
+					break create;
 				}
 			}
+			else break create;
 			if (file.isDirectory()) {
 				Computers.getInstance().getLogger().warning(String.format(lang.getString("file-create-fail"),
 						file.getAbsolutePath()));
-				break scope;
+				break create;
 			}
 			FileOutputStream out = new FileOutputStream(file);
 			PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, Charset.forName("UTF-8")), true);
