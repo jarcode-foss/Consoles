@@ -1,13 +1,12 @@
 package ca.jarcode.consoles.computer;
 
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.CanvasGraphics;
+import ca.jarcode.consoles.api.nms.MapInternals;
 import ca.jarcode.consoles.event.bukkit.MapUpdateEvent;
 import ca.jarcode.consoles.internal.ConsoleComponent;
 import ca.jarcode.consoles.internal.InputComponent;
 import ca.jarcode.consoles.util.Allocation;
-import ca.jarcode.consoles.util.ChunkMapper;
 import ca.jarcode.consoles.util.InstanceListener;
 import ca.jarcode.consoles.api.Position2D;
 import org.bukkit.Bukkit;
@@ -263,7 +262,7 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 			renderBar.clear();
 		}
 
-		public void render(CanvasGraphics g, ChunkMapper.PreparedMapSection section,
+		public void render(CanvasGraphics g, MapInternals.PreparedMapSection section,
 		                   int x, int y, Predicate<Position2D> filter) {
 			for (int i = 0; i < 128; i++) {
 				for (int j = 0; j < 128; j++) {
