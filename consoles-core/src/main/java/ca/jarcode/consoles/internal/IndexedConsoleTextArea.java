@@ -67,12 +67,30 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	public void setText(String text, int startingLine) {
 		stack.clear();
 		stack.put(startingLine, "");
+
 		List<String> list = new ArrayList<>();
-		section(text, list::add, () -> {}, "\n", false);
-		String after = list.stream()
-				.skip(startingLine - 1)
-				.limit(maxStackSize)
-				.collect(Collectors.joining("\n"));
+		int skipped = 0, last = 0, height = 0;
+		for (int t = 0; t < text.length(); t++) {
+			char c = text.charAt(t);
+			if (c == '\n') {
+				if (skipped >= startingLine - 1) {
+					String entry = text.substring(last, t);
+					height += lineAmount(entry, false);
+					list.add(entry);
+					if (height >= maxStackSize)
+						break;
+				}
+				else skipped++;
+				last = t + 1;
+			}
+		}
+		if (last != text.length() && height < maxStackSize) {
+			String entry = text.substring(last, text.length());
+			height += lineAmount(entry, false);
+			if (height < maxStackSize)
+				list.add(entry);
+		}
+		String after = Joiner.on("\n").join(list);
 		if (startingLine != 1 && after.isEmpty()) {
 			stack.clear();
 			return;
@@ -103,10 +121,10 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 		stack.clear();
 		stack = Multimaps.synchronizedMultimap(cached);
 	}
-	private void removeLast() {
+	private void removeLast(int amt) {
 		Multimap<Integer, String> cached = LinkedHashMultimap.create();
 		stack.entries().stream()
-				.limit(stack.size() - 1 > 0 ? stack.size() - 1 : 0)
+				.limit(stack.size() - amt > 0 ? stack.size() - amt : 0)
 				.forEach(e -> cached.put(e.getKey(), e.getValue()));
 		stack.clear();
 		stack = Multimaps.synchronizedMultimap(cached);
@@ -148,6 +166,57 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			first = matcher.end();
 		}
 		handleText.accept(text.substring(first, text.length()));
+	}
+	private int lineAmount(String line, boolean stripped) {
+		if (!stripped)
+			line = ManagedConsole.removeUnsupportedCharacters(ChatColor.stripColor(line));
+		int count = 1;
+		if (font.getWidth(line) > maxWidth) {
+			String[] split = line.split(" ");
+			List<String> list = new ArrayList<>();
+			int index = 0;
+			// checks for split location (spaces)
+			for (String s : split) {
+				list.add(s);
+				String comb = Joiner.on(" ").join(list);
+				if (font.getWidth(comb) <= maxWidth) {
+					index++;
+				}
+				else break;
+			}
+			// no fit, section by max width at index
+			if (index == 0) {
+				int t;
+				for (t = line.length(); t > 0; t--) {
+					if (font.getWidth(line.substring(0, t)) <= maxWidth)
+						break;
+				}
+				// add other portion
+				count += lineAmount(line.substring(t, line.length()), true);
+			}
+
+			// partial fit, break on space
+			else {
+				int in = 0;
+				for (int t = 0; t < index; t++) {
+					in += split[t].length() + 1;
+				}
+				count += lineAmount(line.substring(in, line.length()), true);
+				/*
+				StringBuilder builder = new StringBuilder();
+				for (int t = index; t < split.length; t++) {
+					builder.append(split[t]);
+					if (t != split.length - 1)
+						builder.append(" ");
+				}
+				//remaining
+				count += lineAmount(builder.toString(), true);
+				*/
+			}
+		}
+		// fit
+		else return 1;
+		return count;
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);
@@ -199,7 +268,9 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			// partial fit
 			else {
 				StringBuilder builder = new StringBuilder();
+				int in = 0;
 				for (int t = 0; t < index; t++) {
+					in += split[t].length() + 1;
 					builder.append(split[t]);
 					builder.append(" ");
 				}
@@ -207,14 +278,8 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 				String str = builder.toString();
 				appendToCurrentStack(str);
 
-				builder = new StringBuilder();
-				for (int t = index; t < split.length; t++) {
-					builder.append(split[t]);
-					if (t != split.length - 1)
-						builder.append(" ");
-				}
-				//remaining
-				printContent(builder.toString());
+				// remaining
+				printContent(text.substring(in, text.length()));
 			}
 		}
 		// fit
@@ -222,20 +287,20 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			appendToCurrentStack(text);
 		}
 		while (stack.size() > maxStackSize) {
-			removeLast();
+			removeLast(stack.size() - maxStackSize);
 		}
 	}
 	public void println(String text) {
 		print(text);
 		nextLine();
 		if (stack.size() > maxStackSize) {
-			removeLast();
+			removeLast(stack.size() - maxStackSize);
 		}
 	}
 	public void advanceLine() {
 		nextLine();
 		if (stack.size() > maxStackSize) {
-			removeLast();
+			removeLast(stack.size() - maxStackSize);
 		}
 	}
 	public void clear() {

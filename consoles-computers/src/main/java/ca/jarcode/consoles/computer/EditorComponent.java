@@ -49,6 +49,16 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	// The screen session this is operating in
 	private int tty;
 
+	private static final char[] COLOR_SPLITTERS = " ,:=()~![{}]<>;".toCharArray();
+	private static final char[] NUMBERS = "0987654321".toCharArray();
+	private static final String[] KEYWORDS = { "and", "end", "in", "repeat",
+			"break", "false", "local", "return", "do", "for", "nil", "then",
+			"else", "function", "not", "true", "elseif", "if", "or", "until",
+			"while" };
+	private static final String[] OPERATORS = { "+", "-", "*", "/", "%", "^",
+			"#", "==", "~=", "<=", ">=", "<", ">", "=", "(", ")", "{", "}",
+			"[", "]", ";", ":", ",", ".", "..", "..."};
+
 	public EditorComponent(int w, int h, Computer computer, FSFile file, int tty) {
 		super(w, h, computer.getConsole());
 		this.computer = computer;
@@ -79,6 +89,21 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	}
 	public void rebuild() {
 		setContent(content);
+	}
+	public String color(String content) {
+		StringBuilder builder = new StringBuilder();
+		return null;
+		//TODO: finish
+	}
+	private boolean isNumber(char c) {
+		for (char n : NUMBERS)
+			if (n == c) return true;
+		return false;
+	}
+	private boolean isKey(char c, boolean numberContext) {
+		for (char k : COLOR_SPLITTERS)
+			if (k == c) return true;
+		return !numberContext && c == '.';
 	}
 
 	// deletes characters at the cursor
