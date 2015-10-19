@@ -11,9 +11,8 @@ import org.bukkit.entity.Player;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /*
@@ -29,6 +28,12 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 
 	// The editable content of this editor. Used to rebuild the component.
 	private String content;
+
+	// the processed content, which is re-parsed every time the original content changes.
+	private String processedContent;
+
+	// whether to process (color) the editor's contents
+	private boolean processed = true;
 
 	// The top viewable line
 	private int top = 1;
@@ -55,9 +60,188 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			"break", "false", "local", "return", "do", "for", "nil", "then",
 			"else", "function", "not", "true", "elseif", "if", "or", "until",
 			"while" };
+	private static final String[] HIGHLIGHTED_MEMBERS = { "require" };
+
 	private static final String[] OPERATORS = { "+", "-", "*", "/", "%", "^",
 			"#", "==", "~=", "<=", ">=", "<", ">", "=", "(", ")", "{", "}",
 			"[", "]", ";", ":", ",", ".", "..", "..."};
+
+	private static final char[] OPENING_DELIMETERS = {'(', ')', '\n', ' '};
+
+	private static final List<Function<String, int[][]>> processors = new ArrayList<>();
+	private static final List<String> formatters = new ArrayList<>();
+
+	// functions must produce ranges ordered least -> greatest
+	private static void reg(Function<String, int[][]> func, String formatter) {
+		processors.add(func);
+		formatters.add(formatter);
+	}
+
+	static {
+		reg(EditorComponent::findCommentRanges, ChatColor.GRAY.toString());
+		reg(EditorComponent::findStringRanges, ChatColor.GREEN.toString());
+	}
+
+	private static int[][] findStringRanges(String content) {
+		List<int[]> ranges = new ArrayList<>();
+		char[] arr = content.toCharArray();
+		int first = -1;
+		char strType = '\0';
+		for (int t = 0; t < content.length(); t++) {
+			if (first == -1) {
+				if (arr[t] == '"' || arr[t] == '\'') {
+					first = t;
+					strType = arr[t];
+				}
+			}
+			else if ((arr[t] == '"' || arr[t] == '\'') && strType == arr[t] && arr[t - 1] != '\\') {
+				ranges.add(new int[] { first, t });
+				first = -1;
+			}
+		}
+		if (first != -1)
+			ranges.add(new int[] { first, content.length() - 1 });
+
+		return ranges.toArray(new int[ranges.size()][]);
+	}
+	private static int[][] findCommentRanges(String content) {
+		List<int[]> ret = new ArrayList<>();
+		int d;
+		char[] arr = content.toCharArray();
+		for (int t = 1; t < content.length(); t++) {
+			if (arr[t] == '-' && arr[t - 1] == '-') {
+				if (t < content.length() - 2 && arr[t + 1] == '[' && arr[t + 2] == '[') {
+					d = content.indexOf("--]]", t - 1);
+					if (d == -1) {
+						ret.add(new int[] { t - 1, content.length() - 1 });
+						break;
+					}
+					ret.add(new int[] { t - 1, d + 3 });
+					t = d + 4;
+				}
+				else {
+					d = content.indexOf('\n', t - 1);
+					if (d == - 1) {
+						ret.add(new int[] { t - 1, content.length() - 1 });
+						break;
+					}
+					ret.add(new int[] { t - 1, d });
+					t = d + 1;
+				}
+			}
+		}
+		int[][] ints = new int[ret.size()][];
+		for (int t = 0; t < ret.size(); t++)
+			ints[t] = ret.get(t);
+		return ints;
+	}
+	private static String process(String content) {
+		List<int[]> stack;
+		int size;
+		{
+			int[][][] ranges = new int[processors.size()][][];
+			for (int t = 0; t < ranges.length; t++)
+				ranges[t] = processors.get(t).apply(content);
+			for (int t = 0; t < ranges.length; t++) {
+				for (int d = 0; d < ranges.length; d++) {
+					if (t != d) {
+						if (t > d)
+							handleOverlaps(ranges[d], ranges[t]);
+						else if (d > t)
+							handleOverlaps(ranges[t], ranges[d]);
+					}
+				}
+			}
+			int fsize = 0;
+			for (int[][] range : ranges) {
+				fsize += range.length;
+			}
+			int[][] fstack = new int[fsize][];
+			int counter = 0;
+			for (int t = 0; t < ranges.length; t++) {
+				for (int[] set : ranges[t]) {
+					if (set != null) {
+						fstack[counter] = new int[] { set[0], set[1], t };
+						counter++;
+					}
+				}
+			}
+			size = counter;
+			stack = Arrays.asList(fstack);
+		}
+		Collections.sort(stack, (first, second) -> first[0] - second[0]);
+
+		StringBuilder builder = new StringBuilder();
+		int index = 0;
+		for (int t = 0; t < size; t++) {
+			int[] range = stack.get(t);
+			if (index < content.length() && index < range[0]) {
+				String sub = content.substring(index, range[0]);
+				builder.append(sub);
+			}
+			builder.append(formatters.get(range[2]));
+			builder.append(content.substring(range[0], range[1] + 1));
+			builder.append(ChatColor.RESET);
+			index = range[1] + 1;
+		}
+		if (index < content.length())
+			builder.append(content.substring(index, content.length()));
+		return builder.toString();
+	}
+	private static void handleOverlaps(int[][] primary, int[][] secondary) {
+		if (secondary.length == 0 || primary.length == 0) return;
+		for (int t = 0; t < primary.length; t++) {
+			if (primary[t] == null)
+				continue;
+			// optimisation, skip all ranges before first colliding index
+			if (primary[t][1] < secondary[0][0]) {
+				t++;
+				continue;
+			}
+			// optimisation, skip all ranges after final colliding index
+			if (primary[t][0] > secondary[secondary.length - 1][1])
+				break;
+			for (int d = 0; d < secondary.length; d++) {
+				if (secondary[d] == null)
+					continue;
+				if (overlap(primary[t], secondary[d])) {
+					if (!shrink(secondary[d], primary[t]))
+						secondary[d] = null;
+				}
+			}
+		}
+	}
+	public static boolean overlap(int[] collision, int[] context) {
+		return inside(collision, context[0], context[1])
+				|| inside(context, collision[0], collision[1]);
+	}
+	public static boolean shrink(int[] context, int[] reference) {
+		// context is inside the reference range
+		if (inside(reference, context[0]) && inside(reference, context[1]))
+			return false;
+			// shift to the right
+		else if (inside(reference, context[0])) {
+			if (reference[1] + 1 < context[1])
+				context[0] = reference[1] + 1;
+				// if context was shrunk to zero length
+			else return false;
+		}
+		// shift to the left
+		else if (inside(reference, context[1])) {
+			if (reference[0] - 1 > context[0])
+				context[1] = reference[0] - 1;
+				// if context was shrunk to zero length
+			else return false;
+		}
+		return true;
+	}
+	public static boolean inside(int[] range, int... indexes) {
+		for (int index : indexes) {
+			if (index > range[0] && index < range[1])
+				return true;
+		}
+		return false;
+	}
 
 	public EditorComponent(int w, int h, Computer computer, FSFile file, int tty) {
 		super(w, h, computer.getConsole());
@@ -87,13 +271,54 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		if (row < top)
 			row = top;
 	}
+	public void process() {
+		if (processed) {
+			processedContent = process(content);
+		}
+	}
 	public void rebuild() {
+		setContent(content, false);
+	}
+	public void changed() {
 		setContent(content);
 	}
-	public String color(String content) {
-		StringBuilder builder = new StringBuilder();
+	private int[] resize(int[] arr) {
+		int[] tmp = new int[arr.length << 2];
+		System.arraycopy(arr, 0, tmp, 0, arr.length);
+		return tmp;
+	}
+	private int[] indexesOf(String content, String key) {
+		int s = 4;
+		int at = 0;
+		int[] arr = new int[s];
+		int i = 0;
+		while ((i = content.indexOf(content, i)) != -1) {
+			arr[at] = i;
+			at++;
+			if (at == s) {
+				s <<= 2;
+				int[] tmp = new int[s];
+				System.arraycopy(arr, 0, tmp, 0, s >>= 2);
+				arr = tmp;
+			}
+			i += key.length();
+		}
+		if (at != s - 1) {
+			int[] ret = new int[at + 1];
+			System.arraycopy(arr, 0, ret, 0, at + 1);
+			return ret;
+		}
+		else return arr;
+	}
+	private String until(String content, int index, char... keys) {
+		for (int t = 0; t < content.length(); t++) {
+			for (char c : keys) {
+				if (content.charAt(t) == c) {
+					return content.substring(index, t);
+				}
+			}
+		}
 		return null;
-		//TODO: finish
 	}
 	private boolean isNumber(char c) {
 		for (char n : NUMBERS)
@@ -195,10 +420,29 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		setText(content, top);
 	}
 
-	// sets the text content of this editor
 	public void setContent(String content) {
+		setContent(content, true);
+	}
+
+	// sets the text content of this editor
+	public void setContent(String content, boolean changed) {
 		this.content = content;
-		setText(content, top);
+		if (processed && changed)
+			processedContent = process(content);
+		setText(processed ? processedContent : content, top);
+	}
+
+	public void setProcessed(boolean processed) {
+		setProcessed(processed, true);
+	}
+	public void setProcessed(boolean processed, boolean update) {
+		boolean changed = processed != this.processed;
+		this.processed = processed;
+		if (changed && update) {
+			if (processed)
+				process();
+			rebuild();
+		}
 	}
 
 	// unsafe
@@ -371,24 +615,24 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					top -= 2;
 					if (top < 1)
 						top = 1;
-					rebuild();
+					changed();
 					repaint();
 					return;
 				case "d":
 					top += 2;
-					rebuild();
+					changed();
 					repaint();
 					return;
 				case "U":
 					top = 1;
-					rebuild();
+					changed();
 					repaint();
 					return;
 				case "D":
 					top = content.split("\n").length - (maxStackSize - 10) + 1;
 					if (top < 1)
 						top = 1 ;
-					rebuild();
+					changed();
 					repaint();
 					return;
 			}
