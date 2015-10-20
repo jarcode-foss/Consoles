@@ -138,22 +138,32 @@ public class LuaChest {
 			if (args == null)
 				return -3; // invalid recipe
 			ItemStack[] arr = inv.getContents();
+			int[] toRemove = new int[9];
+			byte at = 0;
 			for (int t = 0; t < arr.length; t++)
 				arr[t] = arr[t] != null ? arr[t].clone() : null;
 			for (ItemStack ingredient : args) {
+				if (ingredient == null)
+					continue;
 				boolean found = false;
 				for (int t = 0; t < arr.length; t++) {
 					if (arr[t] != null
 							&& (arr[t].getDurability() == ingredient.getDurability() || ingredient.getDurability() == 32767)
 							&& arr[t].getType() == ingredient.getType()) {
-						if (arr[t].getAmount() <= 1)
-							arr[t] = null;
-						else arr[t].setAmount(arr[t].getAmount() - 1);
+						toRemove[at] = t + 1;
+						at++;
 						found = true;
 						break;
 					}
 				}
 				if (!found) return 0; // not enough ingredients!
+			}
+			for (int i : toRemove) {
+				if (i == 0) continue;
+				else i--;
+				if (arr[i].getAmount() <= 1)
+					arr[i] = null;
+				else arr[i].setAmount(arr[i].getAmount() - 1);
 			}
 			inv.setContents(arr);
 			inv.addItem(r.getResult().clone());
