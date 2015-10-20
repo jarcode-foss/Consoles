@@ -29,6 +29,16 @@ public class LuaFrame {
 
 	private static final MapFont FONT = MinecraftFont.Font;
 
+	public static byte convert(int c) {
+		if (c >= 0 && c <= 127) {
+			return (byte) (int) c;
+		}
+		else if (c > 127 && c <= 143) {
+			return (byte) (-128 + (c - 127));
+		}
+		else return (byte) 0;
+	}
+
 	protected List<Consumer<CanvasGraphics>> operations = new ArrayList<>();
 	private Computer computer;
 	private int id;
@@ -121,14 +131,5 @@ public class LuaFrame {
 	public int getHeight() {
 		if (removed) return -1;
 		return computer.getViewHeight();
-	}
-	private byte convert(Integer c) {
-		if (c >= 0 && c <= 127) {
-			return (byte) (int) c;
-		}
-		else if (c > 127 && c <= 143) {
-			return (byte) (-128 + (c - 127));
-		}
-		else return (byte) 0;
 	}
 }

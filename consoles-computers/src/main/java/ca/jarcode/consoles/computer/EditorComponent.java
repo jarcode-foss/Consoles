@@ -72,6 +72,8 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	// The index of the character on the current row that is selected (cursor)
 	private volatile int character = 1;
 
+	private byte numberColor = 36;
+
 	// The computer this editor belongs to
 	private Computer computer;
 	// The file being edited
@@ -419,6 +421,9 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	public void changed() {
 		setContent(content);
 	}
+	public void setNumberColor(byte numberColor) {
+		this.numberColor = numberColor;
+	}
 	private int[] resize(int[] arr) {
 		int[] tmp = new int[arr.length << 2];
 		System.arraycopy(arr, 0, tmp, 0, arr.length);
@@ -661,9 +666,9 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			// if the line number changed, display it
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
-				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
-				g.drawFormatted(OFFSET - (numberFont.getWidth(CColor.strip(str)) + MARGIN),
-						(i * textHeight) + H_MARGIN, lastColor, str);
+				String str = entry.getKey().toString();
+				g.draw(OFFSET - (numberFont.getWidth(CColor.strip(str)) + MARGIN),
+						(i * textHeight) + H_MARGIN, numberColor, str);
 				g.setFont(font);
 				k = entry.getKey();
 				if (over >= 0) {

@@ -8,6 +8,7 @@ import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.filesystem.*;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
+import ca.jarcode.consoles.computer.interpreter.types.LuaFrame;
 import ca.jarcode.consoles.computer.manual.ProvidedManual;
 import org.bukkit.ChatColor;
 
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static ca.jarcode.consoles.computer.ProgramUtils.parseFlags;
 import static ca.jarcode.consoles.computer.ProgramUtils.schedule;
 import static ca.jarcode.consoles.computer.ProgramUtils.splitArguments;
 
@@ -41,12 +43,18 @@ import static ca.jarcode.consoles.computer.ProgramUtils.splitArguments;
 @SuppressWarnings("unused")
 public class EditProgram extends FSProvidedProgram {
 	private static final String DEFAULT_CONFIG = "-- This is preloaded by the edit program to " +
-			"set configuration values. You may edit this to your preference.\n" +
+			"set configuration values. You may edit this to your preference.\n\n" +
+			"-- Color mappings set for certain symbols\n" +
 			"symbolColor(\"()\", \"9\")\n" +
 			"symbolColor(\"{}\", \"d\")\n" +
+			"-- Color used for code comments\n" +
 			"commentColor(\"2\")\n" +
+			"-- String color\n" +
 			"stringColor(\"a\")\n" +
-			"keywordColor(\"c\")\n";
+			"-- Lua keyword color\n" +
+			"keywordColor(\"c\")\n" +
+			"-- Raw map color of line numbers on the left side of the editor\n" +
+			"lineNumberColor(36)";
 
 	Charset charset = Charset.forName("UTF-8");
 
@@ -54,20 +62,41 @@ public class EditProgram extends FSProvidedProgram {
 	public void run(String str, Computer computer) throws Exception {
 
 		String[] args = splitArguments(str);
+		HashMap<String, Object> properties = new HashMap<>();
+		properties.put("stripped", false);
+		properties.put("line", -1);
 		if (args.length == 0 || str.isEmpty()) {
-			println("edit [FILE] {INDEX}");
+			println("Usage: edit [FILE] [OPTION]...");
+			println("Flags:");
+			println("\t-s\tstrips the editor of all color formatting");
+			println("\t-n\tsets which line to set the editor view to");
+			return;
+		}
+
+		args = parseFlags(args, (flag, string) -> {
+			switch (flag) {
+				case 's':
+					properties.put("stripped", true);
+					break;
+				case 'n':
+					try {
+						int line = Integer.parseInt(string);
+						if (line < 1)
+							print("edit: invalid line: " + string);
+						else properties.put("line", line);
+					}
+					catch (NumberFormatException e) {
+						print("edit: invalid line: " + string);
+					}
+					break;
+			}
+		}, c -> c == 'n');
+		if (args.length == 0) {
+			print("edit: no file given");
+			return;
 		}
 		str = args[0];
-		int index = -1;
-		if (args.length >= 2) {
-			try {
-				index = Integer.parseInt(args[1]);
-			}
-			catch (Throwable e) {
-				print("edit: " + str.trim() + ": invalid index");
-				return;
-			}
-		}
+		int index = (Integer) properties.get("line");
 		Terminal terminal = computer.getTerminal(this);
 		FSBlock block = computer.getBlock(str, terminal.getCurrentDirectory());
 		if (block == null) {
@@ -81,7 +110,6 @@ public class EditProgram extends FSProvidedProgram {
 		FSFile file = (FSFile) block;
 		str = readFully(file);
 		final String finalStr = str.replace("\r", "");
-		final int finalIndex = index;
 
 		FSBlock config = computer.getBlock("/etc/edit/config", terminal.getCurrentDirectory());
 		if (config == null) {
@@ -97,7 +125,8 @@ public class EditProgram extends FSProvidedProgram {
 			return;
 		}
 
-		new EditorInstance().scheduleCreate(computer, file, (FSFile) config, finalStr, finalIndex);
+		new EditorInstance().scheduleCreate(computer, file, (FSFile) config, finalStr,
+				index, (Boolean) properties.get("stripped"));
 	}
 
 	private char translateColorChar(String color) {
@@ -139,8 +168,9 @@ public class EditProgram extends FSProvidedProgram {
 				keywordColor = ChatColor.RED.toString();
 		List<char[]> keyCharList = new ArrayList<>();
 		List<String> keyColorList = new ArrayList<>();
+		byte numberColor = 36;
 
-		void scheduleCreate(Computer computer, FSFile file, FSFile config, String content, int index)
+		void scheduleCreate(Computer computer, FSFile file, FSFile config, String content, int index, boolean stripped)
 				throws IOException, InterruptedException {
 
 			SandboxProgram inst = SandboxProgram.FACTORY.get();
@@ -151,20 +181,25 @@ public class EditProgram extends FSProvidedProgram {
 				EditorComponent component = new EditorComponent(computer.getViewWidth(),
 						computer.getViewHeight(), computer, file, 7);
 
-				component.registerProcessor(EditorComponent::findCommentRanges, commentColor);
-				component.registerProcessor(EditorComponent::findStringRanges, stringColor);
-				component.registerProcessor(EditorComponent::findKeywordRanges, keywordColor);
+				if (!stripped) {
+					component.registerProcessor(EditorComponent::findCommentRanges, commentColor);
+					component.registerProcessor(EditorComponent::findStringRanges, stringColor);
+					component.registerProcessor(EditorComponent::findKeywordRanges, keywordColor);
 
-				for (int t = 0; t < keyCharList.size(); t++) {
-					final int ft = t;
-					component.registerProcessor(
-							(s) -> EditorComponent.findBracketRanges(s, keyCharList.get(ft)),
-							keyColorList.get(t));
+					for (int t = 0; t < keyCharList.size(); t++) {
+						final int ft = t;
+						component.registerProcessor(
+								(s) -> EditorComponent.findBracketRanges(s, keyCharList.get(ft)),
+								keyColorList.get(t));
+					}
 				}
+				else component.setProcessed(false, false);
 
-				component.setContent(content);
+				component.setNumberColor(numberColor);
+
 				if (index != -1)
 					component.setView(index);
+				component.setContent(content);
 				computer.setComponent(7, component);
 				computer.switchView(8);
 			});
@@ -193,6 +228,10 @@ public class EditProgram extends FSProvidedProgram {
 			char c = translateColorChar(color);
 			if (c == 0) return;
 			keywordColor = ChatColor.COLOR_CHAR + "" + c;
+		}
+
+		public void lua$lineNumberColor(int color) {
+			numberColor = LuaFrame.convert(color);
 		}
 	}
 }
