@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.CanvasComponent;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.api.Position2D;
@@ -40,7 +41,7 @@ public class ConsoleDialog extends ConsoleContainer {
 	private static int largestTextWidth(String text) {
 		int l = 0;
 		for (String str : text.split("\n")) {
-			int f = MinecraftFont.Font.getWidth(ChatColor.stripColor(str)) + 6;
+			int f = MinecraftFont.Font.getWidth(CColor.strip(str)) + 6;
 			if (f > l)
 				l = f;
 		}
@@ -96,7 +97,7 @@ public class ConsoleDialog extends ConsoleContainer {
 		int count = 0;
 		byte color = 119;
 		for (String str : text.split("\n")) {
-			int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(str));
+			int w = MinecraftFont.Font.getWidth(CColor.strip(str));
 			color = g.drawFormatted(x + (getWidth() / 2) - (w / 2),
 					y + 8 + (count * (MinecraftFont.Font.getHeight() + 1)), color, str);
 			count++;

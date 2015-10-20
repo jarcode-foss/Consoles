@@ -52,6 +52,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		super();
 	}
 
+	@Override
 	protected void map() {
 		// instance lua functions, these will call with the program context in mind
 		// maps all functions that start with lua$

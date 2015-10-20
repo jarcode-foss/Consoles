@@ -14,15 +14,17 @@ public class FuncPool {
 
 	private SandboxProgram program;
 
-	public FuncPool(Thread context, SandboxProgram program) {
+	public FuncPool(SandboxProgram program) {
 		this.computer = program.getComputer();
 		this.program = program;
-		this.context = context;
-		Lua.pools.put(context, this);
 
 		for (Map.Entry<String, LibFunction> entry : Lua.staticFunctions.entrySet()) {
 			functions.put(entry.getKey(), entry.getValue());
 		}
+	}
+	public void register(Thread context) {
+		this.context = context;
+		Lua.pools.put(context, this);
 	}
 	public SandboxProgram getProgram() {
 		return program;

@@ -98,6 +98,7 @@ public class Kernel extends FSProvidedProgram {
 				root.contents.put("dev", dev);
 				root.contents.put("tmp", new FSFolder());
 				root.contents.put("X11", x11);
+				root.contents.put("etc", new FSFolder());
 				home.contents.put("admin", new FSFolder());
 				FSStoredFile file = writtenFile("One can only dream.", computer);
 				x11.contents.put("xorg.conf", file);

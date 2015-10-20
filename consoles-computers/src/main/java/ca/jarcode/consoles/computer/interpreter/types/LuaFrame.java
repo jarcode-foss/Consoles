@@ -1,6 +1,7 @@
 package ca.jarcode.consoles.computer.interpreter.types;
 
 import ca.jarcode.consoles.api.CanvasGraphics;
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
@@ -68,7 +69,7 @@ public class LuaFrame {
 			@Arg(name = "text", info = "the text to parse") String text) {
 		if (removed) return -1;
 		text = ChatColor.translateAlternateColorCodes('&', text);
-		return FONT.getWidth(ChatColor.stripColor(text).replace("\u00A7", "&"));
+		return FONT.getWidth(CColor.strip(text).replace("\u00A7", "&"));
 	}
 	@FunctionManual("Draws the specified text at the given X,Y coordinates. Color codes are supported.")
 	public void write(

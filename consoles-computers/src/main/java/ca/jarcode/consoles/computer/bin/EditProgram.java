@@ -1,17 +1,24 @@
 package ca.jarcode.consoles.computer.bin;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.EditorComponent;
 import ca.jarcode.consoles.computer.Terminal;
-import ca.jarcode.consoles.computer.filesystem.FSBlock;
-import ca.jarcode.consoles.computer.filesystem.FSFile;
-import ca.jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import ca.jarcode.consoles.computer.boot.Kernel;
+import ca.jarcode.consoles.computer.filesystem.*;
+import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
 import ca.jarcode.consoles.computer.manual.ProvidedManual;
+import org.bukkit.ChatColor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import static ca.jarcode.consoles.computer.ProgramUtils.schedule;
 import static ca.jarcode.consoles.computer.ProgramUtils.splitArguments;
@@ -31,9 +38,21 @@ import static ca.jarcode.consoles.computer.ProgramUtils.splitArguments;
 				"\u00A7e/-D\u00A7f scrolls to the bottom of the file\n" +
 				"\u00A7e/-t\u00A7f adds four spaces (tab)"
 )
+@SuppressWarnings("unused")
 public class EditProgram extends FSProvidedProgram {
+	private static final String DEFAULT_CONFIG = "-- This is preloaded by the edit program to " +
+			"set configuration values. You may edit this to your preference.\n" +
+			"symbolColor(\"()\", \"9\")\n" +
+			"symbolColor(\"{}\", \"d\")\n" +
+			"commentColor(\"2\")\n" +
+			"stringColor(\"a\")\n" +
+			"keywordColor(\"c\")\n";
+
+	Charset charset = Charset.forName("UTF-8");
+
 	@Override
 	public void run(String str, Computer computer) throws Exception {
+
 		String[] args = splitArguments(str);
 		if (args.length == 0 || str.isEmpty()) {
 			println("edit [FILE] {INDEX}");
@@ -60,9 +79,37 @@ public class EditProgram extends FSProvidedProgram {
 			return;
 		}
 		FSFile file = (FSFile) block;
+		str = readFully(file);
+		final String finalStr = str.replace("\r", "");
+		final int finalIndex = index;
+
+		FSBlock config = computer.getBlock("/etc/edit/config", terminal.getCurrentDirectory());
+		if (config == null) {
+			print("/etc/edit/config does not exist, creating...\n");
+			if (computer.getBlock("/etc/edit", terminal.getCurrentDirectory()) == null)
+				computer.getRoot().mkdir("etc/edit");
+			FSFolder parent = (FSFolder) computer.getBlock("/etc/edit", terminal.getCurrentDirectory());
+			config = Kernel.writtenFile(DEFAULT_CONFIG, computer);
+			parent.contents.put("config", config);
+		}
+		if (!(config instanceof FSFile)) {
+			print("edit: /etc/edit/config: not a file\n");
+			return;
+		}
+
+		new EditorInstance().scheduleCreate(computer, file, (FSFile) config, finalStr, finalIndex);
+	}
+
+	private char translateColorChar(String color) {
+		if (color.length() == 0) return 0;
+		char c = color.toLowerCase().charAt(0);
+		if (!CColor.colorCharRange(c)) return 0;
+		return c;
+	}
+
+	private String readFully(FSFile file) throws IOException, InterruptedException {
 		boolean printed = false;
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		Charset charset = Charset.forName("UTF-8");
 		try (InputStream is = file.createInput()) {
 			int i;
 			while (true) {
@@ -83,17 +130,69 @@ public class EditProgram extends FSProvidedProgram {
 			if (terminated())
 				print("\tterminated");
 		}
-		str = new String(out.toByteArray(), charset);
-		final String finalStr = str.replace("\r", "");
-		final int finalIndex = index;
-		schedule(() -> {
-			EditorComponent component = new EditorComponent(computer.getViewWidth(),
-					computer.getViewHeight(), computer, file, 7);
-			component.setContent(finalStr);
-			if (finalIndex != -1)
-				component.setView(finalIndex);
-			computer.setComponent(7, component);
-			computer.switchView(8);
-		});
+		return new String(out.toByteArray(), charset);
+	}
+
+	private class EditorInstance {
+		String commentColor = ChatColor.DARK_GREEN.toString(),
+				stringColor = ChatColor.GREEN.toString(),
+				keywordColor = ChatColor.RED.toString();
+		List<char[]> keyCharList = new ArrayList<>();
+		List<String> keyColorList = new ArrayList<>();
+
+		void scheduleCreate(Computer computer, FSFile file, FSFile config, String content, int index)
+				throws IOException, InterruptedException {
+
+			SandboxProgram inst = SandboxProgram.FACTORY.get();
+			Lua.find(EditorInstance.class, this, inst.getPool());
+			SandboxProgram.pass(inst, readFully(config), computer.getTerminal(EditProgram.this), instance, "");
+
+			schedule(() -> {
+				EditorComponent component = new EditorComponent(computer.getViewWidth(),
+						computer.getViewHeight(), computer, file, 7);
+
+				component.registerProcessor(EditorComponent::findCommentRanges, commentColor);
+				component.registerProcessor(EditorComponent::findStringRanges, stringColor);
+				component.registerProcessor(EditorComponent::findKeywordRanges, keywordColor);
+
+				for (int t = 0; t < keyCharList.size(); t++) {
+					final int ft = t;
+					component.registerProcessor(
+							(s) -> EditorComponent.findBracketRanges(s, keyCharList.get(ft)),
+							keyColorList.get(t));
+				}
+
+				component.setContent(content);
+				if (index != -1)
+					component.setView(index);
+				computer.setComponent(7, component);
+				computer.switchView(8);
+			});
+		}
+
+		public void lua$symbolColor(String symbols, String color) {
+			char c = translateColorChar(color);
+			if (c == 0) return;
+			keyCharList.add(symbols.toCharArray());
+			keyColorList.add(ChatColor.COLOR_CHAR + "" + c);
+		}
+
+		public void lua$commentColor(String color) {
+			char c = translateColorChar(color);
+			if (c == 0) return;
+			commentColor = ChatColor.COLOR_CHAR + "" + c;
+		}
+
+		public void lua$stringColor(String color) {
+			char c = translateColorChar(color);
+			if (c == 0) return;
+			stringColor = ChatColor.COLOR_CHAR + "" + c;
+		}
+
+		public void lua$keywordColor(String color) {
+			char c = translateColorChar(color);
+			if (c == 0) return;
+			keywordColor = ChatColor.COLOR_CHAR + "" + c;
+		}
 	}
 }

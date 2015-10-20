@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.CanvasComponent;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.api.WrappedComponent;
@@ -66,7 +67,7 @@ public class ConsoleGraphics implements CanvasGraphics {
 		for (int i = 0; i < arr.length; i++) {
 			char c = arr[i];
 			if (c != '\u00A7'
-					&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(c) == -1
+					&& (!CColor.colorCharRange(arr[i])
 					|| i == 0 || arr[i - 1] != '\u00A7')) {
 				length += font.getChar(c).getWidth() + (i == arr.length - 1 ? 0 : 1);
 				if (length > len) {
@@ -112,6 +113,15 @@ public class ConsoleGraphics implements CanvasGraphics {
 	public final byte drawFormatted(int x, int y, byte inherit, String text) {
 		return drawFormatted(x, y, inherit, text, null);
 	}
+	private byte convertPositiveColorValue(int c) {
+		if (c >= 0 && c <= 127) {
+			return (byte) (int) c;
+		}
+		else if (c > 127 && c <= 143) {
+			return (byte) (-128 + (c - 127));
+		}
+		else return (byte) 0;
+	}
 	@SuppressWarnings("ConstantConditions")
 	public final byte drawFormatted(int x, int y, byte inherit, String text, CharacterModifier modifier) {
 		int at = 0;
@@ -122,7 +132,7 @@ public class ConsoleGraphics implements CanvasGraphics {
 		boolean skipNext = false;
 		for (char c : arr) {
 			if (i != text.length() - 1 &&
-					c == '\u00A7' && "0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[i + 1]) > -1) {
+					c == '\u00A7' && CColor.colorCharRange(arr[i + 1])) {
 				ChatColor chatColor = ChatColor.getByChar((arr[i + 1] + "").toLowerCase().charAt(0));
 				switch (chatColor) {
 					case WHITE: color = 32; break;

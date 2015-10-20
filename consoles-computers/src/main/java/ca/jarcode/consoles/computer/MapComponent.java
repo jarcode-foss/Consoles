@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.api.nms.MapInternals;
@@ -158,7 +159,7 @@ public class MapComponent extends ConsoleComponent implements InputComponent {
 			}
 			int textY = getHeight() - BAR_HEIGHT + FONT.getHeight() - 1;
 			g.drawFormatted(2, textY, INFO);
-			g.drawFormatted(26 + FONT.getWidth(ChatColor.stripColor(INFO)), textY, ChatColor.WHITE
+			g.drawFormatted(26 + FONT.getWidth(CColor.strip(INFO)), textY, ChatColor.WHITE
 					+ "scale: " + ChatColor.RED + currentView.get() + ChatColor.WHITE + " pos: " + views[currentView.get()].status());
 		}
 	}

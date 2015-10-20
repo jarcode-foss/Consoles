@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.event.ButtonEvent;
 import ca.jarcode.consoles.event.ConsoleEventListener;
@@ -32,7 +33,7 @@ public class ConsoleButton extends ConsoleComponent
 	}
 
 	public ConsoleButton(ConsoleRenderer renderer, String text) {
-		this(MinecraftFont.Font.getWidth(ChatColor.stripColor(text)) + 10,
+		this(MinecraftFont.Font.getWidth(CColor.strip(text)) + 10,
 				MinecraftFont.Font.getHeight() + 6, renderer);
 		setText(text);
 	}
@@ -72,7 +73,7 @@ public class ConsoleButton extends ConsoleComponent
 				g.draw(i, j, border);
 			}
 		}
-		int w = MinecraftFont.Font.getWidth(ChatColor.stripColor(text));
+		int w = MinecraftFont.Font.getWidth(CColor.strip(text));
 		int h = MinecraftFont.Font.getHeight();
 		g.drawFormatted((getWidth() / 2) - (w / 2), (getHeight() / 2) - (h / 2), text);
 	}

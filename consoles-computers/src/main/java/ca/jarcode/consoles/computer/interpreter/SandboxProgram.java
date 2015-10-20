@@ -1,11 +1,9 @@
 package ca.jarcode.consoles.computer.interpreter;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
-import ca.jarcode.consoles.computer.Computer;
-import ca.jarcode.consoles.computer.ProgramInstance;
-import ca.jarcode.consoles.computer.ProgramUtils;
-import ca.jarcode.consoles.computer.Terminal;
+import ca.jarcode.consoles.computer.*;
 import ca.jarcode.consoles.computer.bin.TouchProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
@@ -128,16 +126,31 @@ public abstract class SandboxProgram {
 		return exec(program, terminal, "");
 	}
 
-	public static void pass(String program, Terminal terminal, ProgramInstance instance) {
-		pass(program, terminal, instance, "");
+	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance) {
+		return pass(program, terminal, instance, "");
 	}
 
-	public static void pass(String program, Terminal terminal, ProgramInstance instance, String args) {
-		SandboxProgram inst = FACTORY.get();
+	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args) {
+		return pass(FACTORY.get(), program, terminal, instance, args);
+	}
+
+	/**
+	 * Passes a program instance from provided to an interpreted lua program
+	 *
+	 * @param inst sandbox instance
+	 * @param program raw program text
+	 * @param terminal terminal instance
+	 * @param instance program instance
+	 * @param args lua program arguments
+	 * @return the sandbox instance
+	 */
+	public static SandboxProgram pass(SandboxProgram inst, String program,
+	                                  Terminal terminal, ProgramInstance instance, String args) {
 		inst.restricted = false;
 		inst.contextTerminal = terminal;
 		instance.interpreted = inst;
 		inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program);
+		return inst;
 	}
 
 	public Map<Integer, LuaFrame> framePool = new HashMap<>();
@@ -147,7 +160,7 @@ public abstract class SandboxProgram {
 	protected InputStream in;
 	protected OutputStream out;
 	protected Computer computer;
-	protected FuncPool pool;
+	protected FuncPool pool = new FuncPool(this);
 	protected String args;
 	protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	protected List<Integer> allocatedSessions = new ArrayList<>();
@@ -255,7 +268,7 @@ public abstract class SandboxProgram {
 			// we also use this pool to identify our program with this thread.
 			//
 			// all static functions that were already mapped are automatically added to this pool
-			pool = new FuncPool(Thread.currentThread(), this);
+			pool.register(Thread.currentThread());
 
 			// map functions from this program instance to the pool
 			map();
@@ -459,6 +472,10 @@ public abstract class SandboxProgram {
 		}
 	}
 
+	public FuncPool getPool() {
+		return pool;
+	}
+
 	// loads a raw chunk and returns a LuaValue, handing errors accordingly
 	private LuaValue loadChunk(String raw) {
 		LuaValue chunk;
@@ -592,7 +609,7 @@ public abstract class SandboxProgram {
 				// prefix and transform message
 				msg = "Lua stack trace from " + format.format(new Date(System.currentTimeMillis())) + "\n"
 						+ "Lua version: " + version + "\n\n"
-						+ ChatColor.stripColor(msg.replace("\t", "    "));
+						+ CColor.strip(msg.replace("\t", "    "));
 
 				// write the data to the file
 				file.write(msg);

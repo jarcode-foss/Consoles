@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.nms.CommandExecutor;
 import com.google.common.base.Joiner;
 import ca.jarcode.consoles.api.CanvasGraphics;
@@ -84,14 +85,14 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);
-		String stripped = ChatColor.stripColor(text + getLastLine());
+		String stripped = CColor.strip(text + getLastLine());
 		if (font.getWidth(stripped) > maxWidth) {
 			String[] split = text.split(" ");
 			List<String> list = new ArrayList<>();
 			int index = 0;
 			for (String s : split) {
 				list.add(s);
-				String comb = ChatColor.stripColor(Joiner.on(" ").join(list) + getLastLine());
+				String comb = CColor.strip(Joiner.on(" ").join(list) + getLastLine());
 				if (font.getWidth(comb) <= maxWidth) {
 					index++;
 				}
@@ -100,15 +101,14 @@ public class ConsoleTextArea extends ConsoleComponent implements WritableCompone
 			// can't fit
 			if (index == 0) {
 				// line is empty, can't fit
-				if (ChatColor.stripColor(getLastLine()).isEmpty()) {
+				if (CColor.strip(getLastLine()).isEmpty()) {
 					StringBuilder builder = new StringBuilder();
 					StringBuilder check = new StringBuilder();
 					char[] arr = text.toCharArray();
 					int t;
 					for (t = 0; t < text.length(); t++) {
 						if (arr[t] != '\u00A7'
-								&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[t]) == -1
-								|| t == 0 || arr[t - 1] != '\u00A7')) {
+								&& (!CColor.colorCharRange(arr[t]) || t == 0 || arr[t - 1] != '\u00A7')) {
 							check.append(arr[t]);
 							String bare = check.toString();
 							if (font.getWidth(bare) > maxWidth) {

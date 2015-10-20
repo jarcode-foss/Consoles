@@ -56,14 +56,14 @@ public class FSFolder extends FSBlock {
 	@SuppressWarnings("SimplifiableIfStatement")
 	public boolean mkdir(String path) {
 		String sub = section(path, "/")[0];
-		FSBlock at = contents.get(sub);
+		FSBlock block = contents.get(sub);
 		String remaining = sub.length() == path.length() ? null : path.substring(sub.length() + 1);
-		if (at == null) {
+		if (block == null) {
 			FSFolder folder = new FSFolder();
 			contents.put(sub, folder);
 			return remaining == null || folder.mkdir(remaining);
-		} else if (at instanceof FSFolder) {
-			return remaining == null || ((FSFolder) at).mkdir(remaining);
+		} else if (block instanceof FSFolder) {
+			return remaining == null || ((FSFolder) block).mkdir(remaining);
 		}
 		return false;
 	}

@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.internal;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.nms.CommandExecutor;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
@@ -105,11 +106,9 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	public void print(String text) {
 		text = text.replace("\t", "    ");
 		if (text.contains("\n")) {
-			section(text, this::print, this::advanceLine, "\n", true);
+			section(text, this::printContent, this::advanceLine, "\n", true);
 			return;
 		}
-		if (!text.startsWith("\u00A7"))
-			text = ChatColor.RESET + text;
 		printContent(text);
 	}
 	// needlessly complex
@@ -169,7 +168,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	private int lineAmount(String line, boolean stripped) {
 		if (!stripped)
-			line = ManagedConsole.removeUnsupportedCharacters(ChatColor.stripColor(line));
+			line = ManagedConsole.removeUnsupportedCharacters(CColor.strip(line));
 		int count = 1;
 		if (font.getWidth(line) > maxWidth) {
 			String[] split = line.split(" ");
@@ -220,14 +219,14 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 	}
 	private void printContent(String text) {
 		text = ManagedConsole.removeUnsupportedCharacters(text);
-		String stripped = ChatColor.stripColor(text + getLastLine());
+		String stripped = CColor.strip(text + getLastLine());
 		if (font.getWidth(stripped) > maxWidth) {
 			String[] split = text.split(" ");
 			List<String> list = new ArrayList<>();
 			int index = 0;
 			for (String s : split) {
 				list.add(s);
-				String comb = ChatColor.stripColor(Joiner.on(" ").join(list) + getLastLine());
+				String comb = CColor.strip(Joiner.on(" ").join(list) + getLastLine());
 				if (font.getWidth(comb) <= maxWidth) {
 					index++;
 				}
@@ -236,15 +235,14 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			// can't fit
 			if (index == 0) {
 				// line is empty, can't fit
-				if (ChatColor.stripColor(getLastLine()).isEmpty()) {
+				if (CColor.strip(getLastLine()).isEmpty()) {
 					StringBuilder builder = new StringBuilder();
 					StringBuilder check = new StringBuilder();
 					char[] arr = text.toCharArray();
 					int t;
 					for (t = 0; t < text.length(); t++) {
 						if (arr[t] != '\u00A7'
-								&& ("0123456789AaBbCcDdEeFfKkLlMmNnOoRr".indexOf(arr[t]) == -1
-								|| t == 0 || arr[t - 1] != '\u00A7')) {
+								&& (!CColor.colorCharRange(arr[t]) || t == 0 || arr[t - 1] != '\u00A7')) {
 							check.append(arr[t]);
 							String bare = check.toString();
 							if (font.getWidth(bare) > maxWidth) {
@@ -345,7 +343,7 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
 				String str = ChatColor.GRAY.toString() + (entry.getKey() % 1000) + ChatColor.WHITE;
-				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN),
+				g.drawFormatted(OFFSET - (numberFont.getWidth(CColor.strip(str)) + MARGIN),
 						(i * textHeight) + H_MARGIN, lastColor, str);
 				g.setFont(font);
 				k = entry.getKey();
@@ -353,5 +351,6 @@ public class IndexedConsoleTextArea extends ConsoleComponent implements Writable
 			lastColor = g.drawFormatted(OFFSET, (i * textHeight) + H_MARGIN, lastColor, entry.getValue());
 			i++;
 		}
+		lastColor = 32;
 	}
 }

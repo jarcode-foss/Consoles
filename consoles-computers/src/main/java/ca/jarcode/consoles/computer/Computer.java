@@ -471,7 +471,7 @@ public abstract class Computer implements Runnable {
 	public boolean switchView(int view, Player player) {
 		if (ignoreUnauthorizedViewChange && (player == null || !player.getUniqueId().equals(getOwner())))
 			return false;
-		return switchView(view, player);
+		return switchView(view);
 	}
 	public boolean switchView(int view) {
 		view--;

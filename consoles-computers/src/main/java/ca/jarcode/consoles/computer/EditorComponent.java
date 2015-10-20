@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer;
 
+import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.api.CanvasGraphics;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
 import ca.jarcode.consoles.internal.ConsoleGraphics;
@@ -25,6 +26,34 @@ I am terribly sorry for anyone else who has to work with this.
 
  */
 public class EditorComponent extends IndexedConsoleTextArea implements InputComponent {
+
+	private static final char[] COLOR_SPLITTERS = " ,:=()~![{}]<>;".toCharArray();
+	private static final char[] NUMBERS = "0987654321".toCharArray();
+	private static final String[] KEYWORDS = { "and", "end", "in", "repeat",
+			"break", "false", "local", "return", "do", "for", "nil", "then",
+			"else", "function", "not", "true", "elseif", "if", "or", "until",
+			"while" };
+
+	private static final int[] KEYWORD_LENGTH_RANGE;
+
+	private static final String[] OPERATORS = { "+", "-", "*", "/", "%", "^",
+			"#", "==", "~=", "<=", ">=", "<", ">", "=", "(", ")", "{", "}",
+			"[", "]", ";", ":", ",", ".", "..", "..."};
+
+	private static final char[] SPLITTERS = " \n+-*/%^#=~<>=(){}[];:,.".toCharArray();
+
+	static {
+		int least = Integer.MAX_VALUE;
+		int most = Integer.MIN_VALUE;
+		for (String str : KEYWORDS) {
+			if (least > str.length())
+				least = str.length();
+			if (most < str.length())
+				most = str.length();
+		}
+
+		KEYWORD_LENGTH_RANGE = new int[] { least, most };
+	}
 
 	// The editable content of this editor. Used to rebuild the component.
 	private String content;
@@ -54,35 +83,22 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	// The screen session this is operating in
 	private int tty;
 
-	private static final char[] COLOR_SPLITTERS = " ,:=()~![{}]<>;".toCharArray();
-	private static final char[] NUMBERS = "0987654321".toCharArray();
-	private static final String[] KEYWORDS = { "and", "end", "in", "repeat",
-			"break", "false", "local", "return", "do", "for", "nil", "then",
-			"else", "function", "not", "true", "elseif", "if", "or", "until",
-			"while" };
-	private static final String[] HIGHLIGHTED_MEMBERS = { "require" };
+	/*
+	I know what you're thinking, this color formatting code is ridiculously
+	confusing and doesn't have any comments.
 
-	private static final String[] OPERATORS = { "+", "-", "*", "/", "%", "^",
-			"#", "==", "~=", "<=", ">=", "<", ">", "=", "(", ")", "{", "}",
-			"[", "]", ";", ":", ",", ".", "..", "..."};
+	It's just been optimized to death because it has to operate over chunks of text
+	after every change to the original content and I can't be bothered to explain
+	all of it.
 
-	private static final char[] OPENING_DELIMETERS = {'(', ')', '\n', ' '};
+	The parsing has be written in a style that maps out primitive symbols
+	(and creates/fits regions based on them) rather than actually parsing the lua
+	code to improve speed. You'll also find I use a lot of primitive arrays and
+	recycle them so the GC doesn't have to do much when the content has to be
+	processed again.
+	 */
 
-	private static final List<Function<String, int[][]>> processors = new ArrayList<>();
-	private static final List<String> formatters = new ArrayList<>();
-
-	// functions must produce ranges ordered least -> greatest
-	private static void reg(Function<String, int[][]> func, String formatter) {
-		processors.add(func);
-		formatters.add(formatter);
-	}
-
-	static {
-		reg(EditorComponent::findCommentRanges, ChatColor.GRAY.toString());
-		reg(EditorComponent::findStringRanges, ChatColor.GREEN.toString());
-	}
-
-	private static int[][] findStringRanges(String content) {
+	public static int[][] findStringRanges(String content) {
 		List<int[]> ranges = new ArrayList<>();
 		char[] arr = content.toCharArray();
 		int first = -1;
@@ -104,7 +120,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 
 		return ranges.toArray(new int[ranges.size()][]);
 	}
-	private static int[][] findCommentRanges(String content) {
+	public static int[][] findCommentRanges(String content) {
 		List<int[]> ret = new ArrayList<>();
 		int d;
 		char[] arr = content.toCharArray();
@@ -125,7 +141,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 						ret.add(new int[] { t - 1, content.length() - 1 });
 						break;
 					}
-					ret.add(new int[] { t - 1, d });
+					ret.add(new int[]{t - 1, d});
 					t = d + 1;
 				}
 			}
@@ -135,77 +151,140 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			ints[t] = ret.get(t);
 		return ints;
 	}
-	private static String process(String content) {
-		List<int[]> stack;
-		int size;
-		{
-			int[][][] ranges = new int[processors.size()][][];
-			for (int t = 0; t < ranges.length; t++)
-				ranges[t] = processors.get(t).apply(content);
-			for (int t = 0; t < ranges.length; t++) {
-				for (int d = 0; d < ranges.length; d++) {
-					if (t != d) {
-						if (t > d)
-							handleOverlaps(ranges[d], ranges[t]);
-						else if (d > t)
-							handleOverlaps(ranges[t], ranges[d]);
-					}
-				}
+	public static int[][] findBracketRanges(String content, char... brackets) {
+		List<int[]> ret = new ArrayList<>();
+		for (char c : brackets) {
+			int index = 0;
+			int result;
+			while ((result = content.indexOf(c, index)) != -1) {
+				ret.add(new int[]{result, result});
+				index = result + 1;
 			}
-			int fsize = 0;
-			for (int[][] range : ranges) {
-				fsize += range.length;
-			}
-			int[][] fstack = new int[fsize][];
-			int counter = 0;
-			for (int t = 0; t < ranges.length; t++) {
-				for (int[] set : ranges[t]) {
-					if (set != null) {
-						fstack[counter] = new int[] { set[0], set[1], t };
-						counter++;
-					}
-				}
-			}
-			size = counter;
-			stack = Arrays.asList(fstack);
 		}
-		Collections.sort(stack, (first, second) -> first[0] - second[0]);
+		return ret.toArray(new int[ret.size()][]);
+	}
+	public static int[][] findKeywordRanges(String content) {
+		int[] splits = getSplitIndexes(content);
+		ArrayList<int[]> list = new ArrayList<>();
+		int first = 0;
+		for (int split : splits) {
+			if (first < split) {
+				int dif = split - first;
+				if (dif >= KEYWORD_LENGTH_RANGE[0] && dif <= KEYWORD_LENGTH_RANGE[1])
+					list.add(new int[]{first, split - 1});
+			}
+			first = split + 1;
+		}
+		if (first < content.length())
+			list.add(new int[] { first, content.length() - 1});
 
-		StringBuilder builder = new StringBuilder();
-		int index = 0;
-		for (int t = 0; t < size; t++) {
-			int[] range = stack.get(t);
-			if (index < content.length() && index < range[0]) {
-				String sub = content.substring(index, range[0]);
-				builder.append(sub);
+		int[][] ret;
+		int[] arr = new int[0];
+		int i = 0;
+		for (int t = 0; t < list.size(); t++) {
+			int[] pair = list.get(t);
+			String sub = content.substring(pair[0], pair[1] + 1);
+			boolean match = false;
+			for (String key : KEYWORDS) {
+				if (sub.equals(key)) {
+					match = true;
+					break;
+				}
 			}
-			builder.append(formatters.get(range[2]));
-			builder.append(content.substring(range[0], range[1] + 1));
-			builder.append(ChatColor.RESET);
-			index = range[1] + 1;
+			if (!match) {
+				if (i == arr.length) {
+					int[] tmp = new int[arr.length == 0 ? 1 : arr.length << 2];
+					System.arraycopy(arr, 0, tmp, 0, arr.length);
+					arr = tmp;
+				}
+				arr[i] = t;
+				i++;
+			}
 		}
-		if (index < content.length())
-			builder.append(content.substring(index, content.length()));
-		return builder.toString();
+		ret = new int[list.size() - i][];
+		int k = 0;
+		for (int t = 0; t < list.size(); t++) {
+			boolean skip = false;
+			for (int h = 0; h < i; h++) {
+				if (arr[h] == t) {
+					skip = true;
+					break;
+				}
+			}
+			if (!skip) {
+				ret[k] = list.get(t);
+				k++;
+			}
+		}
+		return ret;
+	}
+	private static int[] getSplitIndexes(String content) {
+		int[] arr = new int[0];
+		char[] chunk = null;
+		int cursor = 0;
+		int i = 0;
+		for (int t = 0; t < content.length(); t++) {
+			if (cursor == 0)
+				chunk = content.substring(t, t + 24 > content.length() ? content.length() : t + 24).toCharArray();
+			for (char c : SPLITTERS) {
+				if (c == chunk[cursor]) {
+					if (i == arr.length) {
+						int[] tmp = new int[arr.length == 0 ? 1 : arr.length << 2];
+						System.arraycopy(arr, 0, tmp, 0, arr.length);
+						arr = tmp;
+					}
+					arr[i] = t;
+					i++;
+					break;
+				}
+			}
+			cursor++;
+			if (cursor == 24)
+				cursor = 0;
+		}
+		if (i < arr.length) {
+			int[] tmp = new int[i];
+			System.arraycopy(arr, 0, tmp, 0, i);
+			arr = tmp;
+		}
+		return arr;
 	}
 	private static void handleOverlaps(int[][] primary, int[][] secondary) {
 		if (secondary.length == 0 || primary.length == 0) return;
+		int firstIndex = -1;
+		for (int[] range : secondary) {
+			if (range != null) {
+				firstIndex = range[0];
+				break;
+			}
+		}
+		int lastIndex = -1;
+		for (int t = secondary.length - 1; t >= 0; t--) {
+			if (secondary[t] != null) {
+				lastIndex = secondary[t][1];
+				break;
+			}
+		}
+		if (firstIndex == -1 || lastIndex == -1) return;
 		for (int t = 0; t < primary.length; t++) {
 			if (primary[t] == null)
 				continue;
 			// optimisation, skip all ranges before first colliding index
-			if (primary[t][1] < secondary[0][0]) {
-				t++;
+			if (primary[t][1] < firstIndex)
 				continue;
-			}
 			// optimisation, skip all ranges after final colliding index
-			if (primary[t][0] > secondary[secondary.length - 1][1])
+			if (primary[t][0] > lastIndex)
 				break;
 			for (int d = 0; d < secondary.length; d++) {
 				if (secondary[d] == null)
 					continue;
 				if (overlap(primary[t], secondary[d])) {
-					if (!shrink(secondary[d], primary[t]))
+					// edge case if one range is entirely in another, even if it has less priority
+					if (inside(secondary[d], primary[t][0]) && inside(secondary[d], primary[t][1])) {
+						primary[t] = null;
+						break;
+					}
+					else if (!shrink(secondary[d], primary[t]))
 						secondary[d] = null;
 				}
 			}
@@ -237,17 +316,79 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 	}
 	public static boolean inside(int[] range, int... indexes) {
 		for (int index : indexes) {
-			if (index > range[0] && index < range[1])
+			if (index >= range[0] && index <= range[1])
 				return true;
 		}
 		return false;
 	}
 
-	public EditorComponent(int w, int h, Computer computer, FSFile file, int tty) {
+	public EditorComponent(int w, int h, Computer computer, FSFile targetFile, int tty) {
 		super(w, h, computer.getConsole());
 		this.computer = computer;
 		this.tty = tty;
-		this.file = file;
+		this.file = targetFile;
+	}
+
+	private final List<Function<String, int[][]>> processors = new ArrayList<>();
+	private final List<String> formatters = new ArrayList<>();
+
+	// functions must produce ranges ordered least -> greatest
+	public void registerProcessor(Function<String, int[][]> func, String formatter) {
+		processors.add(func);
+		formatters.add(formatter);
+	}
+
+	private String process(String content) {
+		int[][] stack;
+		int size;
+		{
+			int[][][] ranges = new int[processors.size()][][];
+			for (int t = 0; t < ranges.length; t++)
+				ranges[t] = processors.get(t).apply(content);
+			for (int t = 0; t < ranges.length; t++) {
+				for (int d = 0; d < ranges.length; d++) {
+					if (t != d) {
+						if (t > d)
+							handleOverlaps(ranges[d], ranges[t]);
+						else if (d > t)
+							handleOverlaps(ranges[t], ranges[d]);
+					}
+				}
+			}
+			int fsize = 0;
+			for (int[][] range : ranges) {
+				fsize += range.length;
+			}
+			stack = new int[fsize][];
+			int counter = 0;
+			for (int t = 0; t < ranges.length; t++) {
+				for (int[] set : ranges[t]) {
+					if (set != null) {
+						stack[counter] = new int[] { set[0], set[1], t };
+						counter++;
+					}
+				}
+			}
+			size = counter;
+		}
+		Arrays.sort(stack, 0, size, (first, second) -> first[0] - second[0]);
+
+		StringBuilder builder = new StringBuilder();
+		int index = 0;
+		for (int t = 0; t < size; t++) {
+			int[] range = stack[t];
+			if (index < content.length() && index < range[0]) {
+				String sub = content.substring(index, range[0]);
+				builder.append(sub);
+			}
+			builder.append(formatters.get(range[2]));
+			builder.append(content.substring(range[0], range[1] + 1));
+			builder.append(ChatColor.RESET);
+			index = range[1] + 1;
+		}
+		if (index < content.length())
+			builder.append(content.substring(index, content.length()));
+		return builder.toString();
 	}
 
 	// unsafe
@@ -375,14 +516,12 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 		character -= amt;
 		if (character <= 0)
 			character = 1;
-		setText(content, top);
 	}
 
 	// inserts text at the cursor
 	public void insert(String str) {
 		if (content.isEmpty()) {
 			content = str;
-			setText(content, top);
 			return;
 		}
 		int[] i = {0};
@@ -417,7 +556,6 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			character = 1;
 			row++;
 		}
-		setText(content, top);
 	}
 
 	public void setContent(String content) {
@@ -476,7 +614,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 				c = 0;
 				k = entry.getKey();
 			}
-			String stripped = ChatColor.stripColor(entry.getValue());
+			String stripped = CColor.strip(entry.getValue());
 			int size = stripped.length();
 			// cursor is in this stack row
 			if (x >= OFFSET && y >= (i * textHeight) + H_MARGIN && y < ((i + 1) * textHeight) + H_MARGIN) {
@@ -528,7 +666,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			if (k != entry.getKey()) {
 				g.setFont(numberFont);
 				String str = ChatColor.GRAY.toString() + entry.getKey() + ChatColor.WHITE;
-				g.drawFormatted(OFFSET - (numberFont.getWidth(ChatColor.stripColor(str)) + MARGIN),
+				g.drawFormatted(OFFSET - (numberFont.getWidth(CColor.strip(str)) + MARGIN),
 						(i * textHeight) + H_MARGIN, lastColor, str);
 				g.setFont(font);
 				k = entry.getKey();
@@ -555,7 +693,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 									for (int t = -1; t < sprite.getWidth(); t++) {
 										for (int j = (fin == 0 ? 0 : -1); j <= sprite.getHeight(); j++) {
 											byte s = g.sample(px + t, py + j);
-											g.draw(px + t, py + j, s == (byte) 32 ? cursorColorPrimary : cursorColorSecondary);
+											g.draw(px + t, py + j, s != (byte) 119 ? cursorColorPrimary : cursorColorSecondary);
 										}
 									}
 								}
@@ -585,6 +723,7 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			try {
 				int amt = Integer.parseInt(sub);
 				delete(amt);
+				changed();
 				repaint();
 				return;
 			}
@@ -592,14 +731,17 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 			switch (sub) {
 				case "n":
 					insert("\n");
+					changed();
 					repaint();
 					return;
 				case "s":
 					insert(" ");
+					changed();
 					repaint();
 					return;
 				case "t":
 					insert("    ");
+					changed();
 					repaint();
 					return;
 				case "q":
@@ -615,36 +757,34 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 					top -= 2;
 					if (top < 1)
 						top = 1;
-					changed();
+					rebuild();
 					repaint();
 					return;
 				case "d":
 					top += 2;
-					changed();
+					rebuild();
 					repaint();
 					return;
 				case "U":
 					top = 1;
-					changed();
+					rebuild();
 					repaint();
 					return;
 				case "D":
 					top = content.split("\n").length - (maxStackSize - 10) + 1;
 					if (top < 1)
 						top = 1 ;
-					changed();
+					rebuild();
 					repaint();
 					return;
 			}
 		}
-		// bad stuff happens when we use color codes, the
-		// editor still works, but we need to resolve the
-		// 'real' index of the cursor so it doesn't delete
-		// at the wrong character index. We need to edit
-		// code in this editor anyway, so there's no use
-		// in supporting color.
+		// if we have color codes as the actual content, bad things happen
+		// editing indexes are much easier to keep when we don't have invisible characters.
+		// instead you can get colored text with coding certain sections/symbols.
 		input = input.replace((char) 167, '&');
 		insert(input);
+		changed();
 		repaint();
 	}
 
