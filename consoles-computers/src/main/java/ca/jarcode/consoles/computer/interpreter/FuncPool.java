@@ -8,14 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FuncPool {
 	public Map<String, LibFunction> functions = new ConcurrentHashMap<>();
-	
-	private Computer computer;
+
 	private Thread context;
 
 	private SandboxProgram program;
 
 	public FuncPool(SandboxProgram program) {
-		this.computer = program.getComputer();
 		this.program = program;
 
 		for (Map.Entry<String, LibFunction> entry : Lua.staticFunctions.entrySet()) {
@@ -33,6 +31,6 @@ public class FuncPool {
 		Lua.pools.remove(context);
 	}
 	public Computer getComputer() {
-		return computer;
+		return program.getComputer();
 	}
 }
