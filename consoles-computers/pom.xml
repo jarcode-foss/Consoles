@@ -79,7 +79,7 @@
         <dependency>
             <groupId>ca.jarcode</groupId>
             <artifactId>consoles-core</artifactId>
-            <version>1.1</version>
+            <version>1.1a</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
