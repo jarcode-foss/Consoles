@@ -23,8 +23,6 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 			"\"Those who do not understand UNIX are condemned to reinvent it, poorly.\" - Henry Spencer",
 			"\"There is no place like ~\"",
 			"\"Thou shalt not kill -9\"",
-			// The below one is possibly inappropriate for kids, I will change if requested.
-			"\"Software is like sex: it's better when it's free\" - Linus Torvalds",
 			"\"Never trust an operating system you don't have sources for.\"",
 			"\"Put a straw in your mouth and put your hands in your pockets. Type by hitting the " +
 					"keys with the straw.\"",
