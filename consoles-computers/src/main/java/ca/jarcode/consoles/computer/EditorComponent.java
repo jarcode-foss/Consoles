@@ -36,10 +36,6 @@ public class EditorComponent extends IndexedConsoleTextArea implements InputComp
 
 	private static final int[] KEYWORD_LENGTH_RANGE;
 
-	private static final String[] OPERATORS = { "+", "-", "*", "/", "%", "^",
-			"#", "==", "~=", "<=", ">=", "<", ">", "=", "(", ")", "{", "}",
-			"[", "]", ";", ":", ",", ".", "..", "..."};
-
 	private static final char[] SPLITTERS = " \n+-*/%^#=~<>=(){}[];:,.".toCharArray();
 
 	static {
