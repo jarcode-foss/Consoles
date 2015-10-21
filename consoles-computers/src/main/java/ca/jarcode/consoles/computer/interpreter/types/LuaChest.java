@@ -130,16 +130,18 @@ public class LuaChest {
 						list.add(entry.getKey());
 					}
 				}
-			}
-			else if (r instanceof ShapelessRecipe) {
+			} else if (r instanceof ShapelessRecipe) {
 				ShapelessRecipe shapeless = (ShapelessRecipe) r;
 				args = shapeless.getIngredientList();
 			}
 			if (args == null)
 				return -3; // invalid recipe
 			ItemStack[] arr = inv.getContents();
+
+			// this is a cache of indexes in the inventory array that we use to track what items slots
+			// we plan to remove from
 			int[] toRemove = new int[9];
-			byte at = 0;
+			byte removeIndex = 0;
 			for (int t = 0; t < arr.length; t++)
 				arr[t] = arr[t] != null ? arr[t].clone() : null;
 			for (ItemStack ingredient : args) {
@@ -149,25 +151,31 @@ public class LuaChest {
 				for (int t = 0; t < arr.length; t++) {
 					if (arr[t] != null
 							&& (arr[t].getDurability() == ingredient.getDurability() || ingredient.getDurability() == 32767)
-							&& arr[t].getType() == ingredient.getType()) {
-						toRemove[at] = t + 1;
-						at++;
+							&& arr[t].getType() == ingredient.getType()
+							&& getPostCraftAmt(arr, toRemove, t, removeIndex) > 0) {
+						toRemove[removeIndex] = t;
+						removeIndex++;
 						found = true;
 						break;
 					}
 				}
 				if (!found) return 0; // not enough ingredients!
 			}
-			for (int i : toRemove) {
-				if (i == 0) continue;
-				else i--;
-				if (arr[i].getAmount() <= 1)
-					arr[i] = null;
-				else arr[i].setAmount(arr[i].getAmount() - 1);
+			for (int t = 0; t < removeIndex; t++) {
+				if (arr[toRemove[t]].getAmount() <= 1)
+					arr[toRemove[t]] = null;
+				else arr[toRemove[t]].setAmount(arr[toRemove[t]].getAmount() - 1);
 			}
 			inv.setContents(arr);
 			inv.addItem(r.getResult().clone());
 			return 1; // success!
 		}, terminated);
+	}
+	private static int getPostCraftAmt(ItemStack[] arr, int[] toRemove, int index, int removeIndex) {
+		int count = arr[index].getAmount();
+		for (int t = 0; t < removeIndex; t++)
+			if (toRemove[t] == index)
+				count--;
+		return count;
 	}
 }
