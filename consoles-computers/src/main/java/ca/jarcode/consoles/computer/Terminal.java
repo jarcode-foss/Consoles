@@ -50,7 +50,10 @@ public class Terminal extends ConsoleFeed implements InputComponent {
 			"\"This mod was a complete waste of my time.\" - Jarcode",
 			"\"Real programmers write in C. No wait, real programmers write assembly. Or was it actual CPU " +
 					"instructions? I forget, I have a Java project to finish.\"",
-			"\"Are we supposed to write joke entries in this array?\""
+			"\"Are we supposed to write joke entries in this array?\"",
+			"\"Yo mama's so fat, she can't save files over 4GB.\"",
+			"\"Yo mama's so fat, she sat on a binary tree and turned it into a linked list in constant time.\"",
+			"\"Yo mama's so fat, SQL Server introduced BIGINT to store her weight.\""
 	};
 
 	public static Terminal newTerminal(Computer computer) {
