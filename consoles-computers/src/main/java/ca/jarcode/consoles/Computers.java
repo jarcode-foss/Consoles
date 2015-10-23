@@ -8,6 +8,7 @@ import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.internal.ConsoleHandler;
+import jni.NLoader;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -46,6 +47,7 @@ public class Computers extends JavaPlugin {
 	public void onEnable() {
 
 		new NativeLoader("computerimpl").loadAsJNILibrary(this);
+		NativeLoader.linkLoader(new NLoader());
 
 		jarFile = getFile();
 

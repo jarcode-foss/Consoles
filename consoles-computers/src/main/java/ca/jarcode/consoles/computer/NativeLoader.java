@@ -11,6 +11,13 @@ public class NativeLoader {
 
 	public static final Function<String, String> libraryFormatter = libraryFormat();
 
+	public interface ILoader {
+		long dlopen(String path);
+		int dlclose(long handle);
+	}
+
+	private static ILoader loader;
+
 	private static Function<String, String> libraryFormat() {
 		String os = System.getProperty("os.name");
 		boolean arch32 = System.getProperty("os.arch").contains("86"); // check for x86 arch, otherwise assume amd64
@@ -32,6 +39,16 @@ public class NativeLoader {
 		else if (os.contains("Mac"))
 			return "dylib";
 		else return null;
+	}
+
+	public static void linkLoader(ILoader loader) {
+		NativeLoader.loader = loader;
+	}
+
+	public static int closeDynamicLibrary(long handle) {
+		if (loader == null)
+			throw new UnsupportedOperationException();
+		else return loader.dlclose(handle);
 	}
 
 	private final String libraryName;
@@ -57,7 +74,10 @@ public class NativeLoader {
 	 * @return a pointer to the library handle (OS specific), can be 32 bit or 64 bit pointer.
 	 */
 	public long loadAsDynamicLibrary(Plugin plugin) {
-		throw new UnsupportedOperationException();
+		if (loader == null)
+			throw new UnsupportedOperationException();
+		else return loader.dlopen(plugin.getDataFolder().getAbsolutePath()
+				+ File.separator + libraryFormatter.apply(libraryName));
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
