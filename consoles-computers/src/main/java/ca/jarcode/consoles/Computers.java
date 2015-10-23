@@ -4,6 +4,7 @@ import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.computer.GeneralListener;
 import ca.jarcode.consoles.computer.MapDataStore;
+import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.internal.ConsoleHandler;
@@ -43,6 +44,8 @@ public class Computers extends JavaPlugin {
 	}
 
 	public void onEnable() {
+
+		new NativeLoader("computerimpl").loadAsJNILibrary(this);
 
 		jarFile = getFile();
 

@@ -15,12 +15,18 @@
 
     <build>
         <resources>
+            <!-- plugin YML files and default configs -->
             <resource>
                 <directory>src/main/config</directory>
                 <filtering>true</filtering>
             </resource>
+            <!-- lua crap, mostly -->
             <resource>
                 <directory>src/main/resources</directory>
+            </resource>
+            <!-- natives are compiled into libraries that should be located here -->
+            <resource>
+                <directory>${project.build.directory}/natives</directory>
             </resource>
         </resources>
         <sourceDirectory>src/main/java</sourceDirectory>
@@ -39,6 +45,26 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.5</version>
                 <inherited>false</inherited>
+            </plugin>
+            <!-- header plugin -->
+            <plugin>
+                <groupId>com.alexkasko.maven</groupId>
+                <artifactId>jni-headers-maven-plugin</artifactId>
+                <version>1.0.6</version>
+                <executions>
+                    <!-- generate header for native methods -->
+                    <execution>
+                        <id>javah</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahClass>jni.NLoader</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/NLoader.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
