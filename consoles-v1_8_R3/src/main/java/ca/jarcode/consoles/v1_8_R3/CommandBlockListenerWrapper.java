@@ -222,7 +222,7 @@ public class CommandBlockListenerWrapper extends CommandBlockListenerAbstract {
 	}
 
 	public BlockPosition getChunkCoordinates() {
-		return null;
+		return underlying.getChunkCoordinates();
 	}
 
 	public Vec3D d() {
