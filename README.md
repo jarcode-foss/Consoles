@@ -19,6 +19,8 @@ credit to wolfmitchell for website and repository hosting!
 
 I also deploy jars to the maven repository that have dependencies packed with them, which can be used as working builds of the plugin. Check out my [module browser](http://jarcode.ca/modules.php) on my website to browse through releases of Consoles (and other projects).
 
+**warning:** snapshot builds of `consoles-computers` may crash your JVM.
+
 ### API Overview
 
 The API provides:
