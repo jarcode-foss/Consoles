@@ -103,8 +103,9 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types, v))))
-							.val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+							new LuaJScriptValue(v)
+					)))).val;
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new LuaError(e);
 				}
@@ -113,8 +114,10 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types, v, v1))))
-							.val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+							new LuaJScriptValue(v),
+							new LuaJScriptValue(v1)
+					)))).val;
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new LuaError(e);
 				}
@@ -123,8 +126,11 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst,
-							Lua.toJava(types, v, v1, v2)))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+							new LuaJScriptValue(v),
+							new LuaJScriptValue(v1),
+							new LuaJScriptValue(v2)
+					)))).val;
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new LuaError(e);
 				}
@@ -133,8 +139,12 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2, LuaValue v3) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst,
-							Lua.toJava(types, v, v1, v2, v3)))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+							new LuaJScriptValue(v),
+							new LuaJScriptValue(v1),
+							new LuaJScriptValue(v2),
+							new LuaJScriptValue(v3)
+					)))).val;
 				} catch (IllegalAccessException | InvocationTargetException e) {
 					throw new LuaError(e);
 				}

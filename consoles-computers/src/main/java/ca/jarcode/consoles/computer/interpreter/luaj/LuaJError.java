@@ -20,4 +20,14 @@ public class LuaJError extends ScriptError {
 	public String constructMessage() {
 		return err.getMessage();
 	}
+
+	@Override
+	public String getMessage() {
+		return err.getMessage();
+	}
+
+	@Override
+	public Throwable getCause() {
+		return err;
+	}
 }
