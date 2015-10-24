@@ -1,13 +1,13 @@
 package ca.jarcode.consoles.computer.interpreter;
 
 import ca.jarcode.consoles.computer.Computer;
-import org.luaj.vm2.lib.LibFunction;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptFunction;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FuncPool {
-	public Map<String, LibFunction> functions = new ConcurrentHashMap<>();
+	public Map<String, ScriptFunction> functions = new ConcurrentHashMap<>();
 
 	private Thread context;
 
@@ -16,7 +16,7 @@ public class FuncPool {
 	public FuncPool(SandboxProgram program) {
 		this.program = program;
 
-		for (Map.Entry<String, LibFunction> entry : Lua.staticFunctions.entrySet()) {
+		for (Map.Entry<String, ScriptFunction> entry : Lua.staticFunctions.entrySet()) {
 			functions.put(entry.getKey(), entry.getValue());
 		}
 	}

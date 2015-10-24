@@ -30,6 +30,16 @@ frame-rendering: true
 # many server resources.
 max-time-without-interrupt: 7000
 
+# Max heap size for each individual script running on a computer
+# this will later be replaced by heap sizes for each virtual computer
+script-heap-size: 65536
+
+# The script interpreter to use. The options are:
+#  - luajit: a lua interpreter that uses a JIT compiler for very fast execution (incomplete, native)
+#  - lua: default lua interpreter and environment (incomplete, native)
+#  - luaj: a lua interpreter that precompiles logic to java bytecode prior to execution (default, java)
+script-engine: luaj
+
 # Size (in kilobytes) of the chunks that wget downloads every 300ms. Increasing this value will result in higher
 # download speeds.
 wget-chunk-size: 2

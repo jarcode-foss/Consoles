@@ -8,21 +8,19 @@ import ca.jarcode.consoles.computer.bin.TouchProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
 import ca.jarcode.consoles.computer.interpreter.func.TwoArgFunc;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptEngine;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
 import ca.jarcode.consoles.computer.interpreter.libraries.Libraries;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFile;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFrame;
-import ca.jarcode.consoles.computer.interpreter.types.LuaTypes;
+import ca.jarcode.consoles.computer.interpreter.types.ScriptTypes;
 import ca.jarcode.consoles.internal.ConsoleFeed;
 import com.google.common.base.Joiner;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.ChatColor;
-import org.luaj.vm2.LoadState;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.compiler.LuaC;
-import org.luaj.vm2.lib.*;
-import org.luaj.vm2.lib.jse.JseBaseLib;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -50,7 +48,7 @@ public abstract class SandboxProgram {
 
 	static {
 		Libraries.init();
-		LuaTypes.init();
+		ScriptTypes.init();
 	}
 
 	/**
@@ -164,12 +162,10 @@ public abstract class SandboxProgram {
 	protected String args;
 	protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	protected List<Integer> allocatedSessions = new ArrayList<>();
-	protected EmbeddedGlobals globals;
+	protected ScriptValue globals;
 
 	protected Runnable terminator;
 	protected BooleanSupplier terminated;
-
-	protected InterruptLib interruptLib = new InterruptLib(this::terminated);
 
 	protected List<String> registeredChannels = new ArrayList<>();
 
@@ -275,74 +271,22 @@ public abstract class SandboxProgram {
 
 			// create our globals for Lua. We use a special kind of globals
 			// that allows us to finalize variables.
-			globals = new EmbeddedGlobals();
-
-			// Load libraries from LuaJ. I left a bunch of libraries from the
-			// JSE standards to have less possibilities for users to exploit
-			// them.
-			globals.load(new JseBaseLib());
-			globals.load(new PackageLib());
-			globals.load(new Bit32Lib());
-			globals.load(new TableLib());
-			globals.load(new StringLib());
-			globals.load(new BaseLib());
-
-			// I added a missing function to the math library
-			globals.load(new EmbeddedMathLib());
-
-			// Load our debugging library, which is used to terminate the program
-			globals.load(interruptLib);
+			globals = ScriptEngine.get().newInstance(pool, terminated, in, out, Computers.scriptHeapSize);
 
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
 					.filter((lib) -> !lib.isRestricted || !restricted)
-					.forEach((lib) -> globals.load(lib.buildLibrary()));
+					.forEach((lib) -> ScriptEngine.get().load(globals, lib));
 
-			if (!restricted) {
-				globals.load(new CoroutineLib());
-				globals.load(new OsLib());
-			}
-
-			// install
-			LoadState.install(globals);
-			LuaC.install(globals);
-
-			// Block some functions
-			globals.set("load", LuaValue.NIL);
-			globals.set("loadfile", LuaValue.NIL);
-			// require should be used instead
-			globals.set("dofile", LuaValue.NIL);
-
-			// load functions from our pool
-			for (Map.Entry<String, LibFunction> entry : pool.functions.entrySet()) {
-				globals.set(entry.getKey(), entry.getValue());
-			}
-
-			// set stdout
-			if (out == null)
-				globals.STDOUT = dummyPrintStream();
-			else
-				globals.STDOUT = new PrintStream(out, true, "UTF-8");
-
-			// we handle errors with exceptions, so this will always be a dummy writer.
-			globals.STDERR = dummyPrintStream();
-
-			// set stdin
-			if (in == null)
-				globals.STDIN = dummyInputStream();
-			else
-				globals.STDIN = in;
-
-			// finalize all entries. This means programs cannot modify any created
-			// globals at this point.
-			globals.finalizeEntries();
+			if (!restricted)
+				ScriptEngine.get().removeRestrictions(globals);
 
 			// our main program chunk and the default chunk
-			LuaValue chunk, def;
+			ScriptValue chunk, def;
 
 			// the exit function, if it exists.
-			LuaValue exit = null;
+			ScriptValue exit = null;
 
 			// if there is a default chunk/program to load into the globals, load it!
 			if (defaultChunk != null && !defaultChunk.isEmpty()) {
@@ -370,7 +314,7 @@ public abstract class SandboxProgram {
 				//
 				// we don't return if we encountered an error in the default chunk,
 				// instead we continue and attempt to run the main chunk.
-				catch (LuaError err) {
+				catch (ScriptError err) {
 					handleLuaError(err);
 				}
 			}
@@ -395,17 +339,17 @@ public abstract class SandboxProgram {
 				// just called, and all the methods in said chunk have been declared.
 
 				// get our main function
-				LuaValue value = globals.get("main");
+				ScriptValue value = globals.get(ValueFactory.get().translate("main"));
 
 				// set the exit function
-				exit = globals.get("exit");
+				exit = globals.get(ValueFactory.get().translate("exit"));
 
 				// if the main function exists, call it.
 				//
 				// some programs won't have a main method. That's fine, in that case
 				// most of the code will be in the chunk itself.
-				if (value.isfunction()) {
-					value.call(args);
+				if (value.isFunction()) {
+					value.getAsFunction().call(ValueFactory.get().translate(args));
 				}
 			}
 			// if the program was interrupted by our debug/interrupt lib
@@ -413,13 +357,13 @@ public abstract class SandboxProgram {
 				print("\n" + lang.getString("program-term"));
 			}
 			// if we encountered an error, we go through quite the process to handle it
-			catch (LuaError err) {
+			catch (ScriptError err) {
 				handleLuaError(err);
 			}
 			// regardless if we encountered an error or not, we try to call our exit function.
 			finally {
 				// if the exit function exists, and our program has not been terminated
-				if (exit != null && exit.isfunction() && !terminated()) {
+				if (exit != null && exit.isFunction() && !terminated()) {
 
 					try {
 
@@ -432,17 +376,14 @@ public abstract class SandboxProgram {
 						print("\n" + lang.getString("exit-func-term"));
 					}
 					// if there was an error, handle it the same way.
-					catch (LuaError err) {
+					catch (ScriptError err) {
 						handleLuaError(err);
 					}
 				}
 			}
 		}
 		// cleanup code
-		catch (UnsupportedEncodingException e) {
-			// should never happen unless the JVM somehow doesn't support UTF-8 encoding (wat)
-			throw new RuntimeException(e);
-		} finally {
+		finally {
 
 			// unregister our pool
 			if (pool != null)
@@ -469,6 +410,9 @@ public abstract class SandboxProgram {
 			for (int i : allocatedSessions) {
 				computer.setComponent(i, null);
 			}
+
+			// close resources
+			ScriptEngine.get().close(globals);
 		}
 	}
 
@@ -477,16 +421,16 @@ public abstract class SandboxProgram {
 	}
 
 	// loads a raw chunk and returns a LuaValue, handing errors accordingly
-	private LuaValue loadChunk(String raw) {
-		LuaValue chunk;
+	private ScriptValue loadChunk(String raw) {
+		ScriptValue chunk;
 		try {
 			// try to load in the program
 			// this will try to compile the Lua string into Java bytecode
-			chunk = globals.load(raw);
+			chunk = ScriptEngine.get().load(globals, raw);
 
 		}
 		// if we run into a compile error, print out the details and exit.
-		catch (LuaError err) {
+		catch (ScriptError err) {
 			if (Consoles.debug)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " " + lang.getString("lua-compile-err"));
@@ -500,7 +444,7 @@ public abstract class SandboxProgram {
 	}
 
 	// returns a dummy input stream
-	private InputStream dummyInputStream() {
+	public static InputStream dummyInputStream() {
 		return new InputStream() {
 			@Override
 			public int read() throws IOException {
@@ -510,7 +454,7 @@ public abstract class SandboxProgram {
 	}
 
 	// returns a dummy print stream
-	private PrintStream dummyPrintStream() {
+	public static PrintStream dummyPrintStream() {
 		return new PrintStream(new OutputStream() {
 			@Override
 			public void write(int b) throws IOException {}
@@ -537,7 +481,7 @@ public abstract class SandboxProgram {
 
 	// handles an uncaught LuaError that occured while attempting to run a lua program
 	// this can either print to the terminal, or dump the stack contents to a file (if too large)
-	private void handleLuaError(LuaError err) {
+	private void handleLuaError(ScriptError err) {
 
 		// print stack trace in console if in debug mode
 		if (Consoles.debug)
@@ -551,17 +495,17 @@ public abstract class SandboxProgram {
 		boolean cont;
 		do {
 			cont = false;
-			if (err.getCause() instanceof LuaError) {
+			if (err.getCause() instanceof ScriptError) {
 				errorBreakdown += "\n\n" + lang.getString("lua-dump-cause") +"\n" + err.getCause().getMessage();
 				cont = true;
 			}
 			else if (err.getCause() instanceof InvocationTargetException) {
 				if (((InvocationTargetException) err.getCause()).getTargetException() != null)
-					errorBreakdown += "\n\nCaused by:\n"
+					errorBreakdown += "\n\n" + lang.getString("lua-dump-cause") + "\n"
 							+ ((InvocationTargetException) err.getCause()).getTargetException().getClass().getSimpleName()
 							+ ": " + ((InvocationTargetException) err.getCause()).getTargetException().getMessage();
-				if (((InvocationTargetException) err.getCause()).getTargetException() instanceof LuaError) {
-					err = (LuaError) ((InvocationTargetException) err.getCause()).getTargetException();
+				if (((InvocationTargetException) err.getCause()).getTargetException() instanceof ScriptError) {
+					err = (ScriptError) ((InvocationTargetException) err.getCause()).getTargetException();
 					cont = true;
 				}
 			}
@@ -600,9 +544,9 @@ public abstract class SandboxProgram {
 				// grab Lua version
 				String version;
 				try {
-					version = globals.get("_VERSION").checkjstring();
+					version = globals.get(ValueFactory.get().translate("_VERSION")).translateString();
 				}
-				catch (LuaError ignored) {
+				catch (ScriptError ignored) {
 					version = "?";
 				}
 
@@ -639,7 +583,7 @@ public abstract class SandboxProgram {
 			out.write(formatted.getBytes(CHARSET));
 		}
 		catch (IOException e) {
-			throw new LuaError(e);
+			throw new GenericScriptError(e);
 		}
 	}
 	protected void println(String formatted) {
@@ -661,6 +605,6 @@ public abstract class SandboxProgram {
 		if (restricted) ProgramUtils.sleep(ms);
 	}
 	public void resetInterrupt() {
-		interruptLib.update();
+		ScriptEngine.get().resetInterrupt(globals);
 	}
 }

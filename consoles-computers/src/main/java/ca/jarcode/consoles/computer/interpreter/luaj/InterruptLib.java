@@ -1,7 +1,9 @@
-package ca.jarcode.consoles.computer.interpreter;
+package ca.jarcode.consoles.computer.interpreter.luaj;
 
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
+import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.consoles.computer.interpreter.ProgramInterruptException;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.DebugLib;
 

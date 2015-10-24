@@ -1,16 +1,24 @@
-package ca.jarcode.consoles.computer.interpreter;
+package ca.jarcode.consoles.computer.interpreter.luaj;
 
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaValue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import static ca.jarcode.consoles.Lang.lang;
 
 public class EmbeddedGlobals extends Globals {
 
+	InterruptLib interruptLib;
+	boolean restricted = true;
+
 	private List<LuaValue> finalized = new ArrayList<>();
+
+	EmbeddedGlobals(BooleanSupplier terminated) {
+		interruptLib = new InterruptLib(terminated);
+	}
 
 	public void finalizeEntries() {
 		for (LuaValue key : keys()) {

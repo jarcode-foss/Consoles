@@ -1,4 +1,4 @@
-package ca.jarcode.consoles.computer.interpreter;
+package ca.jarcode.consoles.computer.interpreter.luaj;
 
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;

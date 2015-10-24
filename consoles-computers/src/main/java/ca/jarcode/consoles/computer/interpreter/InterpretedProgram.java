@@ -13,6 +13,7 @@ import ca.jarcode.consoles.computer.bin.WGetProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
 import ca.jarcode.consoles.computer.filesystem.FSFolder;
+import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import ca.jarcode.consoles.computer.interpreter.types.*;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
@@ -22,12 +23,6 @@ import ca.jarcode.consoles.api.Position2D;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.block.Chest;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaString;
-import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.CoroutineLib;
-import org.luaj.vm2.lib.OsLib;
-import org.luaj.vm2.lib.ZeroArgFunction;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -69,33 +64,21 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 	}
 
-
-	@FunctionManual("Returns a LuaTypeBuilder, which can be used to build a unique type for " +
-			"use in Lua programs. The builder can be used to set various handlers for the type, " +
-			"and once defined, will return a function which can be used to create the type.")
-	public LuaTypeBuilder lua$typeBuilder() {
-		return new LuaTypeBuilder();
-	}
-
 	@FunctionManual("Evalutes Lua code from a string passed as an argument. This function will " +
-			"return a value if the compiled chunk returns something, otherwise it will return nil.")
-	public LuaValue lua$loadstring(
+			"return a value if the compiled chunk returns something, otherwise it will return " +
+			"an error string.")
+	public ScriptValue lua$loadstring(
 			@Arg(name = "arg", info = "valid lua code in plaintext") String arg) {
-		LuaValue value;
+		ScriptValue value;
 		try {
-			value = globals.load(arg);
+			value = ScriptEngine.get().load(globals, arg);
 		}
-		catch (LuaError err) {
+		catch (ScriptError err) {
 			if (Consoles.debug)
 				err.printStackTrace();
-			return LuaString.valueOf(err.getMessage());
+			return ValueFactory.get().translate(err.getMessage());
 		}
-		return new ZeroArgFunction() {
-			@Override
-			public LuaValue call() {
-				return value.call();
-			}
-		};
+		return FunctionFactory.get().createFunction(value::call).getAsValue();
 	}
 
 	@FunctionManual("Removes restrictions on the current running program, once authenticated with " +
@@ -127,12 +110,10 @@ public final class InterpretedProgram extends SandboxProgram {
 				restricted = false;
 				Lua.libraries.values().stream()
 						.filter((lib) -> lib.isRestricted)
-						.forEach((lib) -> globals.load(lib.buildLibrary()));
+						.forEach((lib) -> ScriptEngine.get().load(globals, lib));
 
-				globals.load(new CoroutineLib());
-				globals.load(new OsLib());
-			}
-			else {
+				ScriptEngine.get().removeRestrictions(globals);
+			} else {
 				print("\nlua: " + lang.getString("lua-perm"));
 				terminate();
 			}
@@ -143,7 +124,7 @@ public final class InterpretedProgram extends SandboxProgram {
 				Thread.sleep(80);
 		}
 		catch (InterruptedException e) {
-			throw new LuaError(e);
+			throw new GenericScriptError(e);
 		}
 	}
 	@FunctionManual("Reads input from the terminal that the current program is running in. This function " +
@@ -159,7 +140,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		try {
 			while (locked.get() && !terminated()) {
 				Thread.sleep(10);
-				interruptLib.update();
+				ScriptEngine.get().resetInterrupt(globals);
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -194,7 +175,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			@Arg(name="overwrite",info="whether to overwrite the file if it exists") boolean overwrite) {
 		ProgramUtils.PreparedBlock block = handleBlockCreate(path, null, contextTerminal, overwrite);
 		if (block.err == null) {
-			int ret = WGetProgram.invoke(path, (FSFolder) block.blockParent, block.blockName,
+			int ret = WGetProgram.invoke(path, block.blockParent, block.blockName,
 					null, terminated, contextTerminal);
 			if (ret == 0) return 0;
 			else return ret - 5;
@@ -214,7 +195,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			@Arg(name="channel",info="name of the channel to register") String channel) {
 		delay(40);
 		if (!computer.isChannelRegistered(channel)) {
-			LuaChannel ch = new LuaChannel(interruptLib::update, () -> {
+			LuaChannel ch = new LuaChannel(() -> ScriptEngine.get().resetInterrupt(globals), () -> {
 				computer.unregisterMessageListener(channel);
 				registeredChannels.remove(channel);
 			}, this::terminated);
@@ -227,13 +208,6 @@ public final class InterpretedProgram extends SandboxProgram {
 	@FunctionManual("Returns the terminal that the current program is being executed from.")
 	public LuaTerminal lua$getTerminal() {
 		return new LuaTerminal(contextTerminal);
-	}
-	@FunctionManual("Returns a static array for Lua. Static arrays are like normal arrays except they can't be " +
-			"resized, can't have non-numerical keys, are not compatable with the '{}' syntax of defining tables, and " +
-			"they are a unique type ('static_array')")
-	public LuaValue lua$static_arr(
-			@Arg(name="size",info="Size of the array to register") int size) {
-		return new LuaArray(size);
 	}
 	@FunctionManual("Sets if the program is allowed to be terminated (ignored by the computer's owner).")
 	public void lua$ignoreTerminate(
@@ -258,8 +232,8 @@ public final class InterpretedProgram extends SandboxProgram {
 			"by calling soundList().")
 	public void lua$sound(
 			@Arg(name="name",info="name of the sound to play") String name,
-			@Arg(name="volume",info="volume of the sound") LuaValue v1,
-			@Arg(name="pitch",info="pitch of the sound") LuaValue v2) {
+			@Arg(name="volume",info="volume of the sound") ScriptValue v1,
+			@Arg(name="pitch",info="pitch of the sound") ScriptValue v2) {
 		delay(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
@@ -269,7 +243,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 		schedule(() -> computer.getConsole().getLocation().getWorld()
 				.playSound(computer.getConsole().getLocation(), match,
-						(float) v1.checkdouble(), (float) v2.checkdouble()));
+						(float) v1.translateDouble(), (float) v2.translateDouble()));
 	}
 	@FunctionManual("Clears the terminal.")
 	public Boolean lua$clear() {
@@ -294,7 +268,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		return path;
 	}
 	@FunctionManual("Loads the specified file from /lib or from the folder of the current program")
-	public LuaValue lua$require(
+	public ScriptValue lua$require(
 			@Arg(name="module",info="Name of the lua module to load.") String path) {
 		delay(10);
 		FSBlock block = computer.getBlock(path, "/lib");
@@ -318,11 +292,11 @@ public final class InterpretedProgram extends SandboxProgram {
 			}
 		}
 		String text = file.read();
-		LuaValue value;
+		ScriptValue value;
 		try {
-			value = globals.load(text);
+			value = ScriptEngine.get().load(globals, text);
 		}
-		catch (LuaError err) {
+		catch (ScriptError err) {
 			if (Consoles.debug)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " " + String.format(lang.getString("lua-require-compile-fail"), path));
@@ -341,7 +315,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		allocatedSessions.add(index);
 		BufferedFrameComponent component = new BufferedFrameComponent(computer);
 		computer.setComponent(index, component);
-		return new LuaBuffer(this, index, component, interruptLib::update);
+		return new LuaBuffer(this, index, component, () -> ScriptEngine.get().resetInterrupt(globals));
 	}
 	@FunctionManual("Appends text to the terminal. This will not suffix a newline (\\n) character, " +
 			"unlike the print function.")
@@ -429,15 +403,15 @@ public final class InterpretedProgram extends SandboxProgram {
 	public void lua$sleep(
 			@Arg(name = "ms", info = "the duration in which to sleep") Integer ms) {
 		try {
-			interruptLib.update();
+			ScriptEngine.get().resetInterrupt(globals);
 			long target = System.currentTimeMillis() + ms;
 			while (System.currentTimeMillis() < target && !terminated()) {
 				Thread.sleep(8);
 			}
-			interruptLib.update();
+			ScriptEngine.get().resetInterrupt(globals);
 		}
 		catch (InterruptedException e) {
-			throw new LuaError(e);
+			throw new GenericScriptError(e);
 		}
 	}
 	@FunctionManual("Creates a new directory if it does not already exist. A new LuaFolder is returned on " +

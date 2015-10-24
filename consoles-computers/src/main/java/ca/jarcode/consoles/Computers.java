@@ -7,17 +7,28 @@ import ca.jarcode.consoles.computer.MapDataStore;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.consoles.computer.interpreter.luaj.LuaJEngine;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import jni.NLoader;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.function.Supplier;
 
 public class Computers extends JavaPlugin {
 
+	public static HashMap<String, Runnable> ENGINES = new HashMap<>();
+
+	static {
+		ENGINES.put("luaj", LuaJEngine::install);
+	}
+
 	private static Computers INSTANCE = null;
+
+	// flag we use in case the plugin is reloaded, the JVM complains if we try to re-load the same native
+	private static boolean LOADED_NATIVES = false;
 
 	// allow the crafting of computers
 	public static boolean allowCrafting = true;
@@ -33,6 +44,10 @@ public class Computers extends JavaPlugin {
 	public static int maxTimeWithoutInterrupt = 7000;
 	// chunk size (in kilobytes) that wget downloads every 300ms
 	public static int wgetChunkSize = 2;
+	// max heap size for scripts (in kilobytes)
+	public static int scriptHeapSize = 64 * 1024;
+	// script interpreter to use
+	public static String scriptEngine = "luaj";
 
 	public static File jarFile;
 
@@ -46,21 +61,35 @@ public class Computers extends JavaPlugin {
 
 	public void onEnable() {
 
-		new NativeLoader("computerimpl").loadAsJNILibrary(this);
-		NativeLoader.linkLoader(new NLoader());
-
 		jarFile = getFile();
 
 		Lua.killAll = false; // if this plugin was reloaded
 		saveDefaultConfig();
 
-		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", true);
-		allowCrafting = getConfig().getBoolean("allow-computer-crafting", true);
-		commandPrefix = getConfig().getString("command-prefix", "/").trim();
-		maxComputers = getConfig().getInt("computer-limit", 3);
-		hideSaveMessages = getConfig().getBoolean("hide-save-messages", false);
-		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", 7000);
-		wgetChunkSize = getConfig().getInt("wget-chunk-size", 2);
+		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", frameRenderingEnabled);
+		allowCrafting = getConfig().getBoolean("allow-computer-crafting", allowCrafting);
+		commandPrefix = getConfig().getString("command-prefix", commandPrefix).trim();
+		maxComputers = getConfig().getInt("computer-limit", maxComputers);
+		hideSaveMessages = getConfig().getBoolean("hide-save-messages", hideSaveMessages);
+		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", maxTimeWithoutInterrupt);
+		wgetChunkSize = getConfig().getInt("wget-chunk-size", wgetChunkSize);
+		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
+		scriptEngine = getConfig().getString("script-engine", scriptEngine);
+
+		if (!LOADED_NATIVES) {
+			new NativeLoader("computerimpl").loadAsJNILibrary(this);
+			NativeLoader.linkLoader(new NLoader());
+		}
+
+		LOADED_NATIVES = true;
+
+		if (!ENGINES.containsKey(scriptEngine)) {
+			scriptEngine = "luaj";
+		}
+
+		getLogger().info("using script engine: " + scriptEngine);
+
+		ENGINES.get(scriptEngine).run();
 
 		MapDataStore.init(this);
 

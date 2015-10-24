@@ -1,6 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter;
 
-import org.luaj.vm2.LuaValue;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
 
 /*
 
@@ -10,5 +10,5 @@ reference and call a function in Lua as a method parameter.
  */
 @FunctionalInterface
 public interface PartialFunctionBind {
-	LuaValue call(Object... args);
+	ScriptValue call(Object... args);
 }

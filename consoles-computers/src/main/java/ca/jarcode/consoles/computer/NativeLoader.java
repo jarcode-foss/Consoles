@@ -42,7 +42,8 @@ public class NativeLoader {
 	}
 
 	public static void linkLoader(ILoader loader) {
-		NativeLoader.loader = loader;
+		if (loader != null)
+			NativeLoader.loader = loader;
 	}
 
 	public static int closeDynamicLibrary(long handle) {

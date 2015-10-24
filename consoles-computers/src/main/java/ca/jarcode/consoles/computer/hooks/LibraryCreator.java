@@ -2,10 +2,8 @@ package ca.jarcode.consoles.computer.hooks;
 
 import ca.jarcode.consoles.computer.interpreter.ComputerLibrary;
 import ca.jarcode.consoles.computer.interpreter.Lua;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
+import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
@@ -52,54 +50,9 @@ public class LibraryCreator {
 			lua[t] = toLua(java[t], inst);
 		return lua;
 	}
-	private static ComputerLibrary.NamedFunction toLua(Method m, final Object inst) {
-		Class[] types = m.getParameterTypes();
-		ComputerLibrary.NamedFunction function = new ComputerLibrary.NamedFunction() {
-			@Override
-			public LuaValue call() {
-				try {
-					return Lua.translateLua(m.invoke(inst));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new LuaError(e);
-				}
-			}
-
-			@Override
-			public LuaValue call(LuaValue v) {
-				try {
-					return Lua.translateLua(m.invoke(inst, Lua.toJava(types, v)));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new LuaError(e);
-				}
-			}
-
-			@Override
-			public LuaValue call(LuaValue v, LuaValue v1) {
-				try {
-					return Lua.translateLua(m.invoke(inst, Lua.toJava(types, v, v1)));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new LuaError(e);
-				}
-			}
-
-			@Override
-			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2) {
-				try {
-					return Lua.translateLua(m.invoke(inst, Lua.toJava(types, v, v1, v2)));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new LuaError(e);
-				}
-			}
-
-			@Override
-			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2, LuaValue v3) {
-				try {
-					return Lua.translateLua(m.invoke(inst, Lua.toJava(types, v, v1, v2, v3)));
-				} catch (IllegalAccessException | InvocationTargetException e) {
-					throw new LuaError(e);
-				}
-			}
-		};
+	private static ComputerLibrary.NamedFunction toLua(Method m, Object inst) {
+		ComputerLibrary.NamedFunction function =
+				new ComputerLibrary.NamedFunction(FunctionFactory.get().createFunction(m, inst));
 		if (m.isAnnotationPresent(LuaName.class)) {
 			LuaName annotation = m.getAnnotation(LuaName.class);
 			function.setName(annotation.name());

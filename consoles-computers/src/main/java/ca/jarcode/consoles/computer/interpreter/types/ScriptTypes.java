@@ -11,13 +11,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class LuaTypes {
+public class ScriptTypes {
 
 	private static List<String> typeNames = new ArrayList<>();
 
 	static {
-		Lua.map(LuaTypes::lua_uniqueTypeNames, "uniqueTypeNames");
-		ManualManager.load(LuaTypes.class);
+		Lua.map(ScriptTypes::lua_uniqueTypeNames, "uniqueTypeNames");
+		ManualManager.load(ScriptTypes.class);
 	}
 
 	public static void init() {
@@ -32,7 +32,6 @@ public class LuaTypes {
 		reg(LuaInteraction.class);
 		// reg(LuaPainter.class);
 		reg(LuaTerminal.class);
-		reg(LuaTypeBuilder.class);
 	}
 	private static void reg(Class<?> type) {
 		ManualManager.loadType(type);
