@@ -43,7 +43,7 @@ public class LuaJEngine implements ScriptEngine {
 
 		// create our globals for Lua. We use a special kind of globals
 		// that allows us to finalize variables.
-		EmbeddedGlobals globals = new EmbeddedGlobals(terminated);
+		LuaJEmbeddedGlobals globals = new LuaJEmbeddedGlobals(terminated);
 
 		// Load libraries from LuaJ. I left a bunch of libraries from the
 		// JSE standards to have less possibilities for users to exploit
@@ -56,7 +56,7 @@ public class LuaJEngine implements ScriptEngine {
 		globals.load(new BaseLib());
 
 		// I added a missing function to the math library
-		globals.load(new EmbeddedMathLib());
+		globals.load(new LuaJEmbeddedMathLib());
 
 		// Load our debugging library, which is used to terminate the program
 		globals.load(globals.interruptLib);
@@ -121,12 +121,12 @@ public class LuaJEngine implements ScriptEngine {
 
 	@Override
 	public void resetInterrupt(ScriptValue globals) {
-		((EmbeddedGlobals) ((LuaJScriptValue) globals).val).interruptLib.update();
+		((LuaJEmbeddedGlobals) ((LuaJScriptValue) globals).val).interruptLib.update();
 	}
 
 	@Override
 	public void removeRestrictions(ScriptValue globals) {
-		EmbeddedGlobals g = ((EmbeddedGlobals) ((LuaJScriptValue) globals).val);
+		LuaJEmbeddedGlobals g = ((LuaJEmbeddedGlobals) ((LuaJScriptValue) globals).val);
 		if (!g.restricted) {
 			g.load(new CoroutineLib());
 			g.load(new OsLib());

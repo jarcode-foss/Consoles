@@ -72,10 +72,14 @@ public class Computers extends JavaPlugin {
 		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", maxTimeWithoutInterrupt);
 		wgetChunkSize = getConfig().getInt("wget-chunk-size", wgetChunkSize);
 		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
-		scriptEngine = getConfig().getString("script-engine", scriptEngine);
+		scriptEngine = getConfig().getString("script-engine", scriptEngine).toLowerCase();
 
 		if (!LOADED_NATIVES) {
+			// extract dependency to rpath
+			new NativeLoader("luajit").extractLib(Computers.getInstance());
+			// extract JNI library and load it
 			new NativeLoader("computerimpl").loadAsJNILibrary(this);
+			// link an instance of `LibLoader` so that we can use dlopen/dlclose within Java
 			NativeLoader.linkLoader(new LibLoader());
 		}
 

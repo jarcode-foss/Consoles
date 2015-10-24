@@ -16,13 +16,13 @@ import static ca.jarcode.consoles.Lang.lang;
 This handles termination for Lua programs (as a library)
 
  */
-public class InterruptLib extends DebugLib {
+public class LuaJInterruptLib extends DebugLib {
 
 	private BooleanSupplier supplier;
 	private volatile long lastInterrupt = System.currentTimeMillis();
 	private byte off = 0;
 
-	public InterruptLib(BooleanSupplier supplier) {
+	public LuaJInterruptLib(BooleanSupplier supplier) {
 		this.supplier = supplier;
 	}
 	public void update() {

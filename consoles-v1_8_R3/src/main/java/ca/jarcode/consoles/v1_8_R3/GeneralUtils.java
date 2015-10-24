@@ -109,6 +109,7 @@ public class GeneralUtils implements GeneralInternals {
 
 	@Override
 	public void setItemNBTString(ItemStack stack, String key, String value) {
+		CraftItemStack
 		net.minecraft.server.v1_8_R3.ItemStack nms = nmsStack(stack);
 		NBTTagCompound comp = nms.getTag();
 		if (value != null && key != null)

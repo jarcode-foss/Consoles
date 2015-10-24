@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter.luanative;
 
+import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.interpreter.ComputerLibrary;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
 import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
@@ -13,10 +14,10 @@ import java.util.function.BooleanSupplier;
 
 public class LuaNEngine implements ScriptEngine {
 
-	private static LuaNImpl impl = null;
+	private static LuaNImpl IMPL = null;
 
 	public static void install(LuaNImpl impl) {
-		LuaNEngine.impl = impl;
+		LuaNEngine.IMPL = impl;
 		FunctionFactory.assign(new LuaNFunctionFactory());
 		ValueFactory.assign(new LuaNValueFactory());
 		ScriptEngine.assign(new LuaNEngine());
@@ -35,7 +36,7 @@ public class LuaNEngine implements ScriptEngine {
 	@Override
 	public ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream stdin,
 	                               OutputStream stdout, long heap) {
-		long ptr = setupinst(impl.val, heap);
+		long ptr = setupinst(IMPL.val, heap);
 		return null;
 	}
 
@@ -51,7 +52,7 @@ public class LuaNEngine implements ScriptEngine {
 
 	@Override
 	public void close(ScriptValue globals) {
-
+		NativeLoader.closeDynamicLibrary(LIBRARY_HANDLE);
 	}
 
 	private native long setupinst(int impl, long heap);

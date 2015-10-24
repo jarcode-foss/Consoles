@@ -9,15 +9,15 @@ import java.util.function.BooleanSupplier;
 
 import static ca.jarcode.consoles.Lang.lang;
 
-public class EmbeddedGlobals extends Globals {
+public class LuaJEmbeddedGlobals extends Globals {
 
-	InterruptLib interruptLib;
+	LuaJInterruptLib interruptLib;
 	boolean restricted = true;
 
 	private List<LuaValue> finalized = new ArrayList<>();
 
-	EmbeddedGlobals(BooleanSupplier terminated) {
-		interruptLib = new InterruptLib(terminated);
+	LuaJEmbeddedGlobals(BooleanSupplier terminated) {
+		interruptLib = new LuaJInterruptLib(terminated);
 	}
 
 	public void finalizeEntries() {

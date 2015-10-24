@@ -1,5 +1,5 @@
 CFLAGS = -D -O2
-LDFLAGS = -fPIC -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"include" -shared
+LDFLAGS = -fPIC -Lsrc/main/resources -lluajit -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"include" -rpath='\$\$ORIGIN/..' -shared
 
 SOURCES := $(wildcard src/main/c/*.c)
 OBJECTS := $(addprefix src/main/c/,$(notdir $(SOURCES:.cpp=.o)))

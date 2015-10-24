@@ -4,7 +4,7 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.jse.JseMathLib;
 
-public class EmbeddedMathLib extends JseMathLib {
+public class LuaJEmbeddedMathLib extends JseMathLib {
 
 	@Override
 	public LuaValue call(LuaValue str, LuaValue globals) {
