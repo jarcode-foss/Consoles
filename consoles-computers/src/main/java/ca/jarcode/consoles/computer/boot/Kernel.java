@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.util.*;
 
+@SuppressWarnings("deprecation")
 // fake operating system kernel, but contains important activities and driver management.
 public class Kernel extends FSProvidedProgram {
 

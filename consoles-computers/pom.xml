@@ -60,7 +60,7 @@
                             <goal>javah</goal>
                         </goals>
                         <configuration>
-                            <javahClass>jni.NLoader</javahClass>
+                            <javahClass>jni.LibLoader</javahClass>
                             <javahOutputFilePath>${project.build.directory}/include/NLoader.h</javahOutputFilePath>
                         </configuration>
                     </execution>

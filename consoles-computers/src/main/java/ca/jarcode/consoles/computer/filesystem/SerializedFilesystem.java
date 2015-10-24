@@ -44,6 +44,7 @@ public class SerializedFilesystem {
 				return ((ByteArrayOutputStream) type.getOutput()).toByteArray();
 			}
 
+			@SuppressWarnings("deprecation")
 			@Override
 			public FSStoredFile deserialize(byte[] data, UUID uuid) {
 				return new FSStoredFile(data, uuid);

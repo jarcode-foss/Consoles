@@ -11,7 +11,6 @@ import net.jodah.typetools.TypeResolver;
 import org.bukkit.Bukkit;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

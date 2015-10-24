@@ -8,8 +8,10 @@ import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.luaj.LuaJEngine;
+import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
+import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
 import ca.jarcode.consoles.internal.ConsoleHandler;
-import jni.NLoader;
+import jni.LibLoader;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -18,12 +20,6 @@ import java.util.HashMap;
 import java.util.function.Supplier;
 
 public class Computers extends JavaPlugin {
-
-	public static HashMap<String, Runnable> ENGINES = new HashMap<>();
-
-	static {
-		ENGINES.put("luaj", LuaJEngine::install);
-	}
 
 	private static Computers INSTANCE = null;
 
@@ -61,6 +57,8 @@ public class Computers extends JavaPlugin {
 
 	public void onEnable() {
 
+		HashMap<String, Runnable> engines = new HashMap<>();
+
 		jarFile = getFile();
 
 		Lua.killAll = false; // if this plugin was reloaded
@@ -78,18 +76,22 @@ public class Computers extends JavaPlugin {
 
 		if (!LOADED_NATIVES) {
 			new NativeLoader("computerimpl").loadAsJNILibrary(this);
-			NativeLoader.linkLoader(new NLoader());
+			NativeLoader.linkLoader(new LibLoader());
 		}
 
 		LOADED_NATIVES = true;
 
-		if (!ENGINES.containsKey(scriptEngine)) {
+		engines.put("luaj", LuaJEngine::install);
+		engines.put("lua", () -> LuaNEngine.install(LuaNImpl.DEFAULT));
+		engines.put("luajit", () -> LuaNEngine.install(LuaNImpl.JIT));
+
+		if (!engines.containsKey(scriptEngine)) {
 			scriptEngine = "luaj";
 		}
 
 		getLogger().info("using script engine: " + scriptEngine);
 
-		ENGINES.get(scriptEngine).run();
+		engines.get(scriptEngine).run();
 
 		MapDataStore.init(this);
 
