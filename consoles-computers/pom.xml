@@ -54,14 +54,27 @@
                 <executions>
                     <!-- generate header for native methods -->
                     <execution>
-                        <id>javah</id>
+                        <id>javah-engine</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>javah</goal>
                         </goals>
                         <configuration>
+                            <javahVerbose>true</javahVerbose>
+                            <javahClass>jni.LuaEngine</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/LuaEngine.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javah-loader</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahVerbose>true</javahVerbose>
                             <javahClass>jni.LibLoader</javahClass>
-                            <javahOutputFilePath>${project.build.directory}/include/NLoader.h</javahOutputFilePath>
+                            <javahOutputFilePath>${project.build.directory}/include/LibLoader.h</javahOutputFilePath>
                         </configuration>
                     </execution>
                 </executions>
