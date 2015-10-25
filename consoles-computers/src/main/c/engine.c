@@ -137,6 +137,10 @@ void engine_handlecall(lua_State* state) {
 	
 }
 
+void engine_wrapcall(engine_func_wrapper* wrapper, ...) {
+	
+}
+
 void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, size_t name_len, jobject jfunc) {
 	
 	// get class

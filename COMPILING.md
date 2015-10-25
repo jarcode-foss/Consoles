@@ -10,7 +10,11 @@
 
 - You need a maven installation. BuildTools will download one for itself, you can simply add its maven directory to your system path, or install maven normally (on most Linux distributions, you can run `apt-get install maven2`)
 
-- consoles-computers contains natives that only compile and run on Linux, which means if you're trying to compile the plugin for any other platform, you need to remove the `consoles-computers` from the root `pom.xml`. This means you cannot compile or use consoles-computers on any other platform. If you are compiling on another platform, run `mvn install` instead of using a the build script.
+### Natives
+
+`consoles-computers` contains natives that only compile and run on Linux, which means if you're trying to compile the plugin for any other platform, you need to remove the `consoles-computers` from the root `pom.xml`. If you are compiling on another platform, run `mvn install` instead of using a the build script.
+
+If you are on Linux, there are two dependencies. The first is LuaJIT, which you do not need to provide (although you can replace it with your own build). The second is `libffi`, which _should_ come with your distribution. If it does not, you need to install it through your package manager.
 
 ### Compiling
 
