@@ -8,7 +8,7 @@ CFLAGS = -O2
 # we also need to include JNI headers, so we just add those
 #  (and the linux-specific headers). Make sure $JAVA_HOME
 #  is set!
-LDFLAGS = -fPIC -Lsrc/main/resources -lluajit -lffi -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"include" -Wl,-rpath='$$ORIGIN/..' -shared
+LDFLAGS = -fPIC -Lsrc/main/resources -lluajit -lffi -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"/usr/include/luajit-2.0" -I"/usr/include/luajit" -Wl,-rpath='$$ORIGIN/..' -shared
 
 # source folder
 SOURCES := $(wildcard src/main/c/*.c)

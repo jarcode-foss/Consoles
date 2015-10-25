@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <ffi.h>
+
 #include <LuaEngine.h>
 
 #include "engine.h"
@@ -55,6 +57,7 @@ void engine_remove(size_t t) {
 		free(engine_instances);
 	}
 	else {
+		size_t newlen = (registered_engines - 1) * sizeof(void*);
 		if (t != registered_engines) {
 			lua_State* state_ptr = engine_states[t];
 			engine_inst* eng_ptr = engine_instances[t];
@@ -62,19 +65,16 @@ void engine_remove(size_t t) {
 			memmove(state_ptr, ((void*) state_ptr) + 1, chunkamt);
 			memmove(eng_ptr, eng_ptr + 1, chunkamt);
 		}
-		else {
-			size_t newlen = (registered_engines - 1) * sizeof(void*);
-			engine_instances = realloc(engine_instances, newlen);
-			engine_states = realloc(engine_states, newlen);
-		}
-		registered_engines--;
+		engine_instances = realloc(engine_instances, newlen);
+		engine_states = realloc(engine_states, newlen);
 	}
+	registered_engines--;
 }
 
 engine_inst* engine_reg(lua_State* state) {
 	engine_inst* instance = malloc(sizeof(engine_inst));
 	instance->state = state;
-	if (registered_engines = 0) {
+	if (registered_engines == 0) {
 		engine_instances = malloc(sizeof(void*));
 		engine_states = malloc(sizeof(void*));
 	}
@@ -91,15 +91,74 @@ engine_inst* engine_reg(lua_State* state) {
 }
 
 void engine_close(engine_inst* inst) {
+	
+	// lookup the engine index and remove it from our list of engines
+	
 	int index = engine_lookup(inst);
 	if (index != -1) {
 		engine_remove(index);
 	}
+	
+	// if the engine was already marked closed, do nothing
 	if (inst->closed) return;
+	
+	// free all function wrappers (and underlying ffi closures).
+	// the amount of closures registered will continue to grow as
+	// java functions are registered, and will only be free'd when
+	// the entire engine is closed.
+	
+	// this could be considered a memory leak, so if it has a noticable
+	// impact over the life of the Lua VM, I will find a way to interact
+	// with the Lua GC so that I can free wrappers as their lua components
+	// are free'd.
+	int t;
+	for (t = 0; t < inst->wrappers_amt; t++) {
+		ffi_closure_free(inst->wrappers[t]->closure);
+		free(wrappers(inst->wrappers[t]);
+	}
+	
+	free(inst->wrappers);
+	inst->wrappers = 0;
+	inst->wrappers_amt = 0;
 	
 	//TODO: cleanup here
 	
 	free(inst);
+}
+
+void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
+	if (inst->wrappers_amt == 0) return;
+	if (inst->wrappers_amt == 1) {
+		free(inst->wrappers);
+	}
+	else {
+		uint8_t valid = 0;
+		int t;
+		for (t = 0; t < inst->wrappers_amt; t++) {
+			if (wrapper == inst->wrappers[t]) {
+				valid = 1;
+				break;
+			}
+		}
+		if (!valid) return;
+		if (t != inst->wrappers_amt) {
+			void* ptr = inst->wrappers[t];
+			memmove(ptr, ptr + 1, inst->wrappers_amt - (t + 1));
+		}
+		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
+	}
+	inst->wrappers_amt--;
+}
+
+void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
+	if (inst->wrappers_amt == 0) {
+		inst->wrappers = malloc(sizeof(void*));
+	}
+	else {
+		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt + 1) * sizeof(void*));
+	}
+	inst->wrappers[inst->wrappers_amt] = wrapper;
+	inst->wrappers_amt++;
 }
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong ptr) {
@@ -132,16 +191,12 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 	engine_debug = mode;
 }
 
-void engine_handlecall(lua_State* state) {
+void engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	engine_inst* inst = engine_instances[engine_state_lookup(state)];
 	
 }
 
-void engine_wrapcall(engine_func_wrapper* wrapper, ...) {
-	
-}
-
-void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, size_t name_len, jobject jfunc) {
+void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, jobject jfunc) {
 	
 	// get class
 	jclass jfunctype = (*env)->GetObjectClass(env, jfunc);
@@ -160,15 +215,28 @@ void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, size_t name_len,
 	char buf[128] = {0};
 	strcat(buf, "(");
 	size_t i;
-	for (i = 0; i < args; i++) {
+	for (i = 0; i < args; i++)
 		strcat(buf, "Ljava/lang/Object;");
-	}
-	if (ret) {
-		strcat(buf, ")Ljava/lang/Object;");
-	}
-	else {
-		strcat(buf, ")V");
-	}
+	if (ret) strcat(buf, ")Ljava/lang/Object;");
+	else strcat(buf, ")V");
 	
 	jmethodID mid = (*env)->GetMethodID(env, jfunctype, "call", buf);
+	void *func_ptr; // our function pointer
+	ffi_type* args[2]; // ffi function args
+	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_ptr); // ffi closure
+	
+	// this shouldn't happen
+	if (!closure) {
+		fprintf(stderr, "\nfailed to allocate ffi closure (%s)\n", name);
+		exit(-1);
+	}
+	
+	args[0] = &ffi_type_pointer;
+	
+	engine_jfuncwrapper* wrapper = malloc(sizeof(engine_jfuncwrapper));
+	engine_regwrapper(inst, wrapper);
+	
+	// solve with ffi's callback functionality
+	// only other solution is to provide C function wrappers at compile time, which would be more effort.
+	
 }

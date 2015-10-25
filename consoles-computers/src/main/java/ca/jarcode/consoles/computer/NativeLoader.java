@@ -101,6 +101,9 @@ public class NativeLoader {
 			if (stream == null)
 				return null;
 			File folder = plugin.getDataFolder();
+			if (!folder.exists())
+				if (!folder.mkdir())
+					return null;
 			result = new File(folder, lib);
 			if (result.exists())
 				result.delete();
