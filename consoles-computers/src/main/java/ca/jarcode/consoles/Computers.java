@@ -55,6 +55,9 @@ public class Computers extends JavaPlugin {
 		INSTANCE = this;
 	}
 
+	// Be careful if you touch this onEnable method, certain classes are not allowed to be referenced within
+	// the lifetime of the VM if natives weren't able to be loaded properly. This is to maintain support
+	// for OSX and Windows using the LuaJ interpreter.
 	public void onEnable() {
 
 		HashMap<String, Runnable> engines = new HashMap<>();
@@ -74,26 +77,45 @@ public class Computers extends JavaPlugin {
 		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
 		scriptEngine = getConfig().getString("script-engine", scriptEngine).toLowerCase();
 
-		if (!LOADED_NATIVES) {
-			// extract dependency to rpath
-			new NativeLoader("luajit").extractLib(Computers.getInstance());
+		loadAttempt: if (!LOADED_NATIVES) {
 			// extract JNI library and load it
-			new NativeLoader("computerimpl").loadAsJNILibrary(this);
+			if (!new NativeLoader("computerimpl").loadAsJNILibrary(this))
+				break loadAttempt;
 			// link an instance of `LibLoader` so that we can use dlopen/dlclose within Java
 			NativeLoader.linkLoader(new LibLoader());
+
+			LOADED_NATIVES = true;
 		}
 
-		LOADED_NATIVES = true;
+		if (!LOADED_NATIVES) {
+			getLogger().warning("");
+			getLogger().warning("Support for the LuaJIT and standard Lua interpreters " +
+							"is unavailable on your environment (" + System.getProperty("os.name") +
+							" " + System.getProperty("os.arch") + ")"
+			);
+			getLogger().warning("");
+			if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+				getLogger().warning("Installing luajit and libffi (also called 'libffi6') " +
+						"and restarting your server should resolve the issue.");
+				getLogger().warning("On Ubuntu/Debian, you can run: ");
+				getLogger().warning("");
+				getLogger().warning("\tapt-get install luajit libffi6");
+				getLogger().warning("");
+			}
+		}
 
 		engines.put("luaj", LuaJEngine::install);
-		engines.put("lua", () -> LuaNEngine.install(LuaNImpl.DEFAULT));
-		engines.put("luajit", () -> LuaNEngine.install(LuaNImpl.JIT));
+
+		if (LOADED_NATIVES) {
+			engines.put("lua", () -> LuaNEngine.install(LuaNImpl.DEFAULT));
+			engines.put("luajit", () -> LuaNEngine.install(LuaNImpl.JIT));
+		}
 
 		if (!engines.containsKey(scriptEngine)) {
 			scriptEngine = "luaj";
 		}
 
-		getLogger().info("using script engine: " + scriptEngine);
+		getLogger().info("Using script engine: " + scriptEngine);
 
 		engines.get(scriptEngine).run();
 

@@ -63,9 +63,18 @@ public class NativeLoader {
 	 *
 	 * @param plugin parent plugin
 	 */
-	public void loadAsJNILibrary(Plugin plugin) {
+	public boolean loadAsJNILibrary(Plugin plugin) {
 		File file = extractLib(plugin);
-		System.load(file.getAbsolutePath());
+		if (file == null) return false;
+		try {
+			System.load(file.getAbsolutePath());
+		}
+		catch (Throwable e) {
+			plugin.getLogger().severe("failed to load library (do have have the right dependencies installed?)");
+			e.printStackTrace();
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -90,7 +99,7 @@ public class NativeLoader {
 			stream = this.getClass()
 					.getClassLoader().getResourceAsStream(lib);
 			if (stream == null)
-				throw new RuntimeException("Unsupported platform");
+				return null;
 			File folder = plugin.getDataFolder();
 			result = new File(folder, lib);
 			if (result.exists())
@@ -98,11 +107,11 @@ public class NativeLoader {
 			Files.copy(stream, Paths.get(result.getAbsolutePath()));
 			return result;
 		} catch (FileNotFoundException e) {
-			plugin.getLogger().severe("failed to find target library file");
-			throw new RuntimeException("Unsupported platform");
+			return null;
 		} catch (IOException e) {
+			plugin.getLogger().severe("failed to extract library" + lib);
 			e.printStackTrace();
-			throw new RuntimeException("Unsupported platform");
+			return null;
 		}
 		finally {
 			silentlyClose(stream);
