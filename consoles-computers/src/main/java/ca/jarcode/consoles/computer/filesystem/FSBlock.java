@@ -49,7 +49,7 @@ public abstract class FSBlock {
 		if (str.length() > 24) return false;
 		for (char c : str.toCharArray()) {
 			if (!((0x30 <= c && 0x39 >= c) || (0x41 <= c && 0x5A >= c)
-					|| (0x61 <= c && 0x7A >= c) || c == '.' || c == '$' || c == '_' || c == '(' || c == ')')) {
+					|| (0x61 <= c && 0x7A >= c) || c == '.' || c == '$' || c == '_' || c == '(' || c == ')' || c =='-')) {
 				return false;
 			}
 		}
