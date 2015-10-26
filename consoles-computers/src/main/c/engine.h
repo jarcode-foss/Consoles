@@ -11,12 +11,14 @@
 #define ENGINE_H_
 
 typedef struct {
-	JNIEnv* env;
+	engine_inst* engine;
 	jmethodID id;
 	ffi_closure* closure;
+	ffi_cif* cif;
 } engine_jfuncwrapper;
 
 typedef struct {
+	JNIEnv* env;
 	lua_State* state;
 	uint8_t closed;
 	engine_jfuncwrapper** wrappers;

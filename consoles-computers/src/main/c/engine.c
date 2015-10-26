@@ -22,6 +22,10 @@ static lua_State** engine_states = 0;
 static engine_inst** engine_instances = 0;
 static size_t registered_engines = 0;
 
+// we use a single caller interface for wrapping Java -> C -> Lua functions,
+// since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
+static ffi_cif func_cif;
+
 int engine_lookup(engine_inst* inst) {
 	uint8_t valid = 0;
 	size_t t;
@@ -162,6 +166,21 @@ void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 }
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong ptr) {
+	
+	if (!FFI_CLOSURES) {
+		fprintf(stderr, "\nFFI_CLOSURES are not supported on this architecture (libffi)\n");
+		exit(-1);
+	}
+	
+	// ffi function args
+	ffi_type* args[1];
+	args[0] = &ffi_type_pointer;
+	// prepare caller interface
+	if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, args) != FII_OK) {
+		fprintf(stderr, "\nfailed to prepare ffi cif for C function wrappers (%s)\n", name);
+		exit(-1);
+	}
+	
 	lua_State* state = lua_open();
 	luaopen_base(state);
 	luaopen_table(state);
@@ -175,6 +194,8 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	
 	engine_inst* instance = engine_reg(state);
 	instance->state = state;
+	instance->env = env;
+	instance->closed = 0;
 	return (jlong) instance;
 }
 
@@ -191,12 +212,27 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 	engine_debug = mode;
 }
 
-void engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
+// this is a (wrapped) function that handles _all_ C->Lua function calls
+int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
+	
 	engine_inst* inst = engine_instances[engine_state_lookup(state)];
 	
 }
 
-void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, jobject jfunc) {
+// binding function for ffi
+int engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_data) {
+	*(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
+}
+
+// magic to turn Java function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
+// and then pushes it onto the lua stack.
+void engine_setfunc(engine_inst* inst, char* name, jobject jfunc) {
+	
+	JNIEnv* env = inst->env;
+	
+	if (engine_debug) {
+		printf("\nwrapping java function from C: %s", name);
+	}
 	
 	// get class
 	jclass jfunctype = (*env)->GetObjectClass(env, jfunc);
@@ -221,9 +257,8 @@ void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, jobject jfunc) {
 	else strcat(buf, ")V");
 	
 	jmethodID mid = (*env)->GetMethodID(env, jfunctype, "call", buf);
-	void *func_ptr; // our function pointer
-	ffi_type* args[2]; // ffi function args
-	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_ptr); // ffi closure
+	void *func_binding; // our function pointer
+	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	
 	// this shouldn't happen
 	if (!closure) {
@@ -231,12 +266,17 @@ void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, jobject jfunc) {
 		exit(-1);
 	}
 	
-	args[0] = &ffi_type_pointer;
-	
 	engine_jfuncwrapper* wrapper = malloc(sizeof(engine_jfuncwrapper));
 	engine_regwrapper(inst, wrapper);
 	
-	// solve with ffi's callback functionality
-	// only other solution is to provide C function wrappers at compile time, which would be more effort.
+	if (ffi_prep_closure_loc(closure, &func_cif, &engine_handlecall_binding, wrapper, func_binding) != FFI_OK) {
+		fprintf(stderr, "\nfailed to prepare ffi closure (%s)\n", name);
+		exit(-1);
+	}
 	
+	wrapper->cif = cif;
+	wrapper->closure = closure;
+	
+	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
+	lua_setglobal(inst->state, name);
 }

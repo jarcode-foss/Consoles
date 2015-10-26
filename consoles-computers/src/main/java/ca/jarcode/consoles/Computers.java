@@ -25,6 +25,7 @@ public class Computers extends JavaPlugin {
 
 	// flag we use in case the plugin is reloaded, the JVM complains if we try to re-load the same native
 	private static boolean LOADED_NATIVES = false;
+	private static boolean ATTEMPTED_NATIVES_LOAD = false;
 
 	// allow the crafting of computers
 	public static boolean allowCrafting = true;
@@ -58,6 +59,18 @@ public class Computers extends JavaPlugin {
 	// Be careful if you touch this onEnable method, certain classes are not allowed to be referenced within
 	// the lifetime of the VM if natives weren't able to be loaded properly. This is to maintain support
 	// for OSX and Windows using the LuaJ interpreter.
+
+	// Reloading the plugin is a difficult task with natives (the whole concept of 'reloading' plugins
+	// when everything is garbage collected _is_ inheritly stupid too), since native libraries are
+	// actually closed when the plugin's classloader is GC'd.
+
+	// We're going to _assume_ that if this class (not instance) is GC'd, then its classloader has also
+	// been collected and that we'll need to re-load our native component. This is not a gaurantee, but
+	// it works 99% of the time.
+
+	// bukkit's /reload command should work fine with this plugin since it technnically doesn't attempt
+	// to unload anything, but there is a possibility that shit could hit the fan if a separate plugin
+	// actually tries to unload this.
 	public void onEnable() {
 
 		HashMap<String, Runnable> engines = new HashMap<>();
@@ -77,7 +90,8 @@ public class Computers extends JavaPlugin {
 		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
 		scriptEngine = getConfig().getString("script-engine", scriptEngine).toLowerCase();
 
-		loadAttempt: if (!LOADED_NATIVES) {
+		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
+			ATTEMPTED_NATIVES_LOAD = true;
 			// extract JNI library and load it
 			if (!new NativeLoader("computerimpl").loadAsJNILibrary(this))
 				break loadAttempt;
