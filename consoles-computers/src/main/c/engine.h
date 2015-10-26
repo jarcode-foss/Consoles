@@ -11,10 +11,12 @@
 #define ENGINE_H_
 
 typedef struct {
-	engine_inst* engine;
 	jmethodID id;
+	jobject obj_inst;
 	ffi_closure* closure;
 	ffi_cif* cif;
+	uint8_t ret;
+	uint8_t args;
 } engine_jfuncwrapper;
 
 typedef struct {
@@ -24,6 +26,10 @@ typedef struct {
 	engine_jfuncwrapper** wrappers;
 	size_t wrappers_amt;
 } engine_inst;
+
+typedef struct {
+	
+} engine_value;
 
 void engine_setfunc(engine_inst* inst, JNIEnv* env, char* name, size_t name_len, jobject jfunc);
 

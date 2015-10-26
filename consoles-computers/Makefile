@@ -1,6 +1,6 @@
 
 
-CFLAGS = -O2
+CFLAGS = -O2 -D_REENTRANT
 
 # linking against luajit, which is in our resources folder,
 #   which needs a relative path to be resolved at runtime.

@@ -5,133 +5,34 @@ import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
 
 public class LuaNScriptValue implements ScriptValue {
 
-	@Override
-	public Object translateObj() {
-		return null;
-	}
+	// this class has it's own members, but they are implemented in C
 
-	@Override
-	public boolean canTranslateObj() {
-		return false;
-	}
+	// this class has no constructor, but it still needs to be assigned data on creation only visible from C
 
-	@Override
-	public String translateString() {
-		return null;
-	}
-
-	@Override
-	public boolean canTranslateString() {
-		return false;
-	}
-
-	@Override
-	public long translateLong() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateLong() {
-		return false;
-	}
-
-	@Override
-	public short translateShort() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateShort() {
-		return false;
-	}
-
-	@Override
-	public byte translateByte() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateByte() {
-		return false;
-	}
-
-	@Override
-	public int translateInt() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateInt() {
-		return false;
-	}
-
-	@Override
-	public float translateFloat() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateFloat() {
-		return false;
-	}
-
-	@Override
-	public double translateDouble() {
-		return 0;
-	}
-
-	@Override
-	public boolean canTranslateDouble() {
-		return false;
-	}
-
-	@Override
-	public boolean translateBoolean() {
-		return false;
-	}
-
-	@Override
-	public boolean canTranslateBoolean() {
-		return false;
-	}
-
-	@Override
-	public boolean isNull() {
-		return false;
-	}
-
-	@Override
-	public boolean canTranslateArray() {
-		return false;
-	}
-
-	@Override
-	public Object translateArray(Class arrClass) {
-		return null;
-	}
-
-	@Override
-	public boolean isFunction() {
-		return false;
-	}
-
-	@Override
-	public ScriptFunction getAsFunction() {
-		return null;
-	}
-
-	@Override
-	public void set(ScriptValue key, ScriptValue value) {
-
-	}
-
-	@Override
-	public ScriptValue get(ScriptValue key) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue call() {
-		return null;
-	}
+	public native Object translateObj();
+	public native boolean canTranslateObj();
+	public native String translateString();
+	public native boolean canTranslateString();
+	public native long translateLong();
+	public native boolean canTranslateLong();
+	public native short translateShort();
+	public native boolean canTranslateShort();
+	public native byte translateByte();
+	public native boolean canTranslateByte();
+	public native int translateInt();
+	public native boolean canTranslateInt();
+	public native float translateFloat();
+	public native boolean canTranslateFloat();
+	public native double translateDouble();
+	public native boolean canTranslateDouble();
+	public native boolean translateBoolean();
+	public native boolean canTranslateBoolean();
+	public native boolean isNull();
+	public native boolean canTranslateArray();
+	public native Object translateArray(Class arrClass);
+	public native boolean isFunction();
+	public native ScriptFunction getAsFunction();
+	public native void set(ScriptValue key, ScriptValue value);
+	public native ScriptValue get(ScriptValue key);
+	public native ScriptValue call();
 }

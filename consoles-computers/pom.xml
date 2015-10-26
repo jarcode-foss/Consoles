@@ -77,6 +77,30 @@
                             <javahOutputFilePath>${project.build.directory}/include/LibLoader.h</javahOutputFilePath>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>javah-nvalue</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahVerbose>true</javahVerbose>
+                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptValue</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/LuaNScriptValue.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javah-nfunc</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahVerbose>true</javahVerbose>
+                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptFunction</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/LuaNScriptFunction.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

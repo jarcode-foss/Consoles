@@ -214,9 +214,13 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 
 // this is a (wrapped) function that handles _all_ C->Lua function calls
 int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
-	
 	engine_inst* inst = engine_instances[engine_state_lookup(state)];
-	
+	if (wrapper->ret) {
+		(env*)->CallObjectMethod(env, wrapper->obj_inst, wrapper->id, ...);
+	}
+	else {
+		
+	}
 }
 
 // binding function for ffi
@@ -274,8 +278,12 @@ void engine_setfunc(engine_inst* inst, char* name, jobject jfunc) {
 		exit(-1);
 	}
 	
+	wrapper->ret = (uint8_t) ret;
+	wrapper->args = (uint8_t) args;
 	wrapper->cif = cif;
 	wrapper->closure = closure;
+	wrapper->obj_inst = jfunc;
+	wrapper->id = mid;
 	
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
 	lua_setglobal(inst->state, name);
