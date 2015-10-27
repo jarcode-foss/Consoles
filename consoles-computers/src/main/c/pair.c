@@ -112,12 +112,12 @@ void pair_map_close(JNIEnv* env, pair_map* m) {
 	free(m->second_pair);
 	free(m);
 }
-void pair_map_rm(JNIEnv* env, pair_map* m, int (*predicate) (void* ptr, void* userdata),
+void pair_map_rm(JNIEnv* env, pair_map* m, int (*predicate) (JNIEnv* env, void* ptr, void* userdata),
 void* userdata, void** pair_set) {
 	LOCK(env, m);
 	int64_t t;
 	for (t = 0; t < m->size; t++) {
-		if (predicate(pair_set[t], userdata) {
+		if (predicate(env, pair_set[t], userdata)) {
 			// can be optimized with mark & sweep
 			m_remove(env, m, t, 1);
 		}

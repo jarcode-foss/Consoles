@@ -1,6 +1,8 @@
 
 #include <jni.h>
 
+#include <lua.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,6 +12,27 @@
 
 #include "engine.h"
 #include "pair.h"
+
+/*
+ * 
+ * This unit is a native implementation of LuaNScriptValue. It serves as a buffer
+ * for Java to interact with Lua values, by storing everything in a C struct.
+ * 
+ * Lua and Java values are mapped to C, making the data extremely easy to work with.
+ * 
+ * The downside of this approach is that this middle ground value is allocated and
+ * never free'd until the lua interpreter dies. I try to improve this using Java's
+ * PhantomReference<T>'s class to track when the Java object is unreachable,
+ * however that depends on how JNI's global references behaves with objects that
+ * have gone out-of-scope.
+ * 
+ * If the about is possible, a function exposed to Java called engine_freehandles
+ * will be created to allow parsing of the entire value stack, while looking for
+ * marked values that are ready to be collected.
+ * 
+ * Written by Levi Webb (Jarcode)
+ * 
+ */
 
 static pair_map m;
 
@@ -68,17 +91,39 @@ void engine_value_init(JNIEnv* env) {
 	}
 }
 
-engine_value* engine_newvalue(engine_inst* inst) {
+engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst) {
 	engine_value* v = malloc(sizeof(engine_value));
+	v->inst = inst;
+	// even though the type is null, v->data is probably garbage memory
+	v->type = ENGINE_NULL;
 	jobject obj = (*env)->NewObject(env, value_type, value_const);
 	obj = (*env)->NewGlobalRef(env, object);
 	pair_map_append(m, obj, v);
 }
 
-static int valuecmp(void* ptr, void* userdata) {
+static int valueparse(JNIEnv* env, void* ptr, void* userdata) {
 	if (((engine_value*) ptr)->inst == userdata) {
 		if (((engine_value*) ptr)->type == ENGINE_ARRAY) {
 			free(((engine_value*) ptr)->data->array->values);
+		}
+		else if (((engine_value*) ptr)->type == ENGINE_STRING) {
+			// strings in our values are either copied from java or lua,
+			// we need to free the string when we parse the stack
+			free(((engine_value*) ptr)->data->str);
+		}
+		// clear global references to reflection method
+		else if (((engine_value*) ptr)->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+			(*env)->DeleteGlobalRef(((engine_value*) ptr)->data->rfunc->obj_inst);
+			(*env)->DeleteGlobalRef(((engine_value*) ptr)->data->rfunc->reflect_method);
+		}
+		// clear global references to lambda method and argument class array
+		else if (((engine_value*) ptr)->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+			(*env)->DeleteGlobalRef(((engine_value*) ptr)->data->lfunc->lambda);
+			(*env)->DeleteGlobalRef(((engine_value*) ptr)->data->lfunc->class_array);
+		}
+		// clear global references to object
+		else if (((engine_value*) ptr)->type == ENGINE_JAVA_OBJECT) {
+			(*env)->DeleteGlobalRef(((engine_value*) ptr)->data->obj);
 		}
 		return 1;
 	}
@@ -86,7 +131,7 @@ static int valuecmp(void* ptr, void* userdata) {
 }
 
 void engine_clearvalues(JNIEnv* env, engine_inst* inst) {
-	m.rm(env, &m, &valuecmp, inst, &(m.second_pair));
+	m.rm(env, &m, &valueparse, inst, &(m.second_pair));
 }
 
 engine_value* engine_unwrap(engine_inst* inst, jobject obj) {
@@ -461,6 +506,67 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_get
 (JNIEnv* env, jobject this, jobject script_value) {
 	
+	engine_value* value = (engine_value*) m.second(env, m, (_jobject*) this);
+	
+	engine_value* key = (engine_value*) m.second(env, m, (_jobject*) script_value);
+	// this happens if some retard calls this method with a script value that isn't LuaNScriptValue or null
+	if (key == 0) {
+		throw(env, "tried to index value with invalid key");
+		return 0;
+	}
+	if (value->type == ENGINE_ARRAY) {
+		long t;
+		if (key->type != ENGINE_FLOATING && key->type != ENGINE_INTEGRAL) {
+			throw(env, "tried to index value (array) with non-number key");
+			return 0;
+		}
+		else if (key->type == ENGINE_FLOATING) {
+			t = (long) key->data->d;
+		}
+		else if (key->type == ENGINE_INTEGRAL) {
+			t = key->data->i;
+		}
+		
+		if (t < value->array->length && t >= 0) {
+			// get value pointer from array
+			engine_value* result = key->data->array[t];
+			// just in case this happens, handle it
+			// actual null values have their own type
+			if (result == 0) {
+				throw(env, "internal error: result after indexing array with valid key is somehow a null pointer (bad value table?)");
+				return 0;
+			}
+			// lookup value and get object counterpart
+			return (jobject) (_jobject*) m.first(env, m, result);
+		}
+		else {
+			throw(env, "tried to index value (array) with out-of-range key");
+			return 0;
+		}
+	}
+	// getting this type leaks a value into our table,
+	// which means indexing pooploads of globals is a
+	// bad idea.
+	else if (value->type == ENGINE_LUA_GLOBALS) {
+		if (key->type != ENGINE_STRING) {
+			throw(env, "the native backend does not allow indexing globals with non-string values");
+			return 0;
+		}
+		else if (key->data->str == 0) {
+			throw(env, "internal error: null string value (bad value)");
+			return 0;
+		}
+		lua_State* state = &(value->data->lglobals->runtime_state);
+		// push onto stack
+		lua_getglobal(state, key->data->str);
+		// pops after tovalue
+		// this function builds a new value (memory!)
+		return engine_popvalue_lua(env, value->inst, state);
+	}
+	else {
+		throw(env, "tried to index non-array/non-global value");
+		return 0;
+	}
 }
 
 /*
@@ -474,12 +580,12 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		// empty arguments array
 		jobjectArray arr = (*env)->NewObjectArray(env, 0, value_type, 0);
-		jobject java_object = engine_call_jlambda(env, value->data->obj, arr);
+		jobject java_object = engine_call_jlambda(env, value, arr);
 	}
-	if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
 		
 	}
-	if (value->type == ENGINE_LUA_FUNCTION) {
+	else if (value->type == ENGINE_LUA_FUNCTION) {
 		// call value->data->func
 	}
 	else {
@@ -495,4 +601,14 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call
 (JNIEnv* env, jobject this, jobjectArray arr) {
 	
+}
+/*
+ * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Method:    isNull
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_isNull
+(JNIEnv *, jobject) {
+	engine_value* value = (engine_value*) m.second(env, m, (_jobject*) this);
+	return value->type == ENGINE_NULL;
 }

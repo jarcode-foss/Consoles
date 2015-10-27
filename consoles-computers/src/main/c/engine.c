@@ -39,8 +39,16 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 	for (t = 0; t < inst->wrappers_amt; t++) {
 		// free closure
 		ffi_closure_free(inst->wrappers[t]->closure);
+		
 		// delete global reference to java function
-		(*env)->DeleteGlobalRef(env, inst->wrappers[t]->obj_inst);
+		if (inst->wrappers[t]->obj_inst) { // if it's null, it was for a reflected static function
+			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->obj_inst);
+		}
+		
+		// reflected methods have a Method instance to be deleted
+		if (inst->wrappers[t]->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data->reflect_method);
+		}
 		
 		free(wrappers(inst->wrappers[t]);
 	}
@@ -143,10 +151,10 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 // this is a (wrapped) function that handles _all_ C->Lua function calls
 int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	JNIEnv* env = *(wrappers->runtime_env);
-	if (wrapper->ret) {
-		(*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->id, ...);
+	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+		
 	}
-	else {
+	else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
 		
 	}
 }
@@ -156,20 +164,20 @@ int engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_
 	*(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
 }
 
-engine_jlambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype) {
+engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype) {
 	jfieldID fid_return = (*env)->GetStaticFieldID(env, jfunctype, "C_RETURN", "I");
 	jfieldID fid_args = (*env)->GetStaticFieldID(env, jfunctype, "C_ARGS", "I");
 	jint ret = (*env)->GetStaticIntField(env, jfunctype, fid_return);
 	jint args = (*env)->GetStaticIntField(env, jfunctype, fid_args); 
-	engine_jlambda_info info = {.ret = ret, .args = args};
+	engine_lambda_info info = {.ret = ret, .args = args};
 	return info;
 }
 
 // magic to turn Java lambda function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
 // and then pushes it onto the lua stack.
-void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, jobject jfunc) {
+void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject class_array, jobject jfunc) {
 	if (engine_debug) {
-		printf("\nwrapping java function from C: %s", name);
+		printf("\nwrapping java lambda function from C: %s", name);
 	}
 	
 	// get class
@@ -178,9 +186,9 @@ void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, jobject jfunc) {
 	// obtain func (lambda) info
 	uint8_t ret, args;
 	{
-		engine_jlambda_info info = engine_getlambdainfo(env, inst, jfunctype);
+		engine_lambda_info info = engine_getlambdainfo(env, inst, jfunctype);
 		ret = info.ret;
-		ret = info.args;
+		args = info.args;
 	}
 	
 	// obtain argument info
@@ -215,14 +223,19 @@ void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, jobject jfunc) {
 		exit(-1);
 	}
 	
-	wrapper->ret = (uint8_t) ret;
-	wrapper->args = (uint8_t) args;
-	wrapper->cif = cif;
 	wrapper->closure = closure;
+	wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION;
+	wrapper->data->lambda->ret = (uint8_t) ret;
+	wrapper->data->lambda->args = (uint8_t) args;
+	wrapper->data->lambda->id = mid;
 	wrapper->obj_inst = (*env)->NewGlobalRef(env, jfunc);
-	wrapper->id = mid;
-	wrapper->runtime_env = &inst->runtime_env;
+	wrapper->runtime_env = &(inst->runtime_env);
 	
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
-	lua_setglobal(inst->state, name);
+}
+
+void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
+	if (engine_debug) {
+		printf("\nwrapping java reflect function from C: %s", name);
+	}
 }
