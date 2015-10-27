@@ -101,6 +101,30 @@
                             <javahOutputFilePath>${project.build.directory}/include/LuaNScriptFunction.h</javahOutputFilePath>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>javah-nvaluef</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahVerbose>true</javahVerbose>
+                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNValueFactory</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/LuaNValueFactory.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javah-nfuncf</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>javah</goal>
+                        </goals>
+                        <configuration>
+                            <javahVerbose>true</javahVerbose>
+                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNFunctionFactory</javahClass>
+                            <javahOutputFilePath>${project.build.directory}/include/LuaNFunctionFactory.h</javahOutputFilePath>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

@@ -17,91 +17,11 @@
 
 static int engine_debug = 0;
 
-// states/active engines are tracked, and will have the same array index when they need to be looked up
-static lua_State** engine_states = 0;
-static engine_inst** engine_instances = 0;
-static size_t registered_engines = 0;
-
 // we use a single caller interface for wrapping Java -> C -> Lua functions,
 // since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
 static ffi_cif func_cif;
 
-int engine_lookup(engine_inst* inst) {
-	uint8_t valid = 0;
-	size_t t;
-	for (t = 0; t < registered_engines; t++) {
-		if (engine_instances[t] == inst) {
-			valid = 1;
-			break;
-		}
-	}
-	if (!valid) return -1;
-	else return t;
-}
-
-int engine_state_lookup(lua_State* state) {
-	uint8_t valid = 0;
-	size_t t;
-	for (t = 0; t < registered_engines; t++) {
-		if (engine_states[t] == state) {
-			valid = 1;
-			break;
-		}
-	}
-	if (!valid) return -1;
-	else return t;
-}
-
-void engine_remove(size_t t) {
-	if (registered_engines == 0) return;
-	if (engine_debug)
-		printf("\nunregistering engine at index: %d\n", (int) t);
-	if (registered_engines == 1) {
-		free(engine_states);
-		free(engine_instances);
-	}
-	else {
-		size_t newlen = (registered_engines - 1) * sizeof(void*);
-		if (t != registered_engines) {
-			lua_State* state_ptr = engine_states[t];
-			engine_inst* eng_ptr = engine_instances[t];
-			size_t chunkamt = registered_engines - (t + 1);
-			memmove(state_ptr, ((void*) state_ptr) + 1, chunkamt);
-			memmove(eng_ptr, eng_ptr + 1, chunkamt);
-		}
-		engine_instances = realloc(engine_instances, newlen);
-		engine_states = realloc(engine_states, newlen);
-	}
-	registered_engines--;
-}
-
-engine_inst* engine_reg(lua_State* state) {
-	engine_inst* instance = malloc(sizeof(engine_inst));
-	instance->state = state;
-	if (registered_engines == 0) {
-		engine_instances = malloc(sizeof(void*));
-		engine_states = malloc(sizeof(void*));
-	}
-	else {
-		size_t newlen = (registered_engines + 1) * sizeof(void*);
-		engine_instances = realloc(engine_instances, newlen);
-		engine_states = realloc(engine_states, newlen);
-	}
-	engine_instances[registered_engines] = instance;
-	engine_states[registered_engines] = state;
-	registered_engines++;
-	
-	return instance;
-}
-
-void engine_close(engine_inst* inst) {
-	
-	// lookup the engine index and remove it from our list of engines
-	
-	int index = engine_lookup(inst);
-	if (index != -1) {
-		engine_remove(index);
-	}
+void engine_close(JNIEnv* env, engine_inst* inst) {
 	
 	// if the engine was already marked closed, do nothing
 	if (inst->closed) return;
@@ -117,7 +37,11 @@ void engine_close(engine_inst* inst) {
 	// are free'd.
 	int t;
 	for (t = 0; t < inst->wrappers_amt; t++) {
+		// free closure
 		ffi_closure_free(inst->wrappers[t]->closure);
+		// delete global reference to java function
+		(*env)->DeleteGlobalRef(env, inst->wrappers[t]->obj_inst);
+		
 		free(wrappers(inst->wrappers[t]);
 	}
 	
@@ -130,6 +54,7 @@ void engine_close(engine_inst* inst) {
 	free(inst);
 }
 
+// unused, probably should be used
 void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 	if (inst->wrappers_amt == 0) return;
 	if (inst->wrappers_amt == 1) {
@@ -177,9 +102,11 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	args[0] = &ffi_type_pointer;
 	// prepare caller interface
 	if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, args) != FII_OK) {
-		fprintf(stderr, "\nfailed to prepare ffi cif for C function wrappers (%s)\n", name);
+		fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
 		exit(-1);
 	}
+	
+	engine_value_init(env);
 	
 	lua_State* state = lua_open();
 	luaopen_base(state);
@@ -192,10 +119,11 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 		//TODO: setmode
 	}
 	
-	engine_inst* instance = engine_reg(state);
+	engine_inst* instance = malloc(sizeof(engine_inst));
 	instance->state = state;
 	instance->env = env;
 	instance->closed = 0;
+	
 	return (jlong) instance;
 }
 
@@ -204,7 +132,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this,
 }
 
 JNIEXPORT jint JNICALL Java_jni_LuaEngine_destroyinst(JNIEnv* env, jobject this, jlong ptr) {
-	engine_close((engine_inst*) ptr);
+	engine_close(env, (engine_inst*) ptr);
 	return 0;
 }
 
@@ -214,9 +142,9 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 
 // this is a (wrapped) function that handles _all_ C->Lua function calls
 int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
-	engine_inst* inst = engine_instances[engine_state_lookup(state)];
+	JNIEnv* env = *(wrappers->runtime_env);
 	if (wrapper->ret) {
-		(env*)->CallObjectMethod(env, wrapper->obj_inst, wrapper->id, ...);
+		(*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->id, ...);
 	}
 	else {
 		
@@ -228,12 +156,18 @@ int engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_
 	*(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
 }
 
-// magic to turn Java function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
+engine_jlambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype) {
+	jfieldID fid_return = (*env)->GetStaticFieldID(env, jfunctype, "C_RETURN", "I");
+	jfieldID fid_args = (*env)->GetStaticFieldID(env, jfunctype, "C_ARGS", "I");
+	jint ret = (*env)->GetStaticIntField(env, jfunctype, fid_return);
+	jint args = (*env)->GetStaticIntField(env, jfunctype, fid_args); 
+	engine_jlambda_info info = {.ret = ret, .args = args};
+	return info;
+}
+
+// magic to turn Java lambda function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
 // and then pushes it onto the lua stack.
-void engine_setfunc(engine_inst* inst, char* name, jobject jfunc) {
-	
-	JNIEnv* env = inst->env;
-	
+void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, jobject jfunc) {
 	if (engine_debug) {
 		printf("\nwrapping java function from C: %s", name);
 	}
@@ -241,15 +175,18 @@ void engine_setfunc(engine_inst* inst, char* name, jobject jfunc) {
 	// get class
 	jclass jfunctype = (*env)->GetObjectClass(env, jfunc);
 	
+	// obtain func (lambda) info
+	uint8_t ret, args;
+	{
+		engine_jlambda_info info = engine_getlambdainfo(env, inst, jfunctype);
+		ret = info.ret;
+		ret = info.args;
+	}
+	
 	// obtain argument info
 	
 	// you might ask "why not just get the method signature?", well that's because reflecting the class
 	// and then getting the signature would probably be harder (and slower).
-	
-	jfieldID fid_return = (*env)->GetStaticFieldID(env, jfunctype, "C_RETURN", "I");
-	jfieldID fid_args = (*env)->GetStaticFieldID(env, jfunctype, "C_ARGS", "I");
-	jint ret = (*env)->GetStaticIntField(env, jfunctype, fid_return);
-	jint args = (*env)->GetStaticIntField(env, jfunctype, fid_args); 
 	
 	// build signature and get method
 	char buf[128] = {0};
@@ -282,8 +219,9 @@ void engine_setfunc(engine_inst* inst, char* name, jobject jfunc) {
 	wrapper->args = (uint8_t) args;
 	wrapper->cif = cif;
 	wrapper->closure = closure;
-	wrapper->obj_inst = jfunc;
+	wrapper->obj_inst = (*env)->NewGlobalRef(env, jfunc);
 	wrapper->id = mid;
+	wrapper->runtime_env = &inst->runtime_env;
 	
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
 	lua_setglobal(inst->state, name);

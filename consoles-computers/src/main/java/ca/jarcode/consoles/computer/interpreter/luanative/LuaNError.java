@@ -4,6 +4,12 @@ import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
 
 public class LuaNError extends ScriptError {
 
+	private String message;
+
+	public LuaNError(String message) {
+		this.message = message;
+	}
+
 	@Override
 	public Throwable underlying() {
 		return null;
@@ -11,6 +17,11 @@ public class LuaNError extends ScriptError {
 
 	@Override
 	public String constructMessage() {
-		return null;
+		return message;
+	}
+
+	@Override
+	public String getMessage() {
+		return message;
 	}
 }

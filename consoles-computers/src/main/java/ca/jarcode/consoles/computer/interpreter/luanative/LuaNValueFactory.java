@@ -4,63 +4,19 @@ import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
 import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
 
 public class LuaNValueFactory implements ValueFactory {
-	@Override
-	public ScriptValue translate(boolean b) {
-		return null;
-	}
 
-	@Override
-	public ScriptValue translate(float f) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(double d) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(String str) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(int i) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(long l) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(short s) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(byte b) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translate(char c) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue list(ScriptValue[] values) {
-		return null;
-	}
-
-	@Override
-	public ScriptValue nullValue() {
-		return null;
-	}
-
-	@Override
-	public ScriptValue translateObj(Object obj) {
-		return null;
-	}
+	// this is a singleton
+	
+	public native ScriptValue translate(boolean b);
+	public native ScriptValue translate(float f);
+	public native ScriptValue translate(double d);
+	public native ScriptValue translate(String str);
+	public native ScriptValue translate(int i);
+	public native ScriptValue translate(long l);
+	public native ScriptValue translate(short s);
+	public native ScriptValue translate(byte b);
+	public native ScriptValue translate(char c);
+	public native ScriptValue list(ScriptValue[] values);
+	public native ScriptValue nullValue();
+	public native ScriptValue translateObj(Object obj);
 }
