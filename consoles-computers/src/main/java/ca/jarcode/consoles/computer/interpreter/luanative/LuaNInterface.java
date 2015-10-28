@@ -6,4 +6,5 @@ public interface LuaNInterface {
 	long unrestrict(long ptr);
 	int destroyinst(long ptr);
 	void setdebug(int mode);
+	LuaNScriptValue wrapglobals(long ptr);
 }

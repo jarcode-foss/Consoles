@@ -54,7 +54,9 @@
 #define ENGINE_LUA_FUNCTION = 7;
 // an array of values (simplified table from lua)
 #define ENGINE_ARRAY = 8;
-// unqiue globals value
+// this is a special type, unlike every other type that is translated into an
+// engine_value, the globals type just wraps access to lua_getglobal and
+// lua_setglobal functions
 #define ENGINE_LUA_GLOBALS = 9;
 // null value
 #define ENGINE_NULL = 10;
@@ -99,8 +101,7 @@ typedef struct {
 		jobject reflect_method // Method instance
 	}
 	uint8_t type; // lambda or reflected
-	// dereferenced when called to get the current env pointer
-	JNIEnv** runtime_env;
+	JNIEnv** runtime_env; // dereferenced when called to get the current env pointer
 } engine_jfuncwrapper;
 
 /*
@@ -112,6 +113,7 @@ typedef struct {
 	uint8_t closed;
 	engine_jfuncwrapper** wrappers;
 	size_t wrappers_amt;
+	
 	// assigned (never used) before a chunk is executed in Lua
 	// this is used for function wrappers that need to find the environment they are running in
 	JNIEnv* runtime_env;
@@ -186,7 +188,7 @@ jobject engine_call_lambda(JNIEnv* env, engine_value* value, jobject array_value
 // this operates on the value on the top of the lua stack, popping it after
 jobject engine_popvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state); // stub
 // pushes a lambda onto the stack as a wrapped C function
-void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject class_array, jobject jfunc);
+void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
 
 // utils

@@ -43,8 +43,11 @@ public class LuaNEngine implements ScriptEngine {
 	@Override
 	public ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream stdin,
 	                               OutputStream stdout, long heap) {
-		long ptr = L.setupinst(IMPL.val, heap);
-		return null;
+		// this is actually a pointer
+		long ptr;
+
+		ptr = L.setupinst(IMPL.val, heap);
+		return L.wrapglobals(ptr);
 	}
 
 	@Override

@@ -16,6 +16,10 @@
 #include "engine.h"
 
 static int engine_debug = 0;
+static uint8_t setup = 0;
+
+static jclass class_method;
+static jmethodID id_methodcall;
 
 // we use a single caller interface for wrapping Java -> C -> Lua functions,
 // since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
@@ -100,21 +104,29 @@ void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong ptr) {
 	
-	if (!FFI_CLOSURES) {
-		fprintf(stderr, "\nFFI_CLOSURES are not supported on this architecture (libffi)\n");
-		exit(-1);
-	}
+	if (!setup) {
+		if (!FFI_CLOSURES) {
+			fprintf(stderr, "\nFFI_CLOSURES are not supported on this architecture (libffi)\n");
+			exit(-1);
+		}
 	
-	// ffi function args
-	ffi_type* args[1];
-	args[0] = &ffi_type_pointer;
-	// prepare caller interface
-	if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, args) != FII_OK) {
-		fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
-		exit(-1);
-	}
+		// ffi function args
+		ffi_type* args[1];
+		args[0] = &ffi_type_pointer;
+		// prepare caller interface
+		if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, args) != FII_OK) {
+			fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
+			exit(-1);
+		}
 	
-	engine_value_init(env);
+		engine_value_init(env);
+		
+		// Method class
+		classreg(env, "java/lang/reflect/Method", &class_method);
+		id_methodcall = (*env)->GetMethodID(env, class_method, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+		
+		setup = 1;
+	}
 	
 	lua_State* state = lua_open();
 	luaopen_base(state);
@@ -152,10 +164,15 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	JNIEnv* env = *(wrappers->runtime_env);
 	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		
+		if (wrapper->data->lambda->ret) {
+			(*env)->CallVoidMethodV(env, wrapper->obj_inst, wrapper->data->lambda->id, __);
+		}
+		else {
+			(*env)->CallVoidMethodV(env, wrapper->obj_inst, wrapper->data->lambda->id, __);
+		}
 	}
 	else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		
+		(*env)->CallObjectMethodV(env, wrapper->data->reflect_method, id_methodcall, __)
 	}
 }
 
@@ -175,7 +192,7 @@ engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass j
 
 // magic to turn Java lambda function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
 // and then pushes it onto the lua stack.
-void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject class_array, jobject jfunc) {
+void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array) {
 	if (engine_debug) {
 		printf("\nwrapping java lambda function from C: %s", name);
 	}
@@ -238,4 +255,28 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 	if (engine_debug) {
 		printf("\nwrapping java reflect function from C: %s", name);
 	}
+	void *func_binding; // our function pointer
+	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
+	
+	// this shouldn't happen
+	if (!closure) {
+		fprintf(stderr, "\nfailed to allocate ffi closure (%s)\n", name);
+		exit(-1);
+	}
+	
+	engine_jfuncwrapper* wrapper = malloc(sizeof(engine_jfuncwrapper));
+	engine_regwrapper(inst, wrapper);
+	
+	if (ffi_prep_closure_loc(closure, &func_cif, &engine_handlecall_binding, wrapper, func_binding) != FFI_OK) {
+		fprintf(stderr, "\nfailed to prepare ffi closure (%s)\n", name);
+		exit(-1);
+	}
+	
+	wrapper->closure = closure;
+	wrapper->type = ENGINE_JAVA_REFLECT_FUNCTION;
+	wrapper->data->reflect_method = (*env)->NewGlobalRef(env, reflect_method);
+	wrapper->obj_inst = (*env)->NewGlobalRef(env, obj_inst);
+	wrapper->runtime_env = &(inst->runtime_env);
+	
+	lua_pushcclosure(inst->state, (lua_CFunction) func_binding);
 }

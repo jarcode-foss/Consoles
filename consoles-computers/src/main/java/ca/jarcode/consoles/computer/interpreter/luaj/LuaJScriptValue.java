@@ -117,19 +117,29 @@ public class LuaJScriptValue implements ScriptValue {
 		return val.istable();
 	}
 
+	// this has been changed in version 1.3 to have a more intuitive
+	// way of converting a table to an array
+
+	// it is also much harder to explit. before you could return a table
+	// to java like so:
+
+	//   table = {}
+	//   table[2^30] = 42
+	//   redstone(0, table)
+
+	// even though the type mapping would make it normally throw an error, the following method
+	// would still allocate an array size of (2^30), causing a massive memory leak.
 	@Override
 	public Object translateArray(Class type) {
 		Class component = type.getComponentType();
 		LuaTable table = val.checktable();
-		int len = 0;
-		for (LuaValue key : table.keys()) {
-			if (key.isint() && key.checkint() > len)
-				len = key.checkint();
+		int i;
+		for (i = 0;; i++) {
+			if (table.get(i) == LuaValue.NIL) break;
 		}
-		Object arr = Array.newInstance(component, len);
-		for (LuaValue key : table.keys()) {
-			if (key.isint())
-				Array.set(arr, key.checkint(), Lua.translate(component, new LuaJScriptValue(table.get(key))));
+		Object arr = Array.newInstance(component, i);
+		for (int t = 0; t < i; t++) {
+			Array.set(arr, t, Lua.translate(component, new LuaJScriptValue(table.get(t))));
 		}
 		return arr;
 	}
