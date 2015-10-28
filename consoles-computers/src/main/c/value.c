@@ -39,17 +39,13 @@ static pair_map m;
 static jclass value_type;
 static jmethodID value_constructor;
 
-static jclass class_type;
 static jmethodID id_comptype;
 
-static jclass class_lua;
 static jmethodID id_translate;
 
 static jclass class_array;
 static jmethodID id_newarray;
 static jmethodID id_arrayset;
-
-static jclass class_object;
 
 static jclass exclass;
 
@@ -70,9 +66,6 @@ void engine_value_init(JNIEnv* env) {
 	if (!setup) {
 		classreg(env, ENGINE_ERR_CLASS, &exclass);
 		classreg(env, ENGINE_VALUE_CLASS, &value_type);
-		classreg(env, ENGINE_CLASS, &class_type);
-		classreg(env, ENGINE_LUA_CLASS, &class_lua);
-		classreg(env, "java/lang/Object", &class_object);
 		classreg(env, "java/lang/reflect/Array", &class_array); // for generic array setting
 		value_constructor = (*env)->GetMethodID(env, value_type, "<init>", "()V");
 		handle_null_const(value_const, ENGINE_VALUE_CLASS);

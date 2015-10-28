@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,10 +29,6 @@ public class Lua {
 	public static Map<String, ComputerLibrary> libraries = new ConcurrentHashMap<>();
 	public static Map<String, ScriptFunction> staticFunctions = new ConcurrentHashMap<>();
 	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
-
-	// the function mapping tricks that I am using here is very... controversial for me.
-	// this is a split between me wanting to avoid using repetitive code (like below),
-	// but also wanting to use references to any method in Java (function pointers!).
 
 	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
 	// unique piece of code that I have written.
@@ -375,4 +372,26 @@ public class Lua {
 	public static void main(Runnable task) {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Computers.getInstance(), task);
 	}
+	// used in native code (don't touch the signature)
+	@SuppressWarnings("unused")
+	public static Method resolveMethod(Object object, String name) {
+		Class<?> type = object.getClass();
+		for (Method method : type.getMethods()) {
+			if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name))
+				return method;
+		}
+		return null;
+	}
+	// used in native code (don't touch the signature)
+	@SuppressWarnings("unused")
+	public static long methodId(Method method) {
+		int hash = method.hashCode();
+		Class<?>[] args = method.getParameterTypes();
+		int argmask = 0;
+		for (Class<?> arg : args) {
+			argmask = 37 * argmask + arg.hashCode();
+		}
+		return (long) hash << 32 | argmask & 0xFFFFFFFFL;
+	}
+
 }

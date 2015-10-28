@@ -148,8 +148,17 @@ void engine_pushvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state, engi
 		}
 	}
 	else if (value->type == ENGINE_JAVA_OBJECT) {
-		// some serious ass magic goes here
+		// some serious ass magic
 		
+		// allocate new userdata (managed by lua)
+		engine_userdata* userdata = lua_newuserdata(state, sizeof(engine_userdata));
+		userdata->obj = value->data->obj
+		userdata->runtime_env = &(inst->runtime_env);
+		// get our special metatable
+		luaL_getmetatable(state, "Engine.userdata");
+		// set metatable to our userdatum
+		// it pops itself off the stack and assigns itself to index -2
+		lua_setmetatable(state, -2);
 	}
 	else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		// more magic

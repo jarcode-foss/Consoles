@@ -76,6 +76,10 @@
 
 #define IS_ENGINE_FUNCTION(t) t == ENGINE_JAVA_LAMBDA_FUNCTION || t == ENGINE_JAVA_REFLECT_FUNCTION || t == ENGINE_LUA_FUNCTION
 
+jclass class_type = 0;
+jclass class_lua = 0;
+jclass class_object = 0;
+
 typedef void* engine_luafunc; // stub
 
 /*
@@ -92,16 +96,20 @@ typedef struct {
 typedef struct {
 	jobject obj_inst; // lambda, or instance of object that a reflected method is accessing (can be null)
 	ffi_closure* closure; // closure
+	lua_CFunction func; // function
 	union data { // type-unqiue data
 		struct lambda {
 			jmethodID id; // id of lambda method
 			uint8_t ret; // >0 if there is a return value
 			uint8_t args; // argument count
 		}
-		jobject reflect_method // Method instance
+		struct reflect {
+			jobject method // Method instance
+			long reflect_id; // unqiue wrapper id
+		}
 	}
 	uint8_t type; // lambda or reflected
-	JNIEnv** runtime_env; // dereferenced when called to get the current env pointer
+	engine_inst* engine;
 } engine_jfuncwrapper;
 
 /*
@@ -137,6 +145,14 @@ typedef struct {
 	jobject lambda; // lambda instance, global ref
 	jobject class_array; // java array of classes (Class[])
 } engine_lfunc;
+
+/*
+ * userdata type passed to lua, managed completely by lua
+ */
+typedef struct {
+	jobject obj // jobject, global reference (but should be the copy of a engine_value's global ref)
+	engine_inst* engine;
+} engine_userdata;
 
 /*
  * a 'middleground' engine value

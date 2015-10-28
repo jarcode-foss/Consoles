@@ -19,7 +19,13 @@ static int engine_debug = 0;
 static uint8_t setup = 0;
 
 static jclass class_method;
+
 static jmethodID id_methodcall;
+
+static jmethodID id_methodresolve;
+static jmethodID id_methodid;
+
+static jmethodID id_hashcode;
 
 // we use a single caller interface for wrapping Java -> C -> Lua functions,
 // since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
@@ -51,7 +57,7 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 		
 		// reflected methods have a Method instance to be deleted
 		if (inst->wrappers[t]->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data->reflect_method);
+			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data->reflect->method);
 		}
 		
 		free(wrappers(inst->wrappers[t]);
@@ -109,7 +115,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 			fprintf(stderr, "\nFFI_CLOSURES are not supported on this architecture (libffi)\n");
 			exit(-1);
 		}
-	
+		
 		// ffi function args
 		ffi_type* args[1];
 		args[0] = &ffi_type_pointer;
@@ -118,7 +124,13 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 			fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
 			exit(-1);
 		}
-	
+		
+		classreg(env, "java/lang/Object", &class_object);
+		classreg(env, ENGINE_CLASS, &class_type);
+		classreg(env, ENGINE_LUA_CLASS, &class_lua);
+		id_methodresolve = (*env)->GetStaticMethodID(env, class_lua, "resolveMethod", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;");
+		id_hashcode = (*env)->GetMethodID(env, class_object, "hashCode", "()I");
+		id_methodid = (*env)->GetStaticMethodID(env, class_lua, "methodId", "(Ljava/lang/reflect/Method;)J");
 		engine_value_init(env);
 		
 		// Method class
@@ -133,6 +145,17 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	luaopen_table(state);
 	luaopen_io(state);
 	luaopen_string(state);
+	
+	// register generic userdata table (for java objects)
+	luaL_newmetatable(state, "Engine.userdata");
+	// we are setting the special __index key, which lua calls every time it tries to index an object
+	lua_pushstring(state, "__index");
+	// attach our function to handle generic calls into an object
+	lua_pushcfunction(state, &engine_handleobjcall);
+	// set key and value
+	lua_settable(state, -3);
+	// pop key, value, and metatable off the stack
+	lua_pop(state, 3);
 	
 	// LuaJIT mode
 	if (mode == 1) {
@@ -160,9 +183,25 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 	engine_debug = mode;
 }
 
+// this is a function that handles calls on userdata
+// this can be optimized, but to improve speed, all types passed to this layer
+// would have to be mapped out (and cleaned up), instead of doing it on the fly.
+int engine_handleobjcall(lua_State* state) {
+	// first arg should be userdata
+	engine_userdata* d = (engine_userdata*) luaL_checkudata(state, 1, "Engine.userdata");
+	// second arg should be string, indexing a java object with anything else makes no sense
+	char* str = luaL_checkstring(state, 2);
+	jobject obj = d->obj;
+	JNIEnv* env = d->engine->runtime_env;
+	jstring jstr = (*env)->NewStringUTF(env, str);
+	jobject method = (*env)->CallStaticObjectMethod(obj, class_lua, id_methodresolve, obj, jstr);
+	engine_pushreflect(env, d->engine, method, obj);
+	return 1;
+}
+
 // this is a (wrapped) function that handles _all_ C->Lua function calls
 int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
-	JNIEnv* env = *(wrappers->runtime_env);
+	JNIEnv* env = wrappers->engine->runtime_env;
 	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		if (wrapper->data->lambda->ret) {
 			(*env)->CallVoidMethodV(env, wrapper->obj_inst, wrapper->data->lambda->id, __);
@@ -172,7 +211,7 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 		}
 	}
 	else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		(*env)->CallObjectMethodV(env, wrapper->data->reflect_method, id_methodcall, __)
+		(*env)->CallObjectMethodV(env, wrapper->data->reflect->method, id_methodcall, __)
 	}
 }
 
@@ -251,10 +290,27 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
 }
 
+// same idea as above, but with reflection types instead (Method). We also do a lookup in
+// this implementation to find methods that have already been wrapped to consverve memory over
+// the lifetime of a lua VM/interpreter.
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
 	if (engine_debug) {
 		printf("\nwrapping java reflect function from C: %s", name);
 	}
+	
+	// compute method id
+	long id = (*env)->CallStaticLongMethod(env, class_lua, id_methodid, reflect_method);
+	// search for reflect wrapper with equal id
+	size_t t;
+	for(t = 0; t < inst->wrappers_amt; t++) {
+		engine_jfuncwrapper wrapper = inst->wrappers[t];
+		if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION && wrapper->reflect->id == id) {
+			// found identical wrapper, recycle it and return;
+			lua_pushcfunction(inst->state, wrapper->func);
+			return;
+		}
+	}
+	
 	void *func_binding; // our function pointer
 	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	
@@ -274,9 +330,10 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 	
 	wrapper->closure = closure;
 	wrapper->type = ENGINE_JAVA_REFLECT_FUNCTION;
-	wrapper->data->reflect_method = (*env)->NewGlobalRef(env, reflect_method);
+	wrapper->data->reflect->method = (*env)->NewGlobalRef(env, reflect_method);
 	wrapper->obj_inst = (*env)->NewGlobalRef(env, obj_inst);
 	wrapper->runtime_env = &(inst->runtime_env);
+	wrapper->func = (lua_CFunction) func_binding;
 	
-	lua_pushcclosure(inst->state, (lua_CFunction) func_binding);
+	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
 }
