@@ -22,7 +22,9 @@ public class LuaJFunctionFactory implements FunctionFactory {
 
 				@Override
 				public LuaValue call(LuaValue v1) {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+							new LuaJScriptValue(v1)
+					))).val;
 				}
 			};
 		else if (types.length == 2)
@@ -30,7 +32,10 @@ public class LuaJFunctionFactory implements FunctionFactory {
 
 				@Override
 				public LuaValue call(LuaValue v1, LuaValue v2) {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1, v2))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+							new LuaJScriptValue(v1),
+							new LuaJScriptValue(v2)
+					))).val;
 				}
 			};
 		else if (types.length == 3)
@@ -38,50 +43,68 @@ public class LuaJFunctionFactory implements FunctionFactory {
 
 				@Override
 				public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3) {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1, v2, v3))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+							new LuaJScriptValue(v1),
+							new LuaJScriptValue(v2),
+							new LuaJScriptValue(v3)
+					))).val;
 				}
 			};
 		else if (types.length == 0)
 			return new ZeroArgFunction() {
 				@Override
 				public LuaValue call() {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types))).val;
+					return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types))).val;
 				}
 			};
 
 		return new LibFunction() {
 			@Override
 			public LuaValue call() {
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types))).val;
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1) {
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+						new LuaJScriptValue(v1)
+				))).val;
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2) {
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1, v2))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+						new LuaJScriptValue(v1),
+						new LuaJScriptValue(v2)
+				))).val;
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3) {
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1, v2, v3))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+						new LuaJScriptValue(v1),
+						new LuaJScriptValue(v2),
+						new LuaJScriptValue(v3)
+				))).val;
 			}
 
 			@Override
 			public LuaValue call(LuaValue v1, LuaValue v2, LuaValue v3, LuaValue v4) {
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, v1, v2, v3, v4))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types,
+						new LuaJScriptValue(v1),
+						new LuaJScriptValue(v2),
+						new LuaJScriptValue(v3),
+						new LuaJScriptValue(v4)
+				))).val;
 			}
 
 			@Override
 			public LuaValue invoke(Varargs value) {
 				Object[] total = new Object[types.length];
 				for (int t = 0; t < types.length; t++) {
-					total[t] = Lua.translate(types[t], new LuaJScriptValue(value.arg(t)));
+					total[t] = Lua.translateAndRelease(types[t], new LuaJScriptValue(value.arg(t)));
 				}
-				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.call(func, types, total))).val;
+				return ((LuaJScriptValue) Lua.translateToScriptValue(Lua.callAndRelease(func, types, total))).val;
 			}
 		};
 	}
@@ -103,7 +126,7 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJavaAndRelease(types,
 							new LuaJScriptValue(v)
 					)))).val;
 				} catch (IllegalAccessException | InvocationTargetException e) {
@@ -114,7 +137,7 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJavaAndRelease(types,
 							new LuaJScriptValue(v),
 							new LuaJScriptValue(v1)
 					)))).val;
@@ -126,7 +149,7 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJavaAndRelease(types,
 							new LuaJScriptValue(v),
 							new LuaJScriptValue(v1),
 							new LuaJScriptValue(v2)
@@ -139,7 +162,7 @@ public class LuaJFunctionFactory implements FunctionFactory {
 			@Override
 			public LuaValue call(LuaValue v, LuaValue v1, LuaValue v2, LuaValue v3) {
 				try {
-					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJava(types,
+					return ((LuaJScriptValue) Lua.translateToScriptValue(m.invoke(inst, Lua.toJavaAndRelease(types,
 							new LuaJScriptValue(v),
 							new LuaJScriptValue(v1),
 							new LuaJScriptValue(v2),

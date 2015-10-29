@@ -31,20 +31,23 @@ static jmethodID id_hashcode;
 // since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
 static ffi_cif func_cif;
 
+/*
+ * There are some resources that accumulate over the life of the Lua VM. The reason
+ * why we cannot collect these during the VM's lifetime is because it's impossible
+ * to determine when they are no longer needed, and because it's not plausible
+ * to rely on Lua code (as it is untrusted) to close these resources.
+ * 
+ * So, we have to close them at the end of the lifecycle.
+ */
 void engine_close(JNIEnv* env, engine_inst* inst) {
 	
 	// if the engine was already marked closed, do nothing
 	if (inst->closed) return;
 	
-	// free all function wrappers (and underlying ffi closures).
+	// Free all function wrappers (and underlying ffi closures).
 	// the amount of closures registered will continue to grow as
 	// java functions are registered, and will only be free'd when
 	// the entire engine is closed.
-	
-	// this could be considered a memory leak, so if it has a noticable
-	// impact over the life of the Lua VM, I will find a way to interact
-	// with the Lua GC so that I can free wrappers as their lua components
-	// are free'd.
 	int t;
 	for (t = 0; t < inst->wrappers_amt; t++) {
 		// free closure
@@ -60,14 +63,23 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data->reflect->method);
 		}
 		
-		free(wrappers(inst->wrappers[t]);
+		free(inst->wrappers[t]);
+	}
+	
+	// Free all floating java global references. These are mainly
+	// used by lua userdatums that 'float' around in the lua VM
+	// and have an undefined lifecycle
+	for (t = 0; t < inst->floating_objects_amt; t++) {
+		(*env)->DeleteGlobalRef(env, inst->floating_objects[t]);
 	}
 	
 	free(inst->wrappers);
 	inst->wrappers = 0;
 	inst->wrappers_amt = 0;
 	
-	//TODO: cleanup here
+	free(inst->floating_objects);
+	inst->floating_objects = 0;
+	inst->floating_objects_amt = 0;
 	
 	free(inst);
 }
@@ -89,7 +101,7 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 		}
 		if (!valid) return;
 		if (t != inst->wrappers_amt) {
-			void* ptr = inst->wrappers[t];
+			engine_jfuncwrapper** ptr = &(inst->wrappers[t]); // pointer to element t
 			memmove(ptr, ptr + 1, inst->wrappers_amt - (t + 1));
 		}
 		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
@@ -99,10 +111,10 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 
 void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 	if (inst->wrappers_amt == 0) {
-		inst->wrappers = malloc(sizeof(void*));
+		inst->wrappers = malloc(sizeof(engine_jfuncwrapper*));
 	}
 	else {
-		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt + 1) * sizeof(void*));
+		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt + 1) * sizeof(engine_jfuncwrapper*));
 	}
 	inst->wrappers[inst->wrappers_amt] = wrapper;
 	inst->wrappers_amt++;
@@ -143,8 +155,9 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_State* state = lua_open();
 	luaopen_base(state);
 	luaopen_table(state);
-	luaopen_io(state);
+	luaopen_math(state);
 	luaopen_string(state);
+	luaopen_table(state);
 	
 	// register generic userdata table (for java objects)
 	luaL_newmetatable(state, "Engine.userdata");
@@ -154,8 +167,16 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_pushcfunction(state, &engine_handleobjcall);
 	// set key and value
 	lua_settable(state, -3);
-	// pop key, value, and metatable off the stack
-	lua_pop(state, 3);
+	// pop metatable off the stack
+	lua_pop(state, 1);
+	
+	// set the implementation type
+	lua_pushstring(state, ENGINE_TYPE);
+	lua_setglobal(state, ENGINE_TYPE_KEY);
+	
+	// create and set function registry
+	lua_newtable(state);
+	lua_setglobal(state, FUNCTION_REGISTRY);
 	
 	// LuaJIT mode
 	if (mode == 1) {
@@ -166,11 +187,22 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	instance->state = state;
 	instance->env = env;
 	instance->closed = 0;
+	instance->restricted = 1;
 	
 	return (jlong) instance;
 }
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this, jlong ptr) {
+	engine_inst* inst = (engine_inst*) ptr;
+	if (inst->restricted) {
+		luaopen_package(inst->state);
+		luaopen_io(inst->state);
+		luaopen_ffi(inst->state);
+		luaopen_jit(inst->state);
+		luaopen_os(inst->state);
+		luaopen_bit(inst->state);
+		inst->restricted = 0;
+	}
 	return ptr;
 }
 
@@ -183,6 +215,25 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 	engine_debug = mode;
 }
 
+JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject this, jlong ptr) {
+	engine_inst* inst = (engine_inst*) ptr;
+	engine_value* v = engine_newvalue(env, inst);
+	v->type = ENGINE_LUA_GLOBALS;
+	return engine_wrap(inst, v);
+}
+// This function allows users to release the global reference
+// from an object early. This isn't required, but it's nice.
+int engine_releaseobj(lua_State* state) {
+	// first arg should be userdata
+	engine_userdata* d = (engine_userdata*) luaL_checkudata(state, 1, "Engine.userdata");
+	if (d && !(d->released)) {
+		JNIEnv* env  = d->engine->runtime_env;
+		(*env)->DeleteGlobalRef(env, d->obj);
+		d->released = 1;
+	}
+	return 0;
+}
+
 // this is a function that handles calls on userdata
 // this can be optimized, but to improve speed, all types passed to this layer
 // would have to be mapped out (and cleaned up), instead of doing it on the fly.
@@ -193,9 +244,22 @@ int engine_handleobjcall(lua_State* state) {
 	char* str = luaL_checkstring(state, 2);
 	jobject obj = d->obj;
 	JNIEnv* env = d->engine->runtime_env;
+	if (!env || !obj || !d || d->released) {
+		lua_pushnil(state);
+		return 1;
+	}
+	if (strcmp(str, "release")) {
+		lua_pushcfunction(state, &engine_releaseobj);
+		return 1;
+	}
 	jstring jstr = (*env)->NewStringUTF(env, str);
 	jobject method = (*env)->CallStaticObjectMethod(obj, class_lua, id_methodresolve, obj, jstr);
-	engine_pushreflect(env, d->engine, method, obj);
+	if (method) {
+		engine_pushreflect(env, d->engine, method, obj);
+	}
+	else {
+		lua_pushnil(state);
+	}
 	return 1;
 }
 
@@ -336,4 +400,39 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 	wrapper->func = (lua_CFunction) func_binding;
 	
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
+}
+
+void engine_addfloating(engine_inst* inst, jobject reference) {
+	if (inst->floating_objects_amt == 0) {
+		inst->floating_objects = malloc(sizeof(jobject*));
+	}
+	else {
+		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt + 1) * sizeof(jobject*));
+	}
+	inst->floating_objects[inst->floating_objects_amt = reference;
+	inst->wrappers_amt++;
+}
+
+void engine_removefloating(engine_inst* inst, jobject reference) {
+	if (inst->floating_objects_amt == 0) return;
+	if (inst->floating_objects_amt == 1) {
+		free(inst->floating_objects);
+	}
+	else {
+		uint8_t valid = 0;
+		size_t t;
+		for (t = 0; t < inst->floating_objects_amt; t++) {
+			if (reference == inst->floating_objects[t]) {
+				valid = 1;
+				break;
+			}
+		}
+		if (!valid) return;
+		if (t != inst->floating_objects_amt) {
+			jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
+			memmove(ptr, ptr + 1, inst->floating_objects_amt - (t + 1));
+		}
+		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
+	}
+	inst->floating_objects_amt--;
 }

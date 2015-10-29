@@ -71,6 +71,8 @@ public class LuaJEngine implements ScriptEngine {
 		globals.set("loadfile", LuaValue.NIL);
 		// require should be used instead
 		globals.set("dofile", LuaValue.NIL);
+
+		globals.set("__impl", LuaValue.valueOf("luaj"));
 		
 		// load functions from our pool
 		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {

@@ -15,10 +15,10 @@
 
 void pair_map_init(JNIEnv* env, pair_map* m) {
 void pair_map_init(JNIEnv* env, pair_map* m) {
-	m->first = &pair_map_first;
-	m->second = &pair_map_second;
-	m->rm_first = &pair_map_rm_first;
-	m->rm_second = &pair_map_rm_second;
+	m->java = &pair_map_java;
+	m->native = &pair_map_native;
+	m->rm_java = &pair_map_rm_java;
+	m->rm_native = &pair_map_rm_native;
 	m->close = &pair_map_close;
 	m->append = &pair_map_append;
 	jclass obj_type = (*env)->FindClass(env, PAIR_JAVA_LOCK_OBJECT);
@@ -50,74 +50,92 @@ static void m_remove(JNIEnv* env, pair_map* m, int64_t t, int8_t locked) {
 	if (!locked) LOCK(env, m);
 	if (m->size > 0) {
 		if (m->size == 1) {
-			free(m->first_pair);
-			free(m->second_pair);
+			free(m->java_pair);
+			free(m->native_pair);
 		}
 		else {
 			int64_t newlen = (m->size - 1) * sizeof(void*);
 			if (t != m->size) {
-				void* first_ptr = m->first_pair[t];
-				void* second_ptr = m->second_pairt];
+				jobject* java_ptr = &(m->java_pair[t]);
+				void** native_ptr = &(m->native_pair[t]);
 				int64_t chunkamt = m->size - (t + 1);
-				memmove(first_ptr, first_ptr + 1, chunkamt);
-				memmove(second_ptr, second_ptr + 1, chunkamt);
+				memmove(java_ptr, java_ptr + 1, chunkamt);
+				memmove(native_ptr, native_ptr + 1, chunkamt);
 			}
-			m->first_pair = realloc(m->first_pair, newlen);
-			m->second_pair = realloc(m->second_pair, newlen);
+			m->java_pair = realloc(m->java_pair, newlen);
+			m->native_pair = realloc(m->native_pair, newlen);
 		}
 	}
 	if (!locked) UNLOCK(env, m);
 }
-void* pair_map_first(JNIEnv* env, pair_map* m, void* second) {
-	int64_t t = lookup(env, m, m->second_pair, second);
-	if (t >= 0) return m->first_pair[t];
+jobject pair_map_java(JNIEnv* env, pair_map* m, void* native) {
+	WAIT_FOR_WRITE(env, m);
+	uint8_t valid = 0;
+	int64_t t;
+	for (t = 0; t < m->size; t++) {
+		if (m->native_pair[t] == native) {
+			valid = 1;
+			break;
+		}
+	}
+	if (!valid) return 0;
+	if (t >= 0) return m->java_pair[t];
 	else return 0;
 }
-void* pair_map_second(JNIEnv* env, pair_map* m, void* first) {
-	int64_t t = lookup(env, m, m->first_pair, first);
-	if (t >= 0) return m->second_pair[t];
+void* pair_map_native(JNIEnv* env, pair_map* m, jobject java) {
+	WAIT_FOR_WRITE(env, m);
+	uint8_t valid = 0;
+	int64_t t;
+	for (t = 0; t < m->size; t++) {
+		if ((*env)->IsSameObject(env, java, m->java_pair[t])) {
+			valid = 1;
+			break;
+		}
+	}
+	if (!valid) return 0;
+	if (t >= 0) return m->native_pair[t];
 	else return 0;
 }
-void pair_map_append(JNIEnv* env, pair_map* m, void* first, void* second) {
+void pair_map_append(JNIEnv* env, pair_map* m, jobject java, void* native) {
 	LOCK(env, m);
 	if (m->size == 0) {
-		m->first_pair = malloc(sizeof(void*));
-		m->second_pair = malloc(sizeof(void*));
+		m->java_pair = malloc(sizeof(jobject*));
+		m->native_pair = malloc(sizeof(void**));
 	}
 	else {
 		int64_t newlen = (m->size + 1) * sizeof(void*);
-		m->first_pair = realloc(m->first_pair, newlen);
-		m->second_pair = realloc(m->second_pair, newlen);
+		m->java_pair = realloc(m->java_pair, newlen);
+		m->native_pair = realloc(m->native_pair, newlen);
 	}
-	m->first_pair[m->size] = first;
-	m->second_pair[m->size] = second;
+	m->java_pair[m->size] = java;
+	m->native_pair[m->size] = native;
 	m->size++;
 	UNLOCK(env, m);
 }
-void pair_map_rm_first(JNIEnv* env, pair_map* m, void* first) {
+void pair_map_rm_java(JNIEnv* env, pair_map* m, jobject java) {
 	if (m->size == 0) return;
-	int64_t t = lookup(m, &(m->first_pair), first);
+	int64_t t = lookup(m, &(m->java_pair), java);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
-void pair_map_rm_second(JNIEnv* env, pair_map* m, void* second) {
+void pair_map_rm_native(JNIEnv* env, pair_map* m, void* native) {
 	if (m->size == 0) return;
-	int64_t t = lookup(m, &(m->second_pair), second);
+	int64_t t = lookup(m, &(m->native_pair), native);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
 void pair_map_close(JNIEnv* env, pair_map* m) {
 	(*env)->DeleteGlobalRef(env, m->lock);
-	free(m->first_pair);
-	free(m->second_pair);
+	free(m->java_pair);
+	free(m->native_pair);
 	free(m);
 }
 void pair_map_rm(JNIEnv* env, pair_map* m, int (*predicate) (JNIEnv* env, void* ptr, void* userdata),
-void* userdata, void** pair_set) {
+void* userdata) {
 	LOCK(env, m);
 	int64_t t;
 	for (t = 0; t < m->size; t++) {
-		if (predicate(env, pair_set[t], userdata)) {
+		if (predicate(env, m->native_pair[t], userdata)) {
 			// can be optimized with mark & sweep
 			m_remove(env, m, t, 1);
 		}

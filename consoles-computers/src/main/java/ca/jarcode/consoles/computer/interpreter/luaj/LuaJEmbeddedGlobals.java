@@ -30,7 +30,7 @@ public class LuaJEmbeddedGlobals extends Globals {
 	@Override
 	public void set(String str, LuaValue value) {
 		if (str == null)
-			error("cannot index null");
+			error("LuaJ: cannot index null");
 		else if (finalized.contains(get(str)))
 			finalErr();
 		else super.set(str, value);

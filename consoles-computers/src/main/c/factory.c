@@ -16,7 +16,7 @@
 #include "pair.h"
 
 // boring mapping
-engine_value* engine_popvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state) {
+engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) {
 	engine_value* v = engine_newvalue(env, inst);
 	if (lua_isnumber(state, -1)) {
 		v->type = ENGINE_FLOATING;
@@ -51,15 +51,59 @@ engine_value* engine_popvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* sta
 		lua_pop(state, 1);
 	}
 	else if (lua_islightuserdata(state, -1)) {
-		// this is a stub (this translates to java objects being impossible to return to java code)
+		// this is a stub (we don't use lightuserdata)
 		lua_pop(state, 1);
 	}
 	else if (lua_isuserdata(state, -1)) {
-		// this is a stub (see above)
+		v->type = ENGINE_JAVA_OBJECT;
+		// get userdata
+		engine_userdata* d = (engine_userdata*) luaL_checkudata(state, -1, "Engine.userdata");
+		v->data->obj = (*env)->NewGlobalRef(env, d->obj);
+		// pop userdata
 		lua_pop(state, 1);
 	}
+	// this one is really complicated
+	// instead of using the standard registry, we use our own table (so we can index things with numbers)
+	// we do a dual association when registering new functions, after attempting to look the function up
+	// we then pass the id to the engine value, which can be later looked up to call the function
 	else if (lua_isfunction(state, -1)) {
+		v->type = ENGINE_LUA_FUNCTION;
 		
+		// make copy of function, and put it on the top of the stack
+		lua_pushvalue(state, -1);
+		// push registry on the stack
+		lua_getglobal(state, FUNCTION_REGISTRY);
+		// swap registry and lua function, so that the function is on top
+		engine_swap(state, -1, -2);
+		// swap function (top) with value from function table
+		// (result should be nil or a number)
+		lua_gettable(state, -2);
+		if (lua_isnil(state, -1)) { // no function mapped
+			// pop the nil value
+			lua_pop(state, -1);
+			// (we are now back to the original function at the top)
+			// increment and push new function index
+			function_index++:
+			lua_pushinteger(state, function_index);
+			// (we now have (function, key) pair)
+			// push second copy of key for second association
+			lua_pushinteger(state, function_index);
+			// copy function to top of stack
+			lua_pushvalue(state, -3);
+			// push association (function, id)
+			lua_settable(state, -5);
+			// push association (id, function)
+			lua_settable(state, -3);
+			// pop registry
+			lua_pop(state, -1);
+			
+			v->data->func = function_index;
+		}
+		else { // if there is a function mapped already
+			v->data->func = (uint32_t) lua_tonumber(state, -1);
+			// pop registry and id
+			lua_pop(state, 2);
+		}
 	}
 	else if (lua_iscfunction(state, -1)) {
 		// this is a stub, however, there is no reason for java (or C) to be spitting a function at lua
@@ -148,12 +192,15 @@ void engine_pushvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state, engi
 		}
 	}
 	else if (value->type == ENGINE_JAVA_OBJECT) {
-		// some serious ass magic
-		
 		// allocate new userdata (managed by lua)
 		engine_userdata* userdata = lua_newuserdata(state, sizeof(engine_userdata));
-		userdata->obj = value->data->obj
+		// create new global ref
+		userdata->obj = (*env)->NewGlobalRef(value->data->obj);
+		// set env pointer to pointer
 		userdata->runtime_env = &(inst->runtime_env);
+		userdata->released = 0;
+		// register floating reference
+		engine_addfloating(inst, userdata->obj);
 		// get our special metatable
 		luaL_getmetatable(state, "Engine.userdata");
 		// set metatable to our userdatum
@@ -161,7 +208,7 @@ void engine_pushvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state, engi
 		lua_setmetatable(state, -2);
 	}
 	else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		// more magic
+		// magic
 		engine_pushlambda(env, inst, value->lfunc->lambda, value->lfunc->class_array);
 	}
 	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
@@ -179,8 +226,12 @@ void engine_pushvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state, engi
  * Signature: ([Ljava/lang/Class;Ljava/lang/Object;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptFunction;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNFunctionFactory_createFunction___3Ljava_lang_Class_2Ljava_lang_Object_2
-(JNIEnv* env, jobject this, jobjectArray, jobject) {
-	
+(JNIEnv* env, jobject this, jobjectArray class_array, jobject lambda) {
+	engine_value* value = engine_newsharedvalue(env);
+	value->type == ENGINE_JAVA_LAMBDA_FUNCTION;
+	value->data->lfunc->class_array = (*env)->NewGlobalRef(env, class_array);
+	value->data->lfunc->lambda = (*env)->NewGlobalRef(env, lambda);
+	return engine_wrap(env, value);
 }
 
 /*
@@ -193,122 +244,122 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	
 }
 
-  /*
+/*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (Z)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (ZLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__Z
-(JNIEnv* env, jobject this, jboolean) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__ZLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jboolean, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (F)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (FLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__F
-(JNIEnv* env, jobject this, jfloat) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__FLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jfloat, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (D)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (DLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__D
-(JNIEnv* env, jobject this, jdouble) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__DLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jdouble, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (Ljava/lang/String;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (Ljava/lang/String;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__Ljava_lang_String_2
-(JNIEnv* env, jobject this, jstring) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__Ljava_lang_String_2Lca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jstring, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (I)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (ILca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__I
-(JNIEnv* env, jobject this, jint) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__ILca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jint, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (J)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (JLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__J
-(JNIEnv* env, jobject this, jlong) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__JLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jlong, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (S)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (SLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__S
-(JNIEnv* env, jobject this, jshort) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__SLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jshort, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (B)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (BLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__B
-(JNIEnv* env, jobject this, jbyte) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__BLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jbyte, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translate
- * Signature: (C)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (CLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__C
-(JNIEnv* env, jobject this, jchar) {
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__CLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+(JNIEnv* env, jobject this, jchar, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    list
- * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_list
-(JNIEnv* env, jobject this, jobjectArray) {
+(JNIEnv* env, jobject this, jobjectArray, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    nullValue
- * Signature: ()Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_nullValue
-(JNIEnv* env, jobject this) {
+(JNIEnv* env, jobject this, jobject) {
 	
 }
 
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
  * Method:    translateObj
- * Signature: (Ljava/lang/Object;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
+ * Signature: (Ljava/lang/Object;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translateObj
-(JNIEnv* env, jobject this, jobject) {
+(JNIEnv* env, jobject this, jobject, jobject) {
 	
 }

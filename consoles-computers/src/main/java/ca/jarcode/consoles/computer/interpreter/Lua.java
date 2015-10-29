@@ -144,9 +144,9 @@ public class Lua {
 						FunctionFactory.get().createFunction(m, inst)))
 				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
 	}
-	public static Object[] toJava(Class[] types, Object... args) {
+	public static Object[] toJavaAndRelease(Class[] types, Object... args) {
 		for (int t = 0; t < args.length; t++) {
-			args[t] = translate(types[t], (ScriptValue) args[t]);
+			args[t] = translateAndRelease(types[t], (ScriptValue) args[t]);
 		}
 		return args;
 	}
@@ -181,38 +181,39 @@ public class Lua {
 		return FunctionFactory.get().createFunction(types, func);
 	}
 	public static ScriptValue translateToScriptValue(Object java) {
+		ScriptValue globals = findPool().getProgram().globals;
 		if (java == null) {
-			return ValueFactory.get().nullValue();
+			return ValueFactory.get().nullValue(globals);
 		}
 		else if (java instanceof ScriptValue) {
 			return (ScriptValue) java;
 		}
 		else if (java instanceof Boolean) {
-			return ValueFactory.get().translate((Boolean) java);
+			return ValueFactory.get().translate((Boolean) java, globals);
 		}
 		else if (java instanceof Integer) {
-			return ValueFactory.get().translate((Integer) java);
+			return ValueFactory.get().translate((Integer) java, globals);
 		}
 		else if (java instanceof Byte) {
-			return ValueFactory.get().translate((Byte) java);
+			return ValueFactory.get().translate((Byte) java, globals);
 		}
 		else if (java instanceof Short) {
-			return ValueFactory.get().translate((Short) java);
+			return ValueFactory.get().translate((Short) java, globals);
 		}
 		else if (java instanceof Long) {
-			return ValueFactory.get().translate((Long) java);
+			return ValueFactory.get().translate((Long) java, globals);
 		}
 		else if (java instanceof Double) {
-			return ValueFactory.get().translate((Double) java);
+			return ValueFactory.get().translate((Double) java, globals);
 		}
 		else if (java instanceof Float) {
-			return ValueFactory.get().translate((Float) java);
+			return ValueFactory.get().translate((Float) java, globals);
 		}
 		else if (java instanceof Character) {
-			return ValueFactory.get().translate(new String(new char[]{(Character) java}));
+			return ValueFactory.get().translate(new String(new char[]{(Character) java}), globals);
 		}
 		else if (java instanceof String) {
-			return ValueFactory.get().translate((String) java);
+			return ValueFactory.get().translate((String) java, globals);
 		}
 		// recursive
 		else if (java.getClass().isArray()) {
@@ -222,13 +223,13 @@ public class Lua {
 			return ValueFactory.get().list(
 					Arrays.asList(arr).stream()
 					.map(Lua::translateToScriptValue)
-					.toArray(ScriptValue[]::new)
-			);
+					.toArray(ScriptValue[]::new),
+					globals);
 		}
 		else {
 			if (Consoles.debug)
 				Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
-			return ValueFactory.get().translateObj(java);
+			return ValueFactory.get().translateObj(java, globals);
 		}
 	}
 
@@ -274,63 +275,56 @@ public class Lua {
 		if (type != null && FunctionBind.class.isAssignableFrom(type)
 				|| (value.isFunction() && (TypeResolver.Unknown.class == type || type == null))) {
 			return javaFunction(value);
-		}
-		else if (type != null && ScriptValue.class.isAssignableFrom(type)) {
+		} else if (type != null && ScriptValue.class.isAssignableFrom(type)) {
 			return value;
 		}
 		// some of these are unsupported on non Oracle/Open JSE VMs
 		else if (type == Runnable.class) {
 			if (!value.isFunction()) throw new RuntimeException("expected function");
 			return (Runnable) value.getAsFunction()::call;
-		}
-		else if (type == boolean.class || type == Boolean.class
+		} else if (type == boolean.class || type == Boolean.class
 				|| value.canTranslateBoolean()) {
 			return value.translateBoolean();
-		}
-		else if (type == int.class || type == Integer.class
+		} else if (type == int.class || type == Integer.class
 				|| (value.canTranslateInt() && (TypeResolver.Unknown.class == type || type == null))) {
 			return value.translateInt();
-		}
-		else if (type == byte.class || type == Byte.class) {
+		} else if (type == byte.class || type == Byte.class) {
 			return value.translateByte();
-		}
-		else if (type == short.class || type == Short.class) {
+		} else if (type == short.class || type == Short.class) {
 			return value.translateShort();
-		}
-		else if (type == long.class || type == Long.class) {
+		} else if (type == long.class || type == Long.class) {
 			return value.translateLong();
-		}
-		else if (type == double.class || type == Double.class) {
+		} else if (type == double.class || type == Double.class) {
 			return value.translateDouble();
-		}
-		else if (type == float.class || type == Float.class) {
+		} else if (type == float.class || type == Float.class) {
 			return value.translateFloat();
-		}
-		else if (type == char.class || type == Character.class) {
+		} else if (type == char.class || type == Character.class) {
 			return value.translateString().charAt(0);
-		}
-		else if (type == String.class || value.canTranslateString()) {
+		} else if (type == String.class || value.canTranslateString()) {
 			return value.translateString();
-		}
-		else if (value.isNull()) {
+		} else if (value.isNull()) {
 			return null;
-		}
-		else if (value.canTranslateObj()) {
+		} else if (value.canTranslateObj()) {
 			return value.translateObj();
-		}
-		else if (type != null && type.isArray() && value.canTranslateArray()) {
+		} else if (type != null && type.isArray() && value.canTranslateArray()) {
 			return value.translateArray(type);
-		}
-		else if (value.canTranslateArray() && type == Object.class) {
+		} else if (value.canTranslateArray() && type == Object.class) {
 			return value.translateArray(Object[].class);
+		} else throw new RuntimeException("Unsupported argument: " + type
+				+ ", lua: " + value.getClass().getSimpleName() + ", data: " + value.toString());
+	}
+	public static Object translateAndRelease(Class<?> type, ScriptValue value) {
+		try {
+			return translate(type, value);
 		}
-		else throw new RuntimeException("Unsupported argument: " + type
-					+ ", lua: " + value.getClass().getSimpleName() + ", data: " + value.toString());
+		finally {
+			value.release();
+		}
 	}
 	@SuppressWarnings("unchecked")
-	public static Object call(Object func, Class[] types, Object... args) {
+	public static Object callAndRelease(Object func, Class[] types, Object... args) {
 		for (int t = 0; t < args.length; t++) {
-			args[t] = translate(types[t], (ScriptValue) args[t]);
+			args[t] = translateAndRelease(types[t], (ScriptValue) args[t]);
 		}
 		if (func instanceof OneArgFunc) {
 			return ((OneArgFunc) func).call(args[0]);

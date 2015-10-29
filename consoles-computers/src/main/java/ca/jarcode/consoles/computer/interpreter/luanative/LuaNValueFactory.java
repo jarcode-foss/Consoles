@@ -7,16 +7,16 @@ public class LuaNValueFactory implements ValueFactory {
 
 	// this is a singleton
 	
-	public native ScriptValue translate(boolean b);
-	public native ScriptValue translate(float f);
-	public native ScriptValue translate(double d);
-	public native ScriptValue translate(String str);
-	public native ScriptValue translate(int i);
-	public native ScriptValue translate(long l);
-	public native ScriptValue translate(short s);
-	public native ScriptValue translate(byte b);
-	public native ScriptValue translate(char c);
-	public native ScriptValue list(ScriptValue[] values);
-	public native ScriptValue nullValue();
-	public native ScriptValue translateObj(Object obj);
+	public native ScriptValue translate(boolean b, ScriptValue globals);
+	public native ScriptValue translate(float f, ScriptValue globals);
+	public native ScriptValue translate(double d, ScriptValue globals);
+	public native ScriptValue translate(String str, ScriptValue globals);
+	public native ScriptValue translate(int i, ScriptValue globals);
+	public native ScriptValue translate(long l, ScriptValue globals);
+	public native ScriptValue translate(short s, ScriptValue globals);
+	public native ScriptValue translate(byte b, ScriptValue globals);
+	public native ScriptValue translate(char c, ScriptValue globals);
+	public native ScriptValue list(ScriptValue[] values, ScriptValue globals);
+	public native ScriptValue nullValue(ScriptValue globals);
+	public native ScriptValue translateObj(Object obj, ScriptValue globals);
 }

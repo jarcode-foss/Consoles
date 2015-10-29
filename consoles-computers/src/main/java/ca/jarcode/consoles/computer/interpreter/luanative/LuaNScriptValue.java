@@ -12,6 +12,9 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	// instances of this class are only safely created created via the function factory (also native)
 
 	// unlike the LuaJ implementation, a value and a function are the same instance
+
+	// unlike the LuaJ implementation, a script value is a copy of lua or java data, not a wrapper
+
 	public native Object translateObj();
 	public native boolean canTranslateObj();
 	public native String translateString();
@@ -34,11 +37,24 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	public native boolean canTranslateArray();
 	public native Object translateArray(Class arrClass);
 	public native boolean isFunction();
-	public ScriptFunction getAsFunction() { return this; }
 	public native void set(ScriptValue key, ScriptValue value);
 	public native ScriptValue get(ScriptValue key);
 	public native ScriptValue call();
+	public native void release();
+	public native ScriptValue copy();
 
 	public native ScriptValue call(ScriptValue... args);
+
+	// this is a value and a function, so just return the same object
 	public ScriptValue getAsValue() { return this; }
+	public ScriptFunction getAsFunction() { return this; }
+
+	// I have no words for how stupid this method is.
+	// this is _really_ just a safegaurd in case a script value
+	// becomes out-of-scope without being released.
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		release();
+	}
 }

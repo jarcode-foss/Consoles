@@ -60,9 +60,12 @@
 #define ENGINE_LUA_GLOBALS = 9;
 // null value
 #define ENGINE_NULL = 10;
+// executable chunk of lua code
+#define ENGINE_CHUNK = 11;
 
 // this macro does not replace _all_ instances of the class string.
 #define ENGINE_CLASS = "java/lang/Class"
+
 #define METHOD_CLASS = "java/lang/reflect/Method"
 
 // project-specific type classpaths. Any type that is part of the Java SE library is allowed to be used
@@ -76,11 +79,24 @@
 
 #define IS_ENGINE_FUNCTION(t) t == ENGINE_JAVA_LAMBDA_FUNCTION || t == ENGINE_JAVA_REFLECT_FUNCTION || t == ENGINE_LUA_FUNCTION
 
+// special lua table to store references to all passed functions
+// lua programs can interact with this, but it's harmless. In fact,
+// it could be used to speed up programs.
+#define FUNCTION_REGISTRY = "__functions";
+
+// key and value for lua programs to find out if they are using a native or java implementation
+#define ENGINE_TYPE_KEY = "__impl"
+#define ENGINE_TYPE = "native";
+
 jclass class_type = 0;
 jclass class_lua = 0;
 jclass class_object = 0;
 
-typedef void* engine_luafunc; // stub
+uint32_t function_index = 0;
+
+// A lua function is an index in a lua table of functions that have been (or need to be)
+// exposed to a engine value. Functions are cached in this table when needed in C.
+typedef uint32_t engine_luafunc;
 
 /*
  * struct for information about a lambda function (usally passed by value)
@@ -119,12 +135,21 @@ typedef struct {
 typedef struct {
 	lua_State* state;
 	uint8_t closed;
+	uint8_t restricted;
+	
+	// all function wrappers for this instance (only cleaned up at the end of the VM's lifecycle)
+	// there is only one wrapper per unique function passed to lua
 	engine_jfuncwrapper** wrappers;
 	size_t wrappers_amt;
 	
 	// assigned (never used) before a chunk is executed in Lua
 	// this is used for function wrappers that need to find the environment they are running in
 	JNIEnv* runtime_env;
+	
+	// this is used, mainly by userdatums passed to lua, to keep track of objects
+	// that still need their global references deleted (these are copies of those references)
+	jobject* floating_objects;
+	size_t floating_objects_amt;
 } engine_inst;
 
 
@@ -147,36 +172,44 @@ typedef struct {
 } engine_lfunc;
 
 /*
- * userdata type passed to lua, managed completely by lua
+ * tiny userdata type passed to lua, managed completely by lua
  */
 typedef struct {
-	jobject obj // jobject, global reference (but should be the copy of a engine_value's global ref)
+	jobject obj // jobject, global _floating_ reference
 	engine_inst* engine;
+	uint8_t released;
 } engine_userdata;
 
 /*
+ * engine data, used for easy sizeof's and a member of the engine_value struct
+ */
+typedef union engine_data_ {
+	long i; // int, long, short, boolean, or byte
+	double d; // float or double
+	char* str; // null-terminated string
+	jobject obj; // object (userdata)
+	enbgine_lfunc lfunc; // java function (lambda)
+	engine_luafunc func; // lua function
+	engine_rfunc rfunc; // reflected java function
+	struct array { // array
+		struct** engine_value_ values; // pointer to block of memory containing pointers to engine values
+		uint32_t length; // length of memory block
+	};
+	lua_State* state; // pointer to pointer of lua_State at runtime
+} engine_data;
+
+/*
  * a 'middleground' engine value
+ * 
+ * LuaJIT has no copies of this value, this is _only_ associated with a java object in a pair map.
  */
 typedef struct engine_value_ {
-	union {
-		long i; // int, long, short, boolean, or byte
-		double d; // float or double
-		char* str; // null-terminated string
-		jobject obj; // object (userdata)
-		enbgine_lfunc lfunc; // java function (lambda)
-		engine_luafunc func; // lua function
-		engine_rfunc rfunc; // reflected java function
-		struct array { // array
-			struct** engine_value_ values; // pointer to block of memory containing pointers to engine values
-			uint32_t length; // length of memory block
-		};
-		struct lglobals {
-			char* name;
-			lua_State** runtime_state; // pointer to pointer of lua_State at runtime
-		}
-	} data;
-	uint8_t type;
-	engine_inst* inst; // engine instance, we need this to parse and clean the value stack
+	engine_data data; // data
+	uint8_t type; // type of value
+	
+	// engine instance, we need this to parse and clean the value stack
+	// if this value is null, we assume that this is a shared value (to be used across VMs)
+	engine_inst* inst;
 } engine_value;
 
 // init methods, these should be called at least once before opening an instance.
@@ -184,11 +217,14 @@ void engine_value_init(JNIEnv* env);
 
 // create engine value
 engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
+engine_value* engine_newsharedvalue(JNIEnv* env);
 
 void engine_clearvalues(JNIEnv* env, engine_inst* inst);
 // unwraps the java script value to C engine_value
 // NOTHING IS ALLOCATED, it just looks up a pair and finds and existing allocation to the value
-engine_value* engine_unwrap(JNIEnv* env, engine_inst* inst, jobject obj);
+engine_value* engine_unwrap(JNIEnv* env, jobject obj);
+// same thing, just in reverse
+jobject engine_wrap(JNIEnv* env, engine_value* value);
 // set global lua function to value
 void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, size_t name_len, engine_value value);
 // wrap lambda to script value
@@ -202,14 +238,22 @@ jobject engine_call_lambda(JNIEnv* env, engine_value* value, jobject array_value
 
 // wrap lua value to script value
 // this operates on the value on the top of the lua stack, popping it after
-jobject engine_popvalue_lua(JNIEnv* env, engine_inst* inst, lua_State* state); // stub
+engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state); // stub
+void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value); // stub
 // pushes a lambda onto the stack as a wrapped C function
 void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
+
+void engine_addfloating(engine_inst* inst, jobject reference);
+void engine_removefloating(engine_inst* inst, jobject reference);
+
+jint throw(JNIEnv* env, const char* message);
 
 // utils
 
 // register global ref to class at memory
 void classreg(JNIEnv* env, const char* name, jclass* mem);
+
+void engine_swap(lua_State* state, int a, int b);
 
 #endif // ENGINE_H_

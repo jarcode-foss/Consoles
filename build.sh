@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+trap 'printf "\nfailed to compile, complain to Jarcode on github\n\n";exit' ERR
 mvn compile
 mkdir -p consoles-computers/target/natives
 cd consoles-computers

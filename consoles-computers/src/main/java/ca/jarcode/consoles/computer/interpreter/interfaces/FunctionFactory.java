@@ -8,6 +8,10 @@ import java.util.function.Supplier;
 
 public interface FunctionFactory {
 
+	// IMPORTANT NOTE: Functions created in this class are special, they are considered to be
+	//                 shared functions (not associated with a VM). This means that they are
+	//                 never cleaned up!
+
 	FunctionFactory[] factory = new FunctionFactory[1];
 
 	static FunctionFactory get() {

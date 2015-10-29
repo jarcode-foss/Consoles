@@ -64,6 +64,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 	}
 
+	// leaky, might want to restrict this
 	@FunctionManual("Evalutes Lua code from a string passed as an argument. This function will " +
 			"return a value if the compiled chunk returns something, otherwise it will return " +
 			"an error string.")
@@ -76,7 +77,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		catch (ScriptError err) {
 			if (Consoles.debug)
 				err.printStackTrace();
-			return ValueFactory.get().translate(err.getMessage());
+			return ValueFactory.get().translate(err.getMessage(), globals);
 		}
 		return FunctionFactory.get().createFunction(value::call).getAsValue();
 	}
@@ -241,9 +242,13 @@ public final class InterpretedProgram extends SandboxProgram {
 		if (match == null) {
 			throw new IllegalArgumentException(name + " is not a qualified sound");
 		}
-		schedule(() -> computer.getConsole().getLocation().getWorld()
-				.playSound(computer.getConsole().getLocation(), match,
-						(float) v1.translateDouble(), (float) v2.translateDouble()));
+		schedule(() -> {
+			computer.getConsole().getLocation().getWorld()
+					.playSound(computer.getConsole().getLocation(), match,
+							(float) v1.translateDouble(), (float) v2.translateDouble());
+			v1.release();
+			v2.release();
+		});
 	}
 	@FunctionManual("Clears the terminal.")
 	public Boolean lua$clear() {
@@ -302,7 +307,9 @@ public final class InterpretedProgram extends SandboxProgram {
 			println("lua:" + ChatColor.RED + " " + String.format(lang.getString("lua-require-compile-fail"), path));
 			return null;
 		}
-		return value.call();
+		ScriptValue result = value.call();
+		value.release();
+		return result;
 	}
 
 	@FunctionManual("Registers and returns a new screen buffer for the screen session. If the given session " +

@@ -339,17 +339,17 @@ public abstract class SandboxProgram {
 				// just called, and all the methods in said chunk have been declared.
 
 				// get our main function
-				ScriptValue value = globals.get(ValueFactory.get().translate("main"));
+				ScriptValue value = globals.get(ValueFactory.get().translate("main", globals));
 
 				// set the exit function
-				exit = globals.get(ValueFactory.get().translate("exit"));
+				exit = globals.get(ValueFactory.get().translate("exit", globals));
 
 				// if the main function exists, call it.
 				//
 				// some programs won't have a main method. That's fine, in that case
 				// most of the code will be in the chunk itself.
 				if (value.isFunction()) {
-					value.getAsFunction().call(ValueFactory.get().translate(args));
+					value.getAsFunction().call(ValueFactory.get().translate(args, globals));
 				}
 			}
 			// if the program was interrupted by our debug/interrupt lib
@@ -544,7 +544,7 @@ public abstract class SandboxProgram {
 				// grab Lua version
 				String version;
 				try {
-					version = globals.get(ValueFactory.get().translate("_VERSION")).translateString();
+					version = globals.get(ValueFactory.get().translate("_VERSION", globals)).translateString();
 				}
 				catch (ScriptError ignored) {
 					version = "?";

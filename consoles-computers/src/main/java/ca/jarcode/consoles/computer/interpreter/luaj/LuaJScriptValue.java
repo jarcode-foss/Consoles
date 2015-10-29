@@ -139,7 +139,7 @@ public class LuaJScriptValue implements ScriptValue {
 		}
 		Object arr = Array.newInstance(component, i);
 		for (int t = 0; t < i; t++) {
-			Array.set(arr, t, Lua.translate(component, new LuaJScriptValue(table.get(t))));
+			Array.set(arr, t, Lua.translateAndRelease(component, new LuaJScriptValue(table.get(t))));
 		}
 		return arr;
 	}
@@ -182,6 +182,17 @@ public class LuaJScriptValue implements ScriptValue {
 		catch (LuaError e) {
 			throw new LuaJError(e);
 		}
+	}
+
+	@Override
+	public void release() {
+		// do nothing and let Java GC this object
+	}
+
+	@Override
+	public ScriptValue copy() {
+		// we do not need to copy this object, because it is never released
+		return this;
 	}
 
 	@Override

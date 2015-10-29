@@ -20,7 +20,8 @@ public class LuaJEmbeddedMathLib extends JseMathLib {
 			if (luaValue.isnumber()) {
 				return valueOf((int) Math.round(luaValue.checkdouble()));
 			}
-			else throw new IllegalArgumentException("bad argument");
+			else error("LuaJ: bad argument");
+			return LuaValue.NIL;
 		}
 	}
 }
