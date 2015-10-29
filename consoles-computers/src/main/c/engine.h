@@ -60,8 +60,6 @@
 #define ENGINE_LUA_GLOBALS = 9;
 // null value
 #define ENGINE_NULL = 10;
-// executable chunk of lua code
-#define ENGINE_CHUNK = 11;
 
 // this macro does not replace _all_ instances of the class string.
 #define ENGINE_CLASS = "java/lang/Class"
@@ -96,7 +94,7 @@ uint32_t function_index = 0;
 
 // A lua function is an index in a lua table of functions that have been (or need to be)
 // exposed to a engine value. Functions are cached in this table when needed in C.
-typedef uint32_t engine_luafunc;
+typedef int engine_luafunc;
 
 /*
  * struct for information about a lambda function (usally passed by value)
@@ -227,25 +225,23 @@ engine_value* engine_unwrap(JNIEnv* env, jobject obj);
 jobject engine_wrap(JNIEnv* env, engine_value* value);
 // set global lua function to value
 void engine_setfunc(JNIEnv* env, engine_inst* inst, char* name, size_t name_len, engine_value value);
-// wrap lambda to script value
-jobject engine_tovalue_lambda(JNIEnv* env, engine_inst* inst, jobject jfunc);
-// wrap rfunc to script value
-jobject engine_tovalue_reflect(JNIEnv* env, engine_inst* inst, engine_rfunc func);
 // get info from lambda function class
 engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype);
-// call actual java lambda, with argument checking (array arg is a java array of script values)
-jobject engine_call_lambda(JNIEnv* env, engine_value* value, jobject array_value_args); // stub
 
 // wrap lua value to script value
 // this operates on the value on the top of the lua stack, popping it after
-engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state); // stub
-void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value); // stub
+engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state);
+void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value);
 // pushes a lambda onto the stack as a wrapped C function
 void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
 
 void engine_addfloating(engine_inst* inst, jobject reference);
 void engine_removefloating(engine_inst* inst, jobject reference);
+
+void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
+
+engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs);
 
 jint throw(JNIEnv* env, const char* message);
 

@@ -11,4 +11,5 @@ public class LuaEngine implements LuaNInterface {
 	public native void setdebug(int mode);
 	public native LuaNScriptValue wrapglobals(long ptr);
 	public native void free(ScriptValue value);
+	public native ScriptValue load(long ptr, String value);
 }

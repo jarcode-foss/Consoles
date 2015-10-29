@@ -677,12 +677,62 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		lua_State* state = value->data->state;
 		// push onto stack
 		lua_getglobal(state, key->data->str);
-		// pops after tovalue
+		// pops after
 		// this function builds a new value (memory!)
 		return engine_popvalue_lua(env, value->inst, state);
 	}
 	else {
 		throw(env, "C: tried to index non-array/non-global value");
+		return 0;
+	}
+}
+
+static inline jobject handleCall(JNIEnv* env, jobject* this, jobjectArray arr) {
+	engine_value* value = findnative(env, this);
+	if (!value) return 0;
+	if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+		throw(env, "C: tried to call stub (lambda func)");
+		return 0;
+	}
+	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+		throw(env, "C: tried to call stub (reflect func)");
+		return 0;
+	}
+	else if (value->type == ENGINE_LUA_FUNCTION) {
+		if (value->inst) {
+			lua_State* state = inst->state;
+			lua_getglobal(state, FUNCTION_REGISTRY);
+			lua_pushinteger(value->data->func);
+			lua_gettable(state, -2);
+			if (lua_isnil(state, -1)) {
+				lua_pop(state, 2);
+				throw(env, "C: internal error: failed to index function from registry");
+				return 0;
+			}
+			// remove table
+			lua_remove(state, -2);
+			jsize len = 0;
+			if (arr) {
+				len = (*env)->GetArrayLength(env, arr);
+				int t;
+				for (t = 0; t < len; t++) {
+					jobject jvalue = (*env)->GetObjectArrayElement(env, arr, t);
+					if (!jvalue) continue;
+					engine_value* element = engine_unwrap(env, jvalue);
+					if (!element) continue;
+					engine_pushvalue(env, inst, state, element);
+				}
+			}
+			engine_value* ret = engine_call(env, inst, state, len);
+			return engine_wrap(env, ret);
+		}
+		else {
+			throw(env, "C: internal error: lua function is a shared value");
+			return 0;
+		}	
+	}
+	else {
+		throw(env, "C: tried to call value as function");
 		return 0;
 	}
 }
@@ -694,23 +744,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call
 (JNIEnv* env, jobject this) {
-	engine_value* value = findnative(env, this);
-	if (!value) return 0;
-	if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		// empty arguments array
-		jobjectArray arr = (*env)->NewObjectArray(env, 0, value_type, 0);
-		jobject java_object = engine_call_jlambda(env, value, arr);
-	}
-	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		
-	}
-	else if (value->type == ENGINE_LUA_FUNCTION) {
-		// call value->data->func
-	}
-	else {
-		throw(env, "C: tried to call value as function");
-		return 0;
-	}
+	return handleCall(env, this, 0);
 }
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
@@ -719,7 +753,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call
 (JNIEnv* env, jobject this, jobjectArray arr) {
-	
+	return handleCall(env, this, arr);
 }
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue

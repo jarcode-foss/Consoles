@@ -192,6 +192,23 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	return (jlong) instance;
 }
 
+JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw) {
+	engine_inst* inst = (engine_inst*) ptr;
+	lua_State* state = inst->state;
+	const char* characters = (*env)->GetStringUTFChars(env, str, 0);
+	size_t len = strlen(characters);
+	// I am using malloc instead of doing this on the stack,
+	// because this string could potentially be very large
+	char* raw = malloc(sizeof(char) * len);
+	memmove(raw, characters, len);
+	(*env)->ReleaseStringUTFChars(env, str, characters);
+	luaL_loadstring(state, raw);
+	free(raw);
+	engine_value* value = engine_newvalue(env, inst);
+	engine_handleregistry(env, inst, state, value);
+	return engine_wrap(env, value);
+}
+
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this, jlong ptr) {
 	engine_inst* inst = (engine_inst*) ptr;
 	if (inst->restricted) {
