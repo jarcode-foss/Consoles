@@ -148,6 +148,15 @@ typedef struct {
 	// that still need their global references deleted (these are copies of those references)
 	jobject* floating_objects;
 	size_t floating_objects_amt;
+	
+	// this is the ffi closure used for the hook function
+	ffi_closure* closure;
+	
+	// this is a flag used by hook function to determine if the VM has been killed
+	volatile uint8_t killed;
+	
+	// jmp_buf for jumping out of lua code when killed
+	jmp_buf call_entry;
 } engine_inst;
 
 

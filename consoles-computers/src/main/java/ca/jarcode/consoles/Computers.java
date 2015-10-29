@@ -45,6 +45,8 @@ public class Computers extends JavaPlugin {
 	public static int scriptHeapSize = 64 * 1024;
 	// script interpreter to use
 	public static String scriptEngine = "luaj";
+	// amount of instructions to wait before checking
+	public static int interruptCheckInterval = 200;
 
 	public static File jarFile;
 
@@ -89,6 +91,7 @@ public class Computers extends JavaPlugin {
 		wgetChunkSize = getConfig().getInt("wget-chunk-size", wgetChunkSize);
 		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
 		scriptEngine = getConfig().getString("script-engine", scriptEngine).toLowerCase();
+		interruptCheckInterval = getConfig().getInt("interrupt-check-interval", interruptCheckInterval);
 
 		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
 			ATTEMPTED_NATIVES_LOAD = true;

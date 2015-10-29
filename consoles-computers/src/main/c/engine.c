@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <setjmp.h>
+
 #include <ffi.h>
 
 #include <LuaEngine.h>
@@ -30,6 +32,8 @@ static jmethodID id_hashcode;
 // we use a single caller interface for wrapping Java -> C -> Lua functions,
 // since they all boil down to 'void (*lua_cfunc) (lua_State* state)'
 static ffi_cif func_cif;
+// again, this is the single caller interface used for hook functions
+static ffi_cif hook_cif;
 
 /*
  * There are some resources that accumulate over the life of the Lua VM. The reason
@@ -40,6 +44,8 @@ static ffi_cif func_cif;
  * So, we have to close them at the end of the lifecycle.
  */
 void engine_close(JNIEnv* env, engine_inst* inst) {
+	
+	lua_close(inst->state);
 	
 	// if the engine was already marked closed, do nothing
 	if (inst->closed) return;
@@ -81,6 +87,8 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 	inst->floating_objects = 0;
 	inst->floating_objects_amt = 0;
 	
+	ffi_closure_free(inst->closure);
+	
 	free(inst);
 }
 
@@ -120,7 +128,33 @@ void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 	inst->wrappers_amt++;
 }
 
-JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong ptr) {
+static void hook(engine_inst* inst, lua_State* state, lua_Debug* debug) {
+	if (inst->killed) {
+		longjmp(inst->call_entry, 1);
+	}
+}
+
+// binding hook for ffi
+static void handle_hook(ffi_cif* cif, void* ret, void* args[], void* user_data) {
+	hook((engine_inst*) user_data, *(lua_State**) args[0], *(lua_Debug**) args[1]);
+}
+
+static inline void abort_ffi() {
+	fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
+	exit(-1);
+}
+
+static inline void abort_ffi_alloc() {
+	fprintf(stderr, "\nfailed to allocate ffi closure (%s)\n", name);
+	exit(-1);
+}
+
+static inline void abort_ffi_prep() {
+	fprintf(stderr, "\nfailed to prepare ffi closure (%s)\n", name);
+	exit(-1);
+}
+
+JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong ptr, jint interval, jint maxtime) {
 	
 	if (!setup) {
 		if (!FFI_CLOSURES) {
@@ -129,12 +163,17 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 		}
 		
 		// ffi function args
-		ffi_type* args[1];
-		args[0] = &ffi_type_pointer;
+		ffi_type* f_args[1];
+		f_args[0] = &ffi_type_pointer;
 		// prepare caller interface
-		if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, args) != FII_OK) {
-			fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers (%s)\n", name);
-			exit(-1);
+		if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, f_args) != FII_OK) {
+			abort_ffi();
+		}
+		ffi_type* h_args[2];
+		f_args[0] = &ffi_type_pointer;
+		f_args[1] = &ffi_type_pointer;
+		if (ffi_prep_cif(&hook_cif, FFI_DEFAULT_ABI, 2, &ffi_type_void, h_args) != FII_OK) {
+			abort_ffi();
 		}
 		
 		classreg(env, "java/lang/Object", &class_object);
@@ -152,12 +191,35 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 		setup = 1;
 	}
 	
+	engine_inst* instance = malloc(sizeof(engine_inst));
+	void* hook_binding = 0;
+	instance->closure = ffi_closure_alloc(sizeof(ffi_closure), &hook_binding); // allocate hook closure
+	if (!(instance->closure)) abort_ffi_alloc();
+	
+	if (ffi_prep_closure_loc(instance->closure, &hook_cif, &handle_hook, wrapper, hook_binding) != FFI_OK) {
+		abort_ffi_prep();
+	}
+	
 	lua_State* state = lua_open();
+	
+	// set LuaJIT mode
+	switch (mode) {
+		case 1:
+			luaJIT_setmode(state, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON)
+			break;
+		case 0:
+			luaJIT_setmode(state, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_OFF)
+			break;
+	}
+	
 	luaopen_base(state);
 	luaopen_table(state);
 	luaopen_math(state);
 	luaopen_string(state);
 	luaopen_table(state);
+	luaopen_debug(state);
+	
+	lua_sethook(state, (lua_Hook) hook_binding, LUA_MASKCOUNT, interval);
 	
 	// register generic userdata table (for java objects)
 	luaL_newmetatable(state, "Engine.userdata");
@@ -178,18 +240,18 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_newtable(state);
 	lua_setglobal(state, FUNCTION_REGISTRY);
 	
-	// LuaJIT mode
-	if (mode == 1) {
-		//TODO: setmode
-	}
-	
-	engine_inst* instance = malloc(sizeof(engine_inst));
 	instance->state = state;
 	instance->env = env;
 	instance->closed = 0;
 	instance->restricted = 1;
 	
 	return (jlong) instance;
+}
+
+// this can be called from any thread!
+JNIEXPORT void JNICALL Java_jni_LuaEngine_kill(JNIEnv* env, jobject this, jlong ptr) {
+	(engine_inst*) inst = (engine_inst*) ptr;
+	inst->killed = true;
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw) {
@@ -297,7 +359,7 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 }
 
 // binding function for ffi
-int engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_data) {
+void engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_data) {
 	*(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
 }
 
@@ -314,7 +376,7 @@ engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass j
 // and then pushes it onto the lua stack.
 void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array) {
 	if (engine_debug) {
-		printf("\nwrapping java lambda function from C: %s", name);
+		printf("\nwrapping java lambda function from C: %s\n", name);
 	}
 	
 	// get class
@@ -343,7 +405,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	else strcat(buf, ")V");
 	
 	jmethodID mid = (*env)->GetMethodID(env, jfunctype, "call", buf);
-	void *func_binding; // our function pointer
+	void *func_binding = 0; // our function pointer
 	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	
 	// this shouldn't happen
@@ -376,7 +438,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 // the lifetime of a lua VM/interpreter.
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
 	if (engine_debug) {
-		printf("\nwrapping java reflect function from C: %s", name);
+		printf("\nwrapping java reflect function from C: %s\n", name);
 	}
 	
 	// compute method id
@@ -397,16 +459,14 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 	
 	// this shouldn't happen
 	if (!closure) {
-		fprintf(stderr, "\nfailed to allocate ffi closure (%s)\n", name);
-		exit(-1);
+		abort_ffi_alloc();
 	}
 	
 	engine_jfuncwrapper* wrapper = malloc(sizeof(engine_jfuncwrapper));
 	engine_regwrapper(inst, wrapper);
 	
 	if (ffi_prep_closure_loc(closure, &func_cif, &engine_handlecall_binding, wrapper, func_binding) != FFI_OK) {
-		fprintf(stderr, "\nfailed to prepare ffi closure (%s)\n", name);
-		exit(-1);
+		abort_ffi_prep();
 	}
 	
 	wrapper->closure = closure;
@@ -452,4 +512,33 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
 	}
 	inst->floating_objects_amt--;
+}
+
+// this is how we handle function calls from Java, but it needs to be improved to properly
+// pass errors to Java as exceptions.
+// should be called with function in stack, followed by arguments
+engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs) {
+	inst->runtime_env = env;
+	lua_getglobal(state, "debug");
+	lua_getfield(state, -1, "traceback");
+	lua_remove(state, -2);
+	int idx = -nargs - 2;
+	lua_insert(state, idx);
+	int err = 0;
+	if (!setjmp(inst->call_entry))
+		err = lua_pcall(state, nargs, 1, idx);
+	switch (err) {
+		case LUA_ERRRUN: // runtime error
+			
+			break;
+		case LUA_ERRMEM: // memory alloc error
+			
+			break;
+		case LUA_ERRERR: // error in error handler
+			
+			break;
+	}
+	engine_value* ret = engine_popvalue(env, inst, state);
+	lua_pop(state, 1);
+	return ret;
 }

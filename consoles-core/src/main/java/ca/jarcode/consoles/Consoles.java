@@ -26,6 +26,8 @@ public class Consoles extends JavaPlugin {
 	public static short startingId;
 	// debug mode
 	public static boolean debug = false;
+	// interact range
+	public static int interactRange = 6;
 
 	public static Consoles getInstance() {
 		return instance;
@@ -45,8 +47,9 @@ public class Consoles extends JavaPlugin {
 
 		boolean forward = getConfig().getBoolean("bungee-forward", false);
 
-		startingId = (short) getConfig().getInt("starting-map-index", 5000);
-		debug = getConfig().getBoolean("debug-mode", false);
+		startingId = (short) getConfig().getInt("starting-map-index", startingId);
+		debug = getConfig().getBoolean("debug-mode", debug);
+		interactRange = getConfig().getInt("interact-range", interactRange);
 
 		// assigns a bunch of API function handles
 		InternalFunctions.assign();

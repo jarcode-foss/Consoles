@@ -33,8 +33,8 @@ public class LuaJEngine implements ScriptEngine {
 	}
 
 	@Override
-	public ScriptValue load(ScriptValue globals, ComputerLibrary lib) {
-		return new LuaJScriptValue(((LuaJScriptValue) globals).val.load(buildLibrary(lib)));
+	public void load(ScriptValue globals, ComputerLibrary lib) {
+		((LuaJScriptValue) globals).val.load(buildLibrary(lib));
 	}
 
 	@Override

@@ -1,6 +1,6 @@
-# ------------------
-#     Computers
-# ------------------
+#
+#   GENERAL SETTINGS
+#
 
 # Enable the crafting of computers
 allow-comptuer-crafting: true
@@ -12,18 +12,38 @@ computer-limit: 3
 # Command prefix when sending commands to a computer. You may want to
 # change this for BungeeCord servers, as it will interrupt commands
 # that may have been designated for a computer.
+#
+# You may also leave this value blank to allow all text to be forwarded
+# to computers.
 command-prefix: /
 
 # If set to true, this will hide all 'Computers saving...' messages
 hide-save-messages: false
 
-
-# ------------------
-# Computer Functions
-# ------------------
+#
+#   FUNCTION SETTINGS
+#
 
 # Custom frame rendering for Lua programs, disable if you do not want players to use this.
 frame-rendering: true
+
+# Size (in kilobytes) of the chunks that wget downloads every 300ms. Increasing this value will result in higher
+# download speeds.
+wget-chunk-size: 2
+
+#
+#   PROGRAM SETTINGS
+#
+
+# The script interpreter to use. The options are:
+#  - luajit: a lua interpreter that uses a JIT compiler for very fast execution (incomplete, native)
+#  - lua: default lua interpreter and environment (incomplete, native)
+#  - luaj: a lua interpreter that precompiles logic to java bytecode prior to execution (default, java)
+script-engine: luaj
+
+# This is the interval (in instructions) in which kill interrupts are checked in programs. This
+# applies to scripts
+interrupt-check-interval: 200
 
 # Maximum time (in miliseconds) that a program can run without calling a blocking function
 # You can tweak this to be lower if you want to avoid program threads from using too
@@ -32,14 +52,6 @@ max-time-without-interrupt: 7000
 
 # Max heap size for each individual script running on a computer
 # this will later be replaced by heap sizes for each virtual computer
+#
+# Note: This is broken in some 1.3 snapshot builds
 script-heap-size: 65536
-
-# The script interpreter to use. The options are:
-#  - luajit: a lua interpreter that uses a JIT compiler for very fast execution (incomplete, native)
-#  - lua: default lua interpreter and environment (incomplete, native)
-#  - luaj: a lua interpreter that precompiles logic to java bytecode prior to execution (default, java)
-script-engine: luaj
-
-# Size (in kilobytes) of the chunks that wget downloads every 300ms. Increasing this value will result in higher
-# download speeds.
-wget-chunk-size: 2

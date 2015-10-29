@@ -463,7 +463,7 @@ public class ConsoleHandler implements Listener {
 		boolean cancelled = false;
 		for (ManagedConsole console : consoles.toArray(new ManagedConsole[consoles.size()])) {
 			if (console.created()) {
-				int[] arr = console.intersect(player.getEyeLocation(), 7);
+				int[] arr = console.intersect(player.getEyeLocation(), Consoles.interactRange);
 				if (arr != null) {
 					if (!cancelled && cancel != null) {
 						cancel.accept(true);

@@ -25,3 +25,7 @@ starting-map-index: 5000
 # If you think there is something wrong with a Lua function call into
 # Consoles, you can enable this to get the full stack trace.
 debug-mode: false
+
+# This is the range (in blocks) that a player must be in order to
+# interact with a console
+interact-range: 6

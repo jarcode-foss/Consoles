@@ -20,7 +20,7 @@ public interface ScriptEngine {
 	}
 
 	ScriptValue load(ScriptValue globals, String raw);
-	ScriptValue load(ScriptValue globals, ComputerLibrary lib);
+	void load(ScriptValue globals, ComputerLibrary lib);
 	ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream stdin, OutputStream stdout, long heap);
 	void resetInterrupt(ScriptValue globals);
 	void removeRestrictions(ScriptValue globals);

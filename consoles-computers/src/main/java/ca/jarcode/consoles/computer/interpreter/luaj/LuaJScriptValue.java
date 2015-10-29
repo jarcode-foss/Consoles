@@ -194,9 +194,10 @@ public class LuaJScriptValue implements ScriptValue {
 		// we do not need to copy this object, because it is never released
 		return this;
 	}
-
+	/*
 	@Override
 	public boolean equals(Object another) {
 		return another instanceof LuaJScriptValue && val.equals(((LuaJScriptValue) another).val);
 	}
+	*/
 }
