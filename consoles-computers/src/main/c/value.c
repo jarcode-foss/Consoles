@@ -39,15 +39,10 @@ static pair_map m;
 static jclass value_type;
 static jmethodID value_constructor;
 
-static jmethodID id_comptype;
-
-static jmethodID id_translate;
-
+// class 'Array'
 static jclass class_array;
 static jmethodID id_newarray;
 static jmethodID id_arrayset;
-
-static jclass exclass;
 
 static uint8_t setup = 0;
 
@@ -59,7 +54,7 @@ static inline void handle_null_const(jmethodID v, const char* message) {
 }
 
 static inline engine_value* findnative(JNIEnv* env, jobject ref) {
-	engine_value* value = (engine_value*) m.native(env, m, ref);
+	engine_value* value = engine_unwrap(env, ref);
 	if (value) {
 		return value;
 	}
@@ -69,23 +64,15 @@ static inline engine_value* findnative(JNIEnv* env, jobject ref) {
 	}
 }
 
-void engine_value_init(JNIEnv* env) {
+void setup_value(JNIEnv* env) {
 	if (!setup) {
-		classreg(env, ENGINE_ERR_CLASS, &exclass);
 		classreg(env, ENGINE_VALUE_CLASS, &value_type);
 		classreg(env, "java/lang/reflect/Array", &class_array); // for generic array setting
 		value_constructor = (*env)->GetMethodID(env, value_type, "<init>", "()V");
-		handle_null_const(value_const, ENGINE_VALUE_CLASS);
-		id_comptype = (*env)->GetMethodID(env, class_type, "getComponentType", "()Ljava/lang/Class;");
+		handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
 		id_newarray = (*env)->GetStaticMethodID(env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;");
-		id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V"
-		{
-			char buf[128] = {0};
-			strcat(buf, "(Ljava/lang/Class;L");
-			strcat(buf, ENGINE_VALUE_INTERFACE);
-			strcat(buf, ";)Ljava/lang/Object;"
-			id_translate = (*env)->GetStaticMethodID(env, class_lua, "translate", buf);
-		}
+		id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V");
+		
 		pair_map_init(env, &m);
 		setup = 1;
 	}
@@ -101,47 +88,40 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
 	// even though the type is null, v->data is probably garbage memory
 	v->type = ENGINE_NULL;
 	v->inst = 0;
-	jobject obj = (*env)->NewObject(env, value_type, value_const);
-	obj = (*env)->NewGlobalRef(env, object);
-	pair_map_append(m, obj, v);
+	jobject obj = (*env)->NewObject(env, value_type, value_constructor);
+	obj = (*env)->NewGlobalRef(env, obj);
+	pair_map_append(env, &m, obj, v);
 }
 
 static void valuefree(JNIEnv* env, engine_value* value) {
 	if (value->type == ENGINE_ARRAY) {
-		free(value->data->array->values);
+		free(value->data.array.values);
 	}
 	else if (value->type == ENGINE_STRING) {
 		// strings in our values are either copied from java or lua,
 		// we need to free the string when we parse the stack
-		free(value->data->str);
+		free(value->data.str);
 	}
 	// clear global references to reflection method
 	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		(*env)->DeleteGlobalRef(value->data->rfunc->obj_inst);
-		(*env)->DeleteGlobalRef(value->data->rfunc->reflect_method);
+		(*env)->DeleteGlobalRef(env, value->data.rfunc.obj_inst);
+		(*env)->DeleteGlobalRef(env, value->data.rfunc.reflect_method);
 	}
 	// clear global references to lambda method and argument class array
 	else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		(*env)->DeleteGlobalRef(value->data->lfunc->lambda);
-		(*env)->DeleteGlobalRef(value->data->lfunc->class_array);
+		(*env)->DeleteGlobalRef(env, value->data.lfunc.lambda);
+		(*env)->DeleteGlobalRef(env, value->data.lfunc.class_array);
 	}
 	// clear global references to object
 	else if (value->type == ENGINE_JAVA_OBJECT) {
-		(*env)->DeleteGlobalRef(value>data->obj);
+		(*env)->DeleteGlobalRef(env, value->data.obj);
 	}
+	free(value);
 }
 
-void engine_freevalue(JNIEnv* env, engine_value* value) {
-	m.rm_second(env, m, value);
+void engine_releasevalue(JNIEnv* env, engine_value* value) {
+	m.rm_native(env, &m, value);
 	valuefree(env, value);
-} /*
- * Class:     jni_LuaEngine
- * Method:    free
- * Signature: (Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)V
- */
-JNIEXPORT void JNICALL Java_jni_LuaEngine_free(JNIEnv* env, jobject this, jobject value) {
-	engine_value* value = findnative(env, this);
-	if (value) engine_freevalue(env, value);
 }
 
 static int valueparse(JNIEnv* env, void* ptr, void* userdata) {
@@ -156,12 +136,12 @@ void engine_clearvalues(JNIEnv* env, engine_inst* inst) {
 	m.rm(env, &m, &valueparse, inst);
 }
 
-engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
+inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
 	return findnative(env, obj);
 }
 
-jobject engine_wrap(JNIEnv* env, engine_value* value) {
-	return m.java(env, m, value);
+inline jobject engine_wrap(JNIEnv* env, engine_value* value) {
+	return m.java(env, &m, value);
 }
 
 /*
@@ -170,9 +150,9 @@ jobject engine_wrap(JNIEnv* env, engine_value* value) {
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_release
-(JNIEnv *, jobject) {
+(JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
-	if (value) engine_freevalue(env, value);
+	if (value) engine_releasevalue(env, value);
 }
 
 /*
@@ -181,34 +161,36 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
  * Signature: ()Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_copy
-(JNIEnv *, jobject) {
+(JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
-	enbine_value* new = engine_newvalue(env, value->inst);
-	new->type = value->type;
+	engine_value* copy = engine_newvalue(env, value->inst);
+	copy->type = value->type;
 	switch (value->type) {
-		case ENGINE_ARRAY:
-			size_t len = value->data->array->length;
-			new->data->array->values = malloc(sizeof(engine_value*) * len);
-			memccpy(new->data->array->values, value->data->array->values, len);
+		case ENGINE_ARRAY: {
+			size_t len = value->data.array.length;
+			copy->data.array.values = malloc(sizeof(engine_value*) * len);
+			memcpy(copy->data.array.values, value->data.array.values, len);
 			break;
+		}
 		case ENGINE_JAVA_LAMBDA_FUNCTION:
-			new->data->lfunc->lambda = (*env)->NewGlobalRef(env, value->data->lfunc->lambda);
-			new->data->lfunc->class_array = (*env)->NewGlobalRef(env, value->data->lfunc->class_array);
+			copy->data.lfunc.lambda = (*env)->NewGlobalRef(env, value->data.lfunc.lambda);
+			copy->data.lfunc.class_array = (*env)->NewGlobalRef(env, value->data.lfunc.class_array);
 			break;
 		case ENGINE_JAVA_REFLECT_FUNCTION:
-			new->data->rfunc->reflect_method = (*env)->NewGlobalRef(env, value->data->rfunc->reflect_method);
-			new->data->rfunc->obj_inst = (*env)->NewGlobalRef(env, value->data->rfunc->obj_inst);
+			copy->data.rfunc.reflect_method = (*env)->NewGlobalRef(env, value->data.rfunc.reflect_method);
+			copy->data.rfunc.obj_inst = (*env)->NewGlobalRef(env, value->data.rfunc.obj_inst);
 			break;
 		case ENGINE_JAVA_OBJECT:
-			new->data->obj = (*env)->NewGlobalRef(env, value->data->obj);
+			copy->data.obj = (*env)->NewGlobalRef(env, value->data.obj);
 			break;
-		case ENGINE_STRING:
-			size_t len = (strlen(value->data->str) + 1);
-			new->data->str = malloc(sizeof(char) * len);
-			memcpy(new->data->str, value->data->str, len);
+		case ENGINE_STRING: {
+			size_t len = (strlen(value->data.str) + 1);
+			copy->data.str = malloc(sizeof(char) * len);
+			memcpy(copy->data.str, value->data.str, len);
 			break;
+		}
 		default:
-			memcpy(&(new->data), &(value->data), sizeof(engine_data));
+			memcpy(&(copy->data), &(value->data), sizeof(engine_data));
 			break;
 	}
 }
@@ -222,7 +204,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 (JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
 	if (value->type == ENGINE_JAVA_OBJECT) {
-		return value->data->obj;
+		return value->data.obj;
 	}
 	else {
 		throw(env, "C: tried to translate value to object");
@@ -250,7 +232,7 @@ JNIEXPORT jstring JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_STRING) {
-		return (*env)->NewStringUTF(env, value->data->str);
+		return (*env)->NewStringUTF(env, value->data.str);
 	}
 	else {
 		throw(env, "C: tried to translate value to string");
@@ -279,10 +261,10 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jlong) value->data->d;
+		return (jlong) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jlong) value->data->i;
+		return (jlong) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to long");
@@ -311,10 +293,10 @@ JNIEXPORT jshort JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jshort) value->data->d;
+		return (jshort) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jshort) value->data->i;
+		return (jshort) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to short");
@@ -343,10 +325,10 @@ JNIEXPORT jbyte JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jbyte) value->data->d;
+		return (jbyte) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jbyte) value->data->i;
+		return (jbyte) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to byte");
@@ -375,10 +357,10 @@ JNIEXPORT jint JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jint) value->data->d;
+		return (jint) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jint) value->data->i;
+		return (jint) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to int");
@@ -407,10 +389,10 @@ JNIEXPORT jfloat JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jfloat) value->data->d;
+		return (jfloat) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jfloat) value->data->i;
+		return (jfloat) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to float");
@@ -439,10 +421,10 @@ JNIEXPORT jdouble JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jdouble) value->data->d;
+		return (jdouble) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jdouble) value->data->i;
+		return (jdouble) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to double");
@@ -471,10 +453,10 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_FLOATING) {
-		return (jbyte) value->data->d;
+		return (jbyte) value->data.d;
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		return (jbyte) value->data->i;
+		return (jbyte) value->data.i;
 	}
 	else {
 		throw(env, "C: tried to translate value to byte");
@@ -491,24 +473,6 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 (JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
 	return value ? (value->type == ENGINE_BOOLEAN) : 0;
-}
-
-/*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
- * Method:    isNull
- * Signature: ()Z
- */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_isNull
-(JNIEnv* env, jobject this) {
-	engine_value* value = findnative(env, this);
-	if (!value) return 0;
-	if (value->type == ENGINE_BOOLEAN) {
-		return (jboolean) value->data->i;
-	}
-	else {
-		throw(env, "C: tried to translate value to boolean");
-		return 0;
-	}
 }
 
 /*
@@ -552,11 +516,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	jclass comptype = (*env)->CallObjectMethod(env, array_type, id_comptype);
 	// create array from type
 	jobject array = (*env)->CallStaticObjectMethod(env, class_array, id_newarray, comptype,
-		value->data->array->length);
+		value->data.array.length);
 	uint32_t t;
-	for (t = 0; t < value->data->array->length; t++) {
+	for (t = 0; t < value->data.array.length; t++) {
 		// get engine_value element, and then get the java counterpart
-		jobject wrapped_element = m.java(env, m, value->data->array->values[t]);
+		jobject wrapped_element = engine_wrap(env, value->data.array.values[t]);
 		// call Lua.translate(type, value) to recursively translate and resolve values
 		jobject java_element = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, comptype,
 			wrapped_element);
@@ -588,27 +552,27 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 	engine_value* this_value = findnative(env, this);
 	if (!this_value) return;
 	engine_value* key = findnative(env, jkey);
-	if (!value) return;
-	engine_value* value = findnative(env jvalue);
+	if (!key) return;
+	engine_value* value = findnative(env, jvalue);
 	if (!value) return;
 	
-	if (this_value == ENGINE_LUA_GLOBALS) {
+	if (this_value->type == ENGINE_LUA_GLOBALS) {
 		if (!this_value->inst) {
 			throw(env, "C: globals value is not associated with engine instance");
 			return;
 		}
-		if (!key->type == ENGINE_STRING) {
+		if (key->type != ENGINE_STRING) {
 			throw(env, "C: tried to set global value with non-string key");
 			return;
 		}
-		else if (key->data->str == 0) {
+		else if (key->data.str == 0) {
 			throw(env, "C: internal error: null string value (bad value)");
 			return;
 		}
-		lua_State* state = value->data->state;
+		lua_State* state = value->data.state;
 		engine_pushvalue(env, this_value->inst, state, value);
 		// pops a value from the stack
-		lua_setglobal(state, this->value->data->str);
+		lua_setglobal(state, value->data.str);
 	}
 	else {
 		throw(env, "C: tried to set non-global value");
@@ -626,7 +590,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	
-	engine_value* key = (engine_value*) m.native(env, m, script_value);
+	engine_value* key = engine_unwrap(env, script_value);
 	// this happens if some retard calls this method with a script value that isn't LuaNScriptValue or null
 	if (key == 0) {
 		throw(env, "C: tried to index value with invalid key");
@@ -639,15 +603,15 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 			return 0;
 		}
 		else if (key->type == ENGINE_FLOATING) {
-			t = (long) key->data->d;
+			t = (long) key->data.d;
 		}
 		else if (key->type == ENGINE_INTEGRAL) {
-			t = key->data->i;
+			t = key->data.i;
 		}
 		
-		if (t < value->array->length && t >= 0) {
+		if (t < value->data.array.length && t >= 0) {
 			// get value pointer from array
-			engine_value* result = key->data->array[t];
+			engine_value* result = key->data.array.values[t];
 			// just in case this happens, handle it
 			// actual null values have their own type
 			if (result == 0) {
@@ -655,7 +619,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 				return 0;
 			}
 			// lookup value and get object counterpart
-			return m.java(env, m, result);
+			return engine_wrap(env, result);
 		}
 		else {
 			throw(env, "C: tried to index value (array) with out-of-range key");
@@ -670,16 +634,17 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 			throw(env, "C: the native backend does not allow indexing globals with non-string values");
 			return 0;
 		}
-		else if (key->data->str == 0) {
+		else if (key->data.str == 0) {
 			throw(env, "C: internal error: null string value (bad value)");
 			return 0;
 		}
-		lua_State* state = value->data->state;
+		lua_State* state = value->data.state;
 		// push onto stack
-		lua_getglobal(state, key->data->str);
+		lua_getglobal(state, key->data.str);
 		// pops after
 		// this function builds a new value (memory!)
-		return engine_popvalue_lua(env, value->inst, state);
+		engine_value* value = engine_popvalue(env, value->inst, state);
+		return engine_wrap(env, value);
 	}
 	else {
 		throw(env, "C: tried to index non-array/non-global value");
@@ -687,7 +652,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	}
 }
 
-static inline jobject handleCall(JNIEnv* env, jobject* this, jobjectArray arr) {
+static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
@@ -700,9 +665,10 @@ static inline jobject handleCall(JNIEnv* env, jobject* this, jobjectArray arr) {
 	}
 	else if (value->type == ENGINE_LUA_FUNCTION) {
 		if (value->inst) {
+			engine_inst* inst = value->inst;
 			lua_State* state = inst->state;
 			lua_getglobal(state, FUNCTION_REGISTRY);
-			lua_pushinteger(value->data->func);
+			lua_pushinteger(state, value->data.func);
 			lua_gettable(state, -2);
 			if (lua_isnil(state, -1)) {
 				lua_pop(state, 2);
@@ -742,18 +708,18 @@ static inline jobject handleCall(JNIEnv* env, jobject* this, jobjectArray arr) {
  * Method:    call
  * Signature: ()Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call__
 (JNIEnv* env, jobject this) {
-	return handleCall(env, this, 0);
+	return handlecall(env, this, 0);
 }
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
  * Method:    call
  * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call
+JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call___3Lca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jobjectArray arr) {
-	return handleCall(env, this, arr);
+	return handlecall(env, this, arr);
 }
 /*
  * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
@@ -761,7 +727,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_isNull
-(JNIEnv *, jobject) {
+(JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
 	return value ? (value->type == ENGINE_NULL) : 0;
 }

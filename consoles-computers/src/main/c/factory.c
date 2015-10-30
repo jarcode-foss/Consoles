@@ -2,7 +2,7 @@
 #include <jni.h>
 
 #include <lua.h>
-#include <luaxlib.h>
+#include <lauxlib.h>
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -20,56 +20,79 @@
 // we do a dual association when registering new functions, after attempting to look the function up
 // we then pass the id to the engine value, which can be later looked up to call the function
 
-// this also pops a value
+// this also pops a value, and expects a function (can be cfunction or lua)
+
 void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v) {
-		v->type = ENGINE_LUA_FUNCTION;
+	v->type = ENGINE_LUA_FUNCTION;
+	
+	// make copy of function, and put it on the top of the stack
+	lua_pushvalue(state, -1);
+	// push registry on the stack
+	lua_getglobal(state, FUNCTION_REGISTRY);
+	// swap registry and lua function, so that the function is on top
+	engine_swap(state, -1, -2);
+	// swap function (top) with value from function table
+	// (result should be nil or a number)
+	lua_gettable(state, -2);
+	if (lua_isnil(state, -1)) { // no function mapped
+		// pop the nil value
+		lua_pop(state, -1);
+		// (we are now back to the original function at the top)
+		// increment and push new function index
+		function_index++;
+		lua_pushinteger(state, function_index);
+		// (we now have (function, key) pair)
+		// push second copy of key for second association
+		lua_pushinteger(state, function_index);
+		// copy function to top of stack
+		lua_pushvalue(state, -3);
+		// push association (function, id)
+		lua_settable(state, -5);
+		// push association (id, function)
+		lua_settable(state, -3);
+		// pop registry
+		lua_pop(state, -1);
 		
-		// make copy of function, and put it on the top of the stack
-		lua_pushvalue(state, -1);
-		// push registry on the stack
-		lua_getglobal(state, FUNCTION_REGISTRY);
-		// swap registry and lua function, so that the function is on top
-		engine_swap(state, -1, -2);
-		// swap function (top) with value from function table
-		// (result should be nil or a number)
-		lua_gettable(state, -2);
-		if (lua_isnil(state, -1)) { // no function mapped
-			// pop the nil value
-			lua_pop(state, -1);
-			// (we are now back to the original function at the top)
-			// increment and push new function index
-			function_index++:
-			lua_pushinteger(state, function_index);
-			// (we now have (function, key) pair)
-			// push second copy of key for second association
-			lua_pushinteger(state, function_index);
-			// copy function to top of stack
-			lua_pushvalue(state, -3);
-			// push association (function, id)
-			lua_settable(state, -5);
-			// push association (id, function)
-			lua_settable(state, -3);
-			// pop registry
-			lua_pop(state, -1);
-			
-			v->data->func = function_index;
+		v->data.func = function_index;
+	}
+	else { // if there is a function mapped already
+		v->data.func = (uint32_t) lua_tonumber(state, -1);
+		// if the function is nil, then the mappings are corrupt
+		// this can happen if the user tampers with the __function
+		// variable
+		if (!(v->data.func)) {
+			v->type = ENGINE_NULL;
 		}
-		else { // if there is a function mapped already
-			v->data->func = (uint32_t) lua_tonumber(state, -1);
-			// pop registry and id
-			lua_pop(state, 2);
-		}
+		// pop registry and id
+		lua_pop(state, 2);
+	}
+}
+
+void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj) {
+	// allocate new userdata (managed by lua)
+	engine_userdata* userdata = lua_newuserdata(state, sizeof(engine_userdata));
+	// create new global ref
+	userdata->obj = (*env)->NewGlobalRef(env, obj);
+	userdata->engine = inst;
+	userdata->released = 0;
+	// register floating reference
+	engine_addfloating(inst, userdata->obj);
+	// get our special metatable
+	luaL_getmetatable(state, "Engine.userdata");
+	// set metatable to our userdatum
+	// it pops itself off the stack and assigns itself to index -2
+	lua_setmetatable(state, -2);
 }
 // boring mapping
 engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) {
 	engine_value* v = engine_newvalue(env, inst);
 	if (lua_isnumber(state, -1)) {
 		v->type = ENGINE_FLOATING;
-		v->data->d = (double) lua_tonumber(state, -1);
+		v->data.d = (double) lua_tonumber(state, -1);
 	}
 	else if (lua_isboolean(state, -1)) {
 		v->type = ENGINE_BOOLEAN;
-		v->type->i = (long) lua_toboolean(state, -1);
+		v->data.i = (long) lua_toboolean(state, -1);
 	}
 	else if (lua_isstring(state, -1)) {
 		v->type = ENGINE_STRING;
@@ -90,7 +113,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 				s[t] = '?';
 		}
 		
-		v->data->str = s;
+		v->data.str = s;
 	}
 	else if (lua_isnoneornil(state, -1)) {
 		lua_pop(state, 1);
@@ -103,7 +126,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 		v->type = ENGINE_JAVA_OBJECT;
 		// get userdata
 		engine_userdata* d = (engine_userdata*) luaL_checkudata(state, -1, "Engine.userdata");
-		v->data->obj = (*env)->NewGlobalRef(env, d->obj);
+		v->data.obj = (*env)->NewGlobalRef(env, d->obj);
 		// pop userdata
 		lua_pop(state, 1);
 	}
@@ -111,9 +134,8 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 		engine_handleregistry(env, inst, state, v);
 	}
 	else if (lua_iscfunction(state, -1)) {
-		// this is a stub, however, there is no reason for java (or C) to be spitting a function at lua
-		// and then getting the same function back.
-		lua_pop(state, 1);
+		// we can register C functions in the registry too
+		engine_handleregistry(env, inst, state, v);
 	}
 	// threads should _not_ be happening
 	// if we run into this, scream at stderr and return null
@@ -145,8 +167,8 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 			lua_pop(state, 1);
 			t++;
 		}
-		v->data->array->length = t;
-		v->data->array->values = malloc(sizeof(engine_value**) * t);
+		v->data.array.length = t;
+		v->data.array.values = malloc(sizeof(engine_value**) * t);
 		unsigned short i;
 		for (i = 0; i < t; i++) {
 			// push key
@@ -154,7 +176,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 			// swap key with value (of some sort)
 			lua_gettable(state, -2);
 			// recurrrrrssssiiiiioooon (and popping the value)
-			v->data->array->values[i] = engine_popvalue_lua(env, inst, state);
+			v->data.array.values[i] = engine_popvalue(env, inst, state);
 		}
 		lua_pop(state, 1);
 	}
@@ -163,21 +185,21 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 
 void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value) {
 	if (value->type == ENGINE_BOOLEAN) {
-		lua_pushboolean(state, (int) value->data->i);
+		lua_pushboolean(state, (int) value->data.i);
 	}
 	else if (value->type == ENGINE_FLOATING) {
-		lua_pushnumber(state, value->data->d);
+		lua_pushnumber(state, value->data.d);
 	}
 	else if (value->type == ENGINE_INTEGRAL) {
-		lua_pushnumber(state, (double) value->data->i);
+		lua_pushnumber(state, (double) value->data.i);
 	}
 	else if (value->type == ENGINE_STRING) {
-		lua_pushstring(state, type->data->str);
+		lua_pushstring(state, value->data.str);
 	}
 	else if (value->type == ENGINE_ARRAY) {
 		
 		// overflow (well, not really, but it shouldn't be getting this big)
-		if (lua_gettop == LUA_MINSTACK - 1) {
+		if (lua_gettop(state) == LUA_MINSTACK - 1) {
 			lua_pushnil(state);
 			return;
 		}
@@ -185,12 +207,12 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
 		// create and push new table
 		lua_newtable(state);
 		unsigned short i;
-		for (i = 0; i < value->data->array->length; i++) {
+		for (i = 0; i < value->data.array.length; i++) {
 			// push key
 			lua_pushinteger(state, i);
 			// push value
-			if (value->data->array->values[i]) {
-				engine_pushvalue_lua(env, inst, state, value->data->array->values[i]);
+			if (value->data.array.values[i]) {
+				engine_pushvalue_lua(env, inst, state, value->data.array.values[i]);
 			}
 			else {
 				lua_pushnil(state);
@@ -202,20 +224,7 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
 		}
 	}
 	else if (value->type == ENGINE_JAVA_OBJECT) {
-		// allocate new userdata (managed by lua)
-		engine_userdata* userdata = lua_newuserdata(state, sizeof(engine_userdata));
-		// create new global ref
-		userdata->obj = (*env)->NewGlobalRef(value->data->obj);
-		// set env pointer to pointer
-		userdata->runtime_env = &(inst->runtime_env);
-		userdata->released = 0;
-		// register floating reference
-		engine_addfloating(inst, userdata->obj);
-		// get our special metatable
-		luaL_getmetatable(state, "Engine.userdata");
-		// set metatable to our userdatum
-		// it pops itself off the stack and assigns itself to index -2
-		lua_setmetatable(state, -2);
+		engine_pushobject(env, inst, state, value->data.obj);
 	}
 	else if (value->type == ENGINE_LUA_GLOBALS) {
 		// stub
@@ -227,11 +236,11 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
 	}
 	else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		// magic
-		engine_pushlambda(env, inst, value->lfunc->lambda, value->lfunc->class_array);
+		engine_pushlambda(env, inst, value->data.lfunc.lambda, value->data.lfunc.class_array);
 	}
 	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
 		// you're a wizard, harry
-		engine_pushreflect(env, inst, value->rfunc->reflect_method, value->rfunc->obj_inst);
+		engine_pushreflect(env, inst, value->data.rfunc.reflect_method, value->data.rfunc.obj_inst);
 	}
 	else if (value->type == ENGINE_NULL) {
 		lua_pushnil(state);
@@ -247,8 +256,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 (JNIEnv* env, jobject this, jobjectArray class_array, jobject lambda) {
 	engine_value* value = engine_newsharedvalue(env);
 	value->type == ENGINE_JAVA_LAMBDA_FUNCTION;
-	value->data->lfunc->class_array = (*env)->NewGlobalRef(env, class_array);
-	value->data->lfunc->lambda = (*env)->NewGlobalRef(env, lambda);
+	value->data.lfunc.class_array = (*env)->NewGlobalRef(env, class_array);
+	value->data.lfunc.lambda = (*env)->NewGlobalRef(env, lambda);
 	return engine_wrap(env, value);
 }
 
@@ -261,8 +270,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 (JNIEnv* env, jobject this, jobject reflect_method, jobject obj_inst) {
 	engine_value* value = engine_newsharedvalue(env);
 	value->type = ENGINE_JAVA_REFLECT_FUNCTION;
-	value->data->rfunc->reflect_method = (*env)->NewGlobalRef(env, reflect_method);
-	value->data->rfunc->obj_inst = (*env)->NewGlobalRef(env, obj_inst);
+	value->data.rfunc.reflect_method = (*env)->NewGlobalRef(env, reflect_method);
+	value->data.rfunc.obj_inst = (*env)->NewGlobalRef(env, obj_inst);
 	return engine_wrap(env, value);
 }
 
@@ -281,7 +290,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_BOOLEAN;
-	value->data->i = boolean;
+	value->data.i = boolean;
 	return engine_wrap(env, value);
 }
 
@@ -300,7 +309,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_FLOATING;
-	value->data->d = (double) f;
+	value->data.d = (double) f;
 	return engine_wrap(env, value);
 }
 
@@ -319,7 +328,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_FLOATING;
-	value->data->d = d;
+	value->data.d = d;
 	return engine_wrap(env, value);
 }
 
@@ -329,7 +338,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  * Signature: (Ljava/lang/String;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__Ljava_lang_String_2Lca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
-(JNIEnv* env, jobject this, jstring str, jobject) {
+(JNIEnv* env, jobject this, jstring str, jobject jglobals) {
 	if (!jglobals) {
 		throw(env, "tried to translate with null globals");
 		return 0;
@@ -340,8 +349,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	const char* characters = (*env)->GetStringUTFChars(env, str, 0);
 	value->type = ENGINE_STRING;
 	size_t len = strlen(characters);
-	value->data->str = malloc(sizeof(char) * len);
-	memmove(value->data->str, characters, len);
+	value->data.str = malloc(sizeof(char) * len);
+	memmove(value->data.str, characters, len);
 	(*env)->ReleaseStringUTFChars(env, str, characters);
 	return engine_wrap(env, value);
 }
@@ -361,7 +370,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_INTEGRAL;
-	value->data->i = i;
+	value->data.i = i;
 	return engine_wrap(env, value);
 }
 
@@ -380,7 +389,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_INTEGRAL;
-	value->data->i = l;
+	value->data.i = l;
 	return engine_wrap(env, value);
 }
 
@@ -399,7 +408,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_INTEGRAL;
-	value->data->i = s;
+	value->data.i = s;
 	return engine_wrap(env, value);
 }
 
@@ -418,7 +427,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_INTEGRAL;
-	value->data->i = b;
+	value->data.i = b;
 	return engine_wrap(env, value);
 }
 
@@ -438,16 +447,16 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_ARRAY;
 	jsize len = (*env)->GetArrayLength(env, elements);
-	value->data->array->values = malloc(sizeof(engine_inst*));
-	value->data->array->length = len;
+	value->data.array.values = malloc(sizeof(engine_inst*));
+	value->data.array.length = len;
 	int t;
 	for (t = 0; t < len; t++) {
 		jobject element = (*env)->GetObjectArrayElement(env, elements, t);
-		engine_inst* element_value = m.native(env, m, element);
+		engine_value* element_value = engine_unwrap(env, element);
 		if (element_value) {
-			value->data->array->values[t] = element_value;
+			value->data.array.values[t] = element_value;
 		}
-		else value->data->array->values[t] = 0;
+		else value->data.array.values[t] = 0;
 	}
 	return engine_wrap(env, value);
 }
@@ -484,6 +493,6 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_inst* inst = globals->inst;
 	engine_value* value = engine_newvalue(env, inst);
 	value->type = ENGINE_JAVA_OBJECT;
-	value->data->obj = (*env)->NewGlobalRef(env, obj);
+	value->data.obj = (*env)->NewGlobalRef(env, obj);
 	return engine_wrap(env, value);
 }

@@ -63,8 +63,8 @@ public final class InterpretedProgram extends SandboxProgram {
 			Lua.put(this::lua_screenFrame, "screenFrame", pool);
 		}
 	}
-
-	// leaky, might want to restrict this
+	// deprecated, use built-in loadstring
+	/*
 	@FunctionManual("Evalutes Lua code from a string passed as an argument. This function will " +
 			"return a value if the compiled chunk returns something, otherwise it will return " +
 			"an error string.")
@@ -81,6 +81,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 		return FunctionFactory.get().createFunction(value::call).getAsValue();
 	}
+	*/
 
 	@FunctionManual("Removes restrictions on the current running program, once authenticated with " +
 			"an admin. A dialog will open prompting for a player with the permission computer.admin " +
@@ -242,13 +243,9 @@ public final class InterpretedProgram extends SandboxProgram {
 		if (match == null) {
 			throw new IllegalArgumentException(name + " is not a qualified sound");
 		}
-		schedule(() -> {
-			computer.getConsole().getLocation().getWorld()
-					.playSound(computer.getConsole().getLocation(), match,
-							(float) v1.translateDouble(), (float) v2.translateDouble());
-			v1.release();
-			v2.release();
-		});
+		schedule(() -> computer.getConsole().getLocation().getWorld()
+				.playSound(computer.getConsole().getLocation(), match,
+						(float) v1.translateDouble(), (float) v2.translateDouble()));
 	}
 	@FunctionManual("Clears the terminal.")
 	public Boolean lua$clear() {
@@ -308,6 +305,8 @@ public final class InterpretedProgram extends SandboxProgram {
 			return null;
 		}
 		ScriptValue result = value.call();
+		// release resoureces, because we won't be using
+		// this value to reference the loaded chunk anymore
 		value.release();
 		return result;
 	}

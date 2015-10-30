@@ -17,14 +17,14 @@ typedef struct pair_map_ {
 	volatile jobject lock;
 	
 	// function pointers
-	void* (*native) (JNIEnv* env, pair_map* map, jobject java);
-	jobject (*java) (JNIEnv* env, pair_map* map, void* native);
-	void (*append) (JNIEnv* env, pair_map* map, jobject java, void* native);
-	void (*rm_java) (JNIEnv* env, pair_map* map, jobject java);
-	void (*rm_native) (JNIEnv* env, pair_map* map, void* native);
-	void (*close) (JNIEnv* env, pair_map* map);
+	void* (*native) (JNIEnv* env, struct pair_map_* map, jobject java);
+	jobject (*java) (JNIEnv* env, struct pair_map_* map, void* native);
+	void (*append) (JNIEnv* env, struct pair_map_* map, jobject java, void* native);
+	void (*rm_java) (JNIEnv* env, struct pair_map_* map, jobject java);
+	void (*rm_native) (JNIEnv* env, struct pair_map_* map, void* native);
+	void (*close) (JNIEnv* env, struct pair_map_* map);
 	void (*rm)
-	(JNIEnv* env, pair_map* m, int (*predicate) (void* ptr, void* userdata), void* userdata, void** pair_set);
+	(JNIEnv* env, struct pair_map_* m, int (*predicate) (JNIEnv* env, void* ptr, void* userdata), void* userdata);
 } pair_map;
 
 pair_map* pair_map_create();
@@ -36,7 +36,7 @@ void pair_map_append(JNIEnv* env, pair_map* map, jobject java, void* native);
 void pair_map_rm_java(JNIEnv* env, pair_map* map, jobject java);
 void pair_map_rm_native(JNIEnv* env, pair_map* map, void* native);
 void pair_map_close(JNIEnv* env, pair_map* map);
-void pair_map_rm
-(JNIEnv* env, pair_map* m, int (*predicate) (void* ptr, void* userdata), void* userdata) 
+void pair_map_rm(JNIEnv* env, pair_map* m, int (*predicate) (JNIEnv* env, void* ptr, void* userdata),
+void* userdata);
 
 #endif // PAIR_H_

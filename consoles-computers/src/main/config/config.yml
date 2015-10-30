@@ -5,53 +5,94 @@
 # Enable the crafting of computers
 allow-comptuer-crafting: true
 
-# Computer crafting limit for normal players
+# Computer crafting limit for normal players.
 # The permissions computer.limit.ignore will override this
 computer-limit: 3
 
-# Command prefix when sending commands to a computer. You may want to
-# change this for BungeeCord servers, as it will interrupt commands
-# that may have been designated for a computer.
+# Command prefix when sending commands to a computer. You may
+# want to change this for BungeeCord servers, as it will
+# interrupt commands that may have been designated for a computer.
 #
-# You may also leave this value blank to allow all text to be forwarded
-# to computers.
+# You may also leave this value blank to allow all text to be
+# forwarded to computers.
 command-prefix: /
 
-# If set to true, this will hide all 'Computers saving...' messages
+# If set to true, this will hide all 'Computers saving...'
+# messages
 hide-save-messages: false
 
 #
 #   FUNCTION SETTINGS
 #
 
-# Custom frame rendering for Lua programs, disable if you do not want players to use this.
+# Custom frame rendering for Lua programs, disable if you do
+# not want players to use this.
+#
+# If you are concerned about players exploiting frame rendering
+# to slow down your server or lag out players adjacent to a
+# computer, then it is best to disable this.
+#
+# For the most part, though, this is relatively safe to keep on.
 frame-rendering: true
 
-# Size (in kilobytes) of the chunks that wget downloads every 300ms. Increasing this value will result in higher
-# download speeds.
+# Size (in kilobytes) of the chunks that wget downloads every
+# 300ms. Increasing this value will result in higher download
+# speeds.
 wget-chunk-size: 2
 
 #
 #   PROGRAM SETTINGS
 #
 
-# The script interpreter to use. The options are:
-#  - luajit: a lua interpreter that uses a JIT compiler for very fast execution (incomplete, native)
-#  - lua: default lua interpreter and environment (incomplete, native)
-#  - luaj: a lua interpreter that precompiles logic to java bytecode prior to execution (default, java)
+# The script interpreter to use. The provided options are:
+#
+#  - luajit: a lua interpreter that uses a JIT compiler
+#    for very fast execution (experimental, native)
+#
+#  - lua: default lua interpreter and environment
+#    (experimental, native)
+#
+#  - luaj: a lua interpreter that precompiles logic
+#    to java bytecode prior to execution (default, java)
+#
+# Depending on the interpreter, security and sandboxing is
+# subject to the implementation. For example, interpreters
+# that operate on the JVM, rather than through the native
+# layer that this plugin uses (LuaN), share the same heap
+# that the server runs on, resulting in easily-exploitable
+# OutOfMemoryErrors in your server.
+#
+# Interpreters/VMs that operate through the native layer
+# do not have to respect the suggested heap size and operate
+# outside of the Java heap.
 script-engine: luaj
 
-# This is the interval (in instructions) in which kill interrupts are checked in programs. This
-# applies to scripts
+# This is the interval (in instructions) in which kill
+# interrupts are checked in programs. This applies to
+# scripts.
+#
+# An 'instruction' is abstract, it could represent Java
+# bytecode, or an instruction on your platform's architecture
 interrupt-check-interval: 200
 
-# Maximum time (in miliseconds) that a program can run without calling a blocking function
-# You can tweak this to be lower if you want to avoid program threads from using too
-# many server resources.
+# Maximum time (in miliseconds) that a program can run without
+# calling a blocking function You can tweak this to be lower
+# if you want to avoid program threads from using too server
+# resources.
 max-time-without-interrupt: 7000
 
-# Max heap size for each individual script running on a computer
-# this will later be replaced by heap sizes for each virtual computer
+# Suggested heap size for each individual script (in kilobytes)
 #
-# Note: This is broken in some 1.3 snapshot builds
+# This currently does not work for LuaJ (JVM-based), and both
+# the standard Lua interpreter and LuaJIT need to be compiled
+# with custom stack sizes to change heap sizes, rather than
+# this variable.
+#
+# LuaJIT by default is compiled with the macro 'LUAI_MAXSTACK'
+# set to 65500, which results in less that 64 KB of heap space
+# for scripts.
+#
+# The only thing this setting is used for is for non-standard
+# Lua VMs that have the ability to set stack sizes without
+# recompiling.
 script-heap-size: 65536

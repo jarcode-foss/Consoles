@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "pair.h"
 
@@ -13,7 +14,6 @@
 // this implementation is free of memory barriers,
 // since everything works on locks.
 
-void pair_map_init(JNIEnv* env, pair_map* m) {
 void pair_map_init(JNIEnv* env, pair_map* m) {
 	m->java = &pair_map_java;
 	m->native = &pair_map_native;
@@ -33,12 +33,12 @@ pair_map* pair_map_create(JNIEnv* env) {
 	return m;
 }
 
-static int64_t lookup(JNIEnv* env, pair_map* m, void** pair_set, void* ptr) {
+static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, uint64_t ptr, uint8_t type) {
 	WAIT_FOR_WRITE(env, m);
 	uint8_t valid = 0;
 	int64_t t;
 	for (t = 0; t < m->size; t++) {
-		if (pair_set[t] == ptr) {
+		if (type ? ((void**) pair_set)[t] == (void*) ptr : ((jobject*) pair_set)[t] == (jobject) ptr) {
 			valid = 1;
 			break;
 		}
@@ -114,13 +114,13 @@ void pair_map_append(JNIEnv* env, pair_map* m, jobject java, void* native) {
 }
 void pair_map_rm_java(JNIEnv* env, pair_map* m, jobject java) {
 	if (m->size == 0) return;
-	int64_t t = lookup(m, &(m->java_pair), java);
+	int64_t t = lookup_idx(env, m, &(m->java_pair), (uint64_t) java, 0);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
 void pair_map_rm_native(JNIEnv* env, pair_map* m, void* native) {
 	if (m->size == 0) return;
-	int64_t t = lookup(m, &(m->native_pair), native);
+	int64_t t = lookup_idx(env, m, &(m->native_pair), (uint64_t) native, 1);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }

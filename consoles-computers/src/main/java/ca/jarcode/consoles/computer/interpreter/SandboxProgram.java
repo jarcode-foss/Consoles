@@ -250,6 +250,14 @@ public abstract class SandboxProgram {
 
 	// runs a program with the given raw text
 	public void compileAndExecute(String raw) {
+
+		/*
+		 * It's important to remember how the script abstractions works, if
+		 * a ScriptValue is not longer in use, it should be released (everything
+		 * is released at the end of the engine's lifecycle). This does not mean
+		 * the value itself is invalidated, only the 'handle' for the value.
+		 */
+
 		try {
 
 			if (Consoles.debug)
@@ -300,6 +308,8 @@ public abstract class SandboxProgram {
 					// call the default chunk
 					def.call();
 
+					// release resources
+					def.release();
 				}
 				// if the program was interrupted by our debug/interrupt lib
 				catch (ProgramInterruptException ex) {
@@ -335,6 +345,9 @@ public abstract class SandboxProgram {
 				// executed.
 				chunk.call();
 
+				// release resources
+				chunk.release();
+
 				// After this point, we can call the main method since the chunk was
 				// just called, and all the methods in said chunk have been declared.
 
@@ -351,6 +364,9 @@ public abstract class SandboxProgram {
 				if (value.isFunction()) {
 					value.getAsFunction().call(ValueFactory.get().translate(args, globals));
 				}
+
+				// release resources
+				value.release();
 			}
 			// if the program was interrupted by our debug/interrupt lib
 			catch (ProgramInterruptException ex) {
@@ -362,23 +378,27 @@ public abstract class SandboxProgram {
 			}
 			// regardless if we encountered an error or not, we try to call our exit function.
 			finally {
-				// if the exit function exists, and our program has not been terminated
-				if (exit != null && exit.isFunction() && !terminated()) {
+				if (exit != null) {
+					// if the exit function exists, and our program has not been terminated
+					if (exit.isFunction() && !terminated()) {
 
-					try {
+						try {
 
-						// call the function
-						exit.call();
+							// call the function
+							exit.call();
 
+						}
+						// again, if the exit function was interrupted.
+						catch (ProgramInterruptException ex) {
+							print("\n" + lang.getString("exit-func-term"));
+						}
+						// if there was an error, handle it the same way.
+						catch (ScriptError err) {
+							handleLuaError(err);
+						}
 					}
-					// again, if the exit function was interrupted.
-					catch (ProgramInterruptException ex) {
-						print("\n" + lang.getString("exit-func-term"));
-					}
-					// if there was an error, handle it the same way.
-					catch (ScriptError err) {
-						handleLuaError(err);
-					}
+					// release resources
+					exit.release();
 				}
 			}
 		}

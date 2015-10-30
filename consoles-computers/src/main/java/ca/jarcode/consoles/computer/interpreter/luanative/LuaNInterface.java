@@ -14,8 +14,6 @@ public interface LuaNInterface {
 	void setdebug(int mode);
 	// wraps the lua globals into a script value
 	LuaNScriptValue wrapglobals(long ptr);
-	// frees resources from the C value (this makes the value unusable and should be out-of-scope)
-	void free(ScriptValue value);
 	// TODO: replace with direct file loading
 	// loads a chunk from raw text
 	ScriptValue load(long ptr, String value);

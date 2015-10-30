@@ -2,17 +2,11 @@
 
 CFLAGS = -O2 -D_REENTRANT
 
-# linking against luajit, which is in our resources folder,
-#   which needs a relative path to be resolved at runtime.
-#
-# we also need to include JNI headers, so we just add those
-#  (and the linux-specific headers). Make sure $JAVA_HOME
-#  is set!
-LDFLAGS = -fPIC -Lsrc/main/resources -lluajit -lffi -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"/usr/include/luajit-2.0" -I"/usr/include/luajit" -Wl,-rpath='$$ORIGIN/..' -shared
+LDFLAGS = -Lsrc/main/resources -lluajit-5.1 -lffi -I"$(JAVA_HOME)/include" -I"$(JAVA_HOME)/include/linux" -I"target/include" -I"/usr/include/luajit-2.0" -I"/usr/include/luajit" -shared -fPIC
 
 # source folder
 SOURCES := $(wildcard src/main/c/*.c)
-OBJECTS := $(addprefix src/main/c/,$(notdir $(SOURCES:.cpp=.o)))
+OBJECTS := $(addprefix src/main/c/,$(notdir $(SOURCES:.c=.o)))
 
 # we're tossing the library in target/natives, maven will
 #  expect it to be there during the packaging phase.
@@ -25,7 +19,7 @@ all: $(LIBRARY_PATH)
 $(LIBRARY_PATH): $(OBJECTS)
 	$(CC) ${LDFLAGS} -o $@ $^
 
-$(SOURCES:.c=.d):%.d:%.c
+$(SOURCES:.c=.o):%.o:%.c
 	$(CC) $(CFLAGS) -MM $< >$@
 
-include $(SOURCS:.c=.d)
+include $(SOURCS:.c=.o)
