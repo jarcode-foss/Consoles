@@ -11,7 +11,6 @@ import ca.jarcode.consoles.computer.interpreter.luaj.LuaJEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
 import ca.jarcode.consoles.internal.ConsoleHandler;
-import jni.LibLoader;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -98,8 +97,6 @@ public class Computers extends JavaPlugin {
 			// extract JNI library and load it
 			if (!new NativeLoader("computerimpl").loadAsJNILibrary(this))
 				break loadAttempt;
-			// link an instance of `LibLoader` so that we can use dlopen/dlclose within Java
-			NativeLoader.linkLoader(new LibLoader());
 
 			LOADED_NATIVES = true;
 		}

@@ -16,7 +16,7 @@
 
 If you are on Linux, there are two dependencies, which are libffi and LuaJIT (5.1). These are available on a number of repositories, on Debian/Ubuntu you should be able to run (assuming you are on a 64-bit system):
 
-    sudo apt-get install build-essential libffi6 libluajit-5.1-2 libluajit-5.1-2-dev libluajit-5.1-2:i386 libffi6:i386 lib32z1
+    sudo apt-get install build-essential libffi6 libluajit-5.1-2 libluajit-5.1-2-dev libluajit-5.1-2:i386 libluajit-5.1-2-dev:i386 libffi6:i386 lib32z1
 
 ### Compiling
 
