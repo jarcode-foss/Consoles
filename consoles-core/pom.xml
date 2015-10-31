@@ -64,12 +64,21 @@
                 <version>2.7</version>
                 <executions>
                     <execution>
+                        <id>deploy-standard</id>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>deploy-with-deps</id>
                         <goals>
                             <goal>deploy-file</goal>
                         </goals>
                         <configuration>
                             <file>${project.build.directory}/final/${project.artifactId}-${project.version}-jar-with-dependencies.jar</file>
-                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
                         </configuration>
                     </execution>
                 </executions>

@@ -128,6 +128,35 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>ca.jarcode</groupId>
+                <artifactId>gcc-maven-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>compile-library</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>-O2 -Wall -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>link-library</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>link</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>-Lsrc/main/resources -lluajit-5.1 -lffi</arguments>
+                            <library>true</library>
+                            <targetName>libcomputerimpl.so</targetName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
@@ -149,12 +178,21 @@
                 <version>2.7</version>
                 <executions>
                     <execution>
+                        <id>deploy-standard</id>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>deploy-with-deps</id>
                         <goals>
                             <goal>deploy-file</goal>
                         </goals>
                         <configuration>
                             <file>${project.build.directory}/final/${project.artifactId}-${project.version}-jar-with-dependencies.jar</file>
-                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
                         </configuration>
                     </execution>
                 </executions>
