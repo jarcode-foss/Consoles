@@ -130,7 +130,7 @@
             <plugin>
                 <groupId>ca.jarcode</groupId>
                 <artifactId>gcc-maven-plugin</artifactId>
-                <version>1.4</version>
+                <version>1.7</version>
                 <executions>
                     <execution>
                         <id>compile-library-linux</id>
@@ -139,6 +139,7 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
+                            <targetPlatforms>ELF32,ELF64</targetPlatforms>
                             <arguments>-O2 -Wall -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
                         </configuration>
                     </execution>
@@ -149,33 +150,10 @@
                             <goal>link</goal>
                         </goals>
                         <configuration>
+                            <targetPlatforms>ELF32,ELF64</targetPlatforms>
                             <arguments>-Lsrc/main/resources -lluajit-5.1 -lffi</arguments>
                             <library>true</library>
                             <targetName>libcomputerimpl.so</targetName>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>compile-library-osx</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <compiler>i686-apple-darwin10-gcc</compiler>
-                            <arguments>-O2 -Wall -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>link-library-osx</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>link</goal>
-                        </goals>
-                        <configuration>
-                            <linker>i686-apple-darwin10-gcc</linker>
-                            <arguments>-Lsrc/main/resources -lluajit-5.1 -lffi</arguments>
-                            <library>true</library>
-                            <targetName>computerimpl.dylib</targetName>
                         </configuration>
                     </execution>
                 </executions>

@@ -212,7 +212,7 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
 			lua_pushinteger(state, i);
 			// push value
 			if (value->data.array.values[i]) {
-				engine_pushvalue_lua(env, inst, state, value->data.array.values[i]);
+				engine_pushvalue(env, inst, state, value->data.array.values[i]);
 			}
 			else {
 				lua_pushnil(state);
@@ -255,7 +255,7 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
 JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNFunctionFactory_createFunction___3Ljava_lang_Class_2Ljava_lang_Object_2
 (JNIEnv* env, jobject this, jobjectArray class_array, jobject lambda) {
 	engine_value* value = engine_newsharedvalue(env);
-	value->type == ENGINE_JAVA_LAMBDA_FUNCTION;
+	value->type = ENGINE_JAVA_LAMBDA_FUNCTION;
 	value->data.lfunc.class_array = (*env)->NewGlobalRef(env, class_array);
 	value->data.lfunc.lambda = (*env)->NewGlobalRef(env, lambda);
 	return engine_wrap(env, value);
