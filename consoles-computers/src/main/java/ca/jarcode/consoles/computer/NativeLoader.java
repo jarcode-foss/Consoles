@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 public class NativeLoader {
 
-	public static final Function<String, String> libraryFormatter = libraryFormat();
+	public static final Function<String, String> libraryFormatter = libraryFormat(getNativeTarget());
 
 	public interface ILoader {
 		long dlopen(String path);
@@ -18,27 +18,43 @@ public class NativeLoader {
 
 	private static ILoader loader;
 
-	private static Function<String, String> libraryFormat() {
-		String os = System.getProperty("os.name");
-		boolean arch32 = System.getProperty("os.arch").contains("86"); // check for x86 arch, otherwise assume amd64
-		if (os.contains("Linux") || os.contains("Android"))
-			return (lib) -> "lib" + lib.toLowerCase() + (arch32 ? "32" : "") + ".so";
-		else if (os.contains("Windows"))
-			return (lib) -> lib + (arch32 ? "32" : "") + ".dll";
-		else if (os.contains("Mac"))
-			return (lib) -> lib.toLowerCase() + (arch32 ? "32" : "") + ".dylib";
-		else return null;
+	public static Function<String, String> libraryFormat(CompileTarget target) {
+		switch (target) {
+			case ELF32: return (lib) -> "lib" + lib + "32.so";
+			case ELF64: return (lib) -> "lib" + lib + ".so";
+			case WIN32: return (lib) -> lib + "32.dll";
+			case WIN64: return (lib) -> lib + ".dll";
+			case OSX: return (lib) -> lib + "dylib";
+			default: throw new RuntimeException("Unsupported platform");
+		}
 	}
 
-	private static String libraryExtension() {
+	public static boolean arch32() {
+		return System.getProperty("os.arch").contains("86") && !System.getProperty("os.arch").contains("x64_86");
+	}
+
+	public static CompileTarget getNativeTarget() {
 		String os = System.getProperty("os.name");
-		if (os.contains("Linux") || os.contains("Android"))
-			return "so";
+		boolean arch32 = arch32();
+		if (os.contains("Linux") || os.contains("FreeBSD") || os.contains("Android"))
+			return (arch32 ? CompileTarget.ELF32 : CompileTarget.ELF64);
 		else if (os.contains("Windows"))
-			return "dll";
+			return (arch32 ? CompileTarget.WIN32 : CompileTarget.WIN64);
 		else if (os.contains("Mac"))
-			return "dylib";
-		else return null;
+			return CompileTarget.OSX;
+		else throw new RuntimeException("Unknown platform");
+	};
+
+	private static String libraryExtension() {
+		CompileTarget target = getNativeTarget();
+		switch (target) {
+			case ELF32:
+			case ELF64: return "so";
+			case WIN32:
+			case WIN64: return "dll";
+			case OSX: return "dylib";
+			default: throw new RuntimeException("Unsupported platform");
+		}
 	}
 
 	public static void linkLoader(ILoader loader) {

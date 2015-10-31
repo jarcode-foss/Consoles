@@ -130,7 +130,7 @@
             <plugin>
                 <groupId>ca.jarcode</groupId>
                 <artifactId>gcc-maven-plugin</artifactId>
-                <version>1.10</version>
+                <version>1.11</version>
                 <executions>
                     <execution>
                         <id>compile-library-linux</id>
