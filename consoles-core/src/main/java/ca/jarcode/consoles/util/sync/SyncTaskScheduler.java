@@ -63,7 +63,7 @@ public class SyncTaskScheduler implements Runnable {
 			thread.setDaemon(true);
 			thread.setPriority(Thread.MIN_PRIORITY); // remove thread starvation
 			POOL.add(thread);
-			thread.run();
+			thread.start();
 		}
 	}
 

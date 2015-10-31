@@ -26,7 +26,7 @@ public class NativeLoader {
 		else if (os.contains("Windows"))
 			return (lib) -> lib + (arch32 ? "32" : "") + ".dll";
 		else if (os.contains("Mac"))
-			return (lib) -> "lib" + lib.toLowerCase() + (arch32 ? "32" : "") + ".dylib";
+			return (lib) -> lib.toLowerCase() + (arch32 ? "32" : "") + ".dylib";
 		else return null;
 	}
 

@@ -31,5 +31,3 @@ If you wish to port `consoles-computers` to Windows, you need to:
 - actually port the code. I will only compile builds with `gcc` using mingw or cygwin.
 - modify the `pom.xml` in `consoles-computers` to have the compile and linking goals for the JNI library of your port, using my `gcc-maven-plugin`.
 
-For OSX, it is very likely that `consoles-computers` will compile without an issue. The only OS-specific functions that it uses are from `dlsym.h` and pthreads, which are available on OSX. If there is a demand for OSX support, I will find a way to compile it on Linux.
-
