@@ -108,10 +108,6 @@ public class Computers extends JavaPlugin {
 		debugHook = getConfig().getBoolean("debug-hook", debugHook);
 		debugHookCommand = getConfig().getString("debug-command", debugHookCommand);
 
-		if (debugHook) {
-			attachDebugger();
-		}
-
 		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
 			ATTEMPTED_NATIVES_LOAD = true;
 			// extract JNI library and load it
@@ -135,6 +131,20 @@ public class Computers extends JavaPlugin {
 				getLogger().warning("");
 				getLogger().warning("\tapt-get install luajit libffi6");
 				getLogger().warning("");
+			}
+		}
+		if (debugHook) {
+			if (!LOADED_NATIVES) {
+				getLogger().warning("Skipping debug hook, natives were never loaded.");
+			}
+			else {
+				attachDebugger();
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					getLogger().warning("Failed to wait for debug hook");
+				}
 			}
 		}
 
@@ -215,19 +225,14 @@ public class Computers extends JavaPlugin {
 
 		try {
 			getLogger().info(String.format("Starting debug hook (command %s)", command));
-			Process process = new ProcessBuilder()
+			new ProcessBuilder()
 					.command(command.split(","))
 					.directory(getDataFolder())
 					.start();
 			getLogger().info("Hook started...");
-			int ret = process.waitFor();
-			getLogger().info(String.format("Returned (%d)", ret));
 		} catch (IOException e) {
 			e.printStackTrace();
 			getLogger().severe("Unable to run debug hook command");
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			getLogger().severe("Interrupted while waiting for debug hook command to complete");
 		}
 	}
 }
