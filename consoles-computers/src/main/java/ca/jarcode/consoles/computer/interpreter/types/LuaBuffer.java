@@ -1,6 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter.types;
 
-import ca.jarcode.consoles.Consoles;
+import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.interpreter.BufferedFrameComponent;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
 import ca.jarcode.consoles.computer.manual.Arg;
@@ -47,7 +47,7 @@ public class LuaBuffer {
 				update(id);
 			}
 			catch (InterruptedException e) {
-				if (Consoles.debug)
+				if (Computers.debug)
 					e.printStackTrace();
 			}
 		}

@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter.types;
 
+import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
@@ -30,7 +31,7 @@ public class LuaFile extends LuaBlock {
 			return true;
 		}
 		catch (IOException e) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 		}
 		return false;
@@ -44,7 +45,7 @@ public class LuaFile extends LuaBlock {
 			return true;
 		}
 		catch (IOException e) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 		}
 		return false;
@@ -67,7 +68,7 @@ public class LuaFile extends LuaBlock {
 			}
 			out.toByteArray();
 		} catch (IOException e) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 		}
 		return null;
@@ -91,7 +92,7 @@ public class LuaFile extends LuaBlock {
 			}
 			return new String(out.toByteArray(), charset);
 		} catch (IOException e) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 		}
 		return null;

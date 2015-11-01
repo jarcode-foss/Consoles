@@ -16,7 +16,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Computers extends JavaPlugin {
@@ -26,6 +29,8 @@ public class Computers extends JavaPlugin {
 	// flag we use in case the plugin is reloaded, the JVM complains if we try to re-load the same native
 	private static boolean LOADED_NATIVES = false;
 	private static boolean ATTEMPTED_NATIVES_LOAD = false;
+
+	private static String NATIVE_IMPL = "computerimpl";
 
 	// allow the crafting of computers
 	public static boolean allowCrafting = true;
@@ -47,6 +52,12 @@ public class Computers extends JavaPlugin {
 	public static String scriptEngine = "luaj";
 	// amount of instructions to wait before checking
 	public static int interruptCheckInterval = 200;
+	// debug mode
+	public static boolean debug = false;
+	// debug hook
+	public static boolean debugHook = false;
+	// debug hook command
+	public static String debugHookCommand = "screen,-S%N,-Xgdb -p %I";
 
 	public static File jarFile;
 
@@ -73,6 +84,7 @@ public class Computers extends JavaPlugin {
 	// bukkit's /reload command should work fine with this plugin since it technnically doesn't attempt
 	// to unload anything, but there is a possibility that shit could hit the fan if a separate plugin
 	// actually tries to unload this.
+
 	public void onEnable() {
 
 		HashMap<String, Runnable> engines = new HashMap<>();
@@ -92,11 +104,18 @@ public class Computers extends JavaPlugin {
 		scriptHeapSize = getConfig().getInt("script-heap-size", scriptHeapSize);
 		scriptEngine = getConfig().getString("script-engine", scriptEngine).toLowerCase();
 		interruptCheckInterval = getConfig().getInt("interrupt-check-interval", interruptCheckInterval);
+		debug = getConfig().getBoolean("debug-mode", debug);
+		debugHook = getConfig().getBoolean("debug-hook", debugHook);
+		debugHookCommand = getConfig().getString("debug-command", debugHookCommand);
+
+		if (debugHook) {
+			attachDebugger();
+		}
 
 		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
 			ATTEMPTED_NATIVES_LOAD = true;
 			// extract JNI library and load it
-			if (!new NativeLoader("computerimpl").loadAsJNILibrary(this))
+			if (!new NativeLoader(NATIVE_IMPL).loadAsJNILibrary(this))
 				break loadAttempt;
 
 			LOADED_NATIVES = true;
@@ -156,7 +175,7 @@ public class Computers extends JavaPlugin {
 			e.printStackTrace();
 		}
 
-		if (Consoles.debug)
+		if (Computers.debug)
 			LuaDefaults.cacheTests();
 
 	}
@@ -169,6 +188,46 @@ public class Computers extends JavaPlugin {
 			Object obj = supplier.get();
 			if (obj instanceof Listener)
 				this.getServer().getPluginManager().registerEvents((Listener) obj, this);
+		}
+	}
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	private void attachDebugger() {
+		String beanName = ManagementFactory.getRuntimeMXBean().getName();
+		if (!beanName.contains("@")) {
+			getLogger().severe("Unable to find process ID to start debug hook");
+			return;
+		}
+		String sub = beanName.split("@")[0];
+		try {
+			Integer.parseInt(sub);
+		}
+		catch (NumberFormatException e) {
+			getLogger().severe("Unable to parse MX bean to find process ID");
+			return;
+		}
+		String command = debugHookCommand;
+
+		Function<String, String> format = NativeLoader.libraryFormat(NativeLoader.getNativeTarget());
+
+		command = command.replace("%I", sub);
+		command = command.replace("%N", "debug-" + sub);
+		command = command.replace("%E", new File(getDataFolder(), format.apply(NATIVE_IMPL)).getAbsolutePath());
+
+		try {
+			getLogger().info(String.format("Starting debug hook (command %s)", command));
+			Process process = new ProcessBuilder()
+					.command(command.split(","))
+					.directory(getDataFolder())
+					.start();
+			getLogger().info("Hook started...");
+			int ret = process.waitFor();
+			getLogger().info(String.format("Returned (%d)", ret));
+		} catch (IOException e) {
+			e.printStackTrace();
+			getLogger().severe("Unable to run debug hook command");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			getLogger().severe("Interrupted while waiting for debug hook command to complete");
 		}
 	}
 }

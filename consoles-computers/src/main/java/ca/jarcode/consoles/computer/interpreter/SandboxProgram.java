@@ -63,7 +63,7 @@ public abstract class SandboxProgram {
 	public static boolean execFile(String path, Terminal terminal, String args) {
 		File file = new File(Computers.getInstance().getDataFolder().getAbsolutePath()
 				+ File.separatorChar + path);
-		if (Consoles.debug)
+		if (Computers.debug)
 			Computers.getInstance().getLogger().info("Executing file: " + path);
 		if (!file.exists() || file.isDirectory()) {
 			return false;
@@ -260,7 +260,7 @@ public abstract class SandboxProgram {
 
 		try {
 
-			if (Consoles.debug)
+			if (Computers.debug)
 				Computers.getInstance().getLogger().info("[DEBUG] compiling and running program " +
 						"(charlen: " + raw.length() + ")");
 
@@ -451,7 +451,7 @@ public abstract class SandboxProgram {
 		}
 		// if we run into a compile error, print out the details and exit.
 		catch (ScriptError err) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " " + lang.getString("lua-compile-err"));
 			String msg = Arrays.asList(err.getMessage().split("\n")).stream()
@@ -504,7 +504,7 @@ public abstract class SandboxProgram {
 	private void handleLuaError(ScriptError err) {
 
 		// print stack trace in console if in debug mode
-		if (Consoles.debug)
+		if (Computers.debug)
 			Computers.getInstance().getLogger().severe("\n" + ExceptionUtils.getFullStackTrace(err));
 
 		// start of our error string

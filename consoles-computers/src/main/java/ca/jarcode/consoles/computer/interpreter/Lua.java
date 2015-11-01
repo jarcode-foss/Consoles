@@ -227,7 +227,7 @@ public class Lua {
 					globals);
 		}
 		else {
-			if (Consoles.debug)
+			if (Computers.debug)
 				Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
 			return ValueFactory.get().translateObj(java, globals);
 		}

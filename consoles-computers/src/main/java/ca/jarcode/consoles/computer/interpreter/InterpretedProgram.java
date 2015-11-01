@@ -75,7 +75,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			value = ScriptEngine.get().load(globals, arg);
 		}
 		catch (ScriptError err) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				err.printStackTrace();
 			return ValueFactory.get().translate(err.getMessage(), globals);
 		}
@@ -299,7 +299,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			value = ScriptEngine.get().load(globals, text);
 		}
 		catch (ScriptError err) {
-			if (Consoles.debug)
+			if (Computers.debug)
 				err.printStackTrace();
 			println("lua:" + ChatColor.RED + " " + String.format(lang.getString("lua-require-compile-fail"), path));
 			return null;

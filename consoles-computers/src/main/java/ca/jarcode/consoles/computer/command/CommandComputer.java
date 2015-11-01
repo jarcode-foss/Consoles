@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer.command;
 
+import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.ConsoleCreateException;
 import ca.jarcode.consoles.command.CommandBase;
@@ -104,7 +105,7 @@ public class CommandComputer extends CommandBase {
 				computer.destroy(true);
 				sender.sendMessage(ChatColor.YELLOW + "Failed to create computer at location " +
 						"(cancelled by external plugin)");
-				if (Consoles.debug)
+				if (Computers.debug)
 					e.printStackTrace();
 			}
 		}

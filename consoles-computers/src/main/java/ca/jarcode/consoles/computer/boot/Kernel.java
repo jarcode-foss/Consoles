@@ -1,5 +1,6 @@
 package ca.jarcode.consoles.computer.boot;
 
+import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.Terminal;
@@ -60,7 +61,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
 		program(0x17, new DestroyProgram());
-		program(0x18, Consoles.debug ? new InstallTestsProgram() : new StubProgram("You must be in debug mode"));
+		program(0x18, Computers.debug ? new InstallTestsProgram() : new StubProgram("You must be in debug mode"));
 	}
 
 	private static void program(int id, FSProvidedProgram providedProgram) {
@@ -275,7 +276,7 @@ public class Kernel extends FSProvidedProgram {
 									terminal.println(ChatColor.RED + "KERNEL: failed to load driver for /dev/"
 											+ name + ChatColor.WHITE + " (" + e.getClass().getSimpleName() + ")");
 									terminal.println(ChatColor.RED + "KERNEL: Uninstalling driver type.");
-									if (Consoles.debug)
+									if (Computers.debug)
 										e.printStackTrace();
 									driverMappings.remove(match);
 								}

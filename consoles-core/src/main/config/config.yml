@@ -17,13 +17,9 @@ bungee-forward: false
 # client disconnects if there are a lot of consoles in your server.
 starting-map-index: 5000
 
-# Debug mode. Useful for developers, this option will print stack traces
-# for every runtime Lua program crash (showing internal stack traces), and
-# various information about computer data saving/loading along with other
-# odds and ends.
-#
-# If you think there is something wrong with a Lua function call into
-# Consoles, you can enable this to get the full stack trace.
+# Debug mode. Useful for developers, this option will print information
+# about canvases being created and removed, and will raise more exceptions
+# to the console rather than ignoring them.
 debug-mode: false
 
 # This is the range (in blocks) that a player must be in order to

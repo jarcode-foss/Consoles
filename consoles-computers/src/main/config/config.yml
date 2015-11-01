@@ -21,6 +21,32 @@ command-prefix: /
 # messages
 hide-save-messages: false
 
+# Debug mode. Useful for developers, this option will print stack traces
+# for every runtime Lua program crash (showing internal stack traces), and
+# various information about computer data saving/loading along with other
+# odds and ends.
+#
+# If you think there is something wrong with a Lua function call into
+# Consoles, you can enable this to get the full stack trace.
+debug-mode: false
+
+# Enables a debug hook, launching a specified debug command when
+# the plugin starts. Only use this command if you need to
+# use a debugger to backtrace a JVM crash.
+debug-hook: false
+
+# The command to use for the debug hook. You can use the %N
+# variable for a 'name' to be generated for the debug session,
+# %I for the processes PID, and %E for the path of the native
+# loaded library. Arguments are separated by  commas (,) to
+# properly pass arguments to the newly spawned process.
+#
+# By default, this command will start GDB in a seperate
+# terminal on Linux. You can uncomment the second line
+# if you need a command for a headless server install.
+debug-command: "x-terminal-emulator,-e,gdb,-p,%I"
+#debug-command: "screen,-S,%N,-X,gdb,-p,%I"
+
 #
 #   FUNCTION SETTINGS
 #

@@ -473,7 +473,7 @@ public class ComputerHandler implements Listener {
 			return true;
 		} catch (ConsoleCreateException e) {
 			player.sendMessage(ChatColor.RED + lang.getString("computer-create-fail"));
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 			unregister(computer, false);
 			return false;

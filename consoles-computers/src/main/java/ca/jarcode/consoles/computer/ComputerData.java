@@ -244,7 +244,7 @@ public class ComputerData {
 			computer.create(meta.face, meta.location);
 		} catch (ConsoleCreateException e) {
 			Computers.getInstance().getLogger().severe("Failed to place computer (cancelled by external plugin)");
-			if (Consoles.debug)
+			if (Computers.debug)
 				e.printStackTrace();
 		}
 		return computer;

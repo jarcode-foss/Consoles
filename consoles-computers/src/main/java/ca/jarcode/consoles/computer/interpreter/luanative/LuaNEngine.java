@@ -30,7 +30,7 @@ public class LuaNEngine implements ScriptEngine {
 		ValueFactory.assign(new LuaNValueFactory());
 		ScriptEngine.assign(new LuaNEngine());
 		NATIVE_ENGINE = new LuaEngine();
-		NATIVE_ENGINE.setdebug(Consoles.debug ? 1 : 0);
+		NATIVE_ENGINE.setdebug(Computers.debug ? 1 : 0);
 		NATIVE_ENGINE.setmaxtime(Computers.maxTimeWithoutInterrupt);
 	}
 
