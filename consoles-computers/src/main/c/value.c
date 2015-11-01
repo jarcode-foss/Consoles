@@ -82,6 +82,7 @@ engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst) {
 	engine_value* v = engine_newsharedvalue(env);
 	// associate this value with an instance
 	v->inst = inst;
+	return v;
 }
 engine_value* engine_newsharedvalue(JNIEnv* env) {
 	engine_value* v = malloc(sizeof(engine_value));
@@ -91,6 +92,7 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
 	jobject obj = (*env)->NewObject(env, value_type, value_constructor);
 	obj = (*env)->NewGlobalRef(env, obj);
 	pair_map_append(env, &m, obj, v);
+	return v;
 }
 
 static void valuefree(JNIEnv* env, engine_value* value) {
@@ -193,6 +195,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 			memcpy(&(copy->data), &(value->data), sizeof(engine_data));
 			break;
 	}
+	jobject jcopy = engine_wrap(env, value);
+	return jcopy;
 }
 
 /*
@@ -643,8 +647,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		lua_getglobal(state, key->data.str);
 		// pops after
 		// this function builds a new value (memory!)
-		engine_value* value = engine_popvalue(env, value->inst, state);
-		return engine_wrap(env, value);
+		engine_value* retvalue = engine_popvalue(env, value->inst, state);
+		return engine_wrap(env, retvalue);
 	}
 	else {
 		throw(env, "C: tried to index non-array/non-global value");

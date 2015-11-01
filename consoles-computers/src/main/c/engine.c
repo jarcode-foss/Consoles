@@ -186,8 +186,8 @@ static void setup_closures() {
 		abort_ffi();
 	}
 	ffi_type* h_args[2];
-	f_args[0] = &ffi_type_pointer;
-	f_args[1] = &ffi_type_pointer;
+	h_args[0] = &ffi_type_pointer;
+	h_args[1] = &ffi_type_pointer;
 	if (ffi_prep_cif(&hook_cif, FFI_DEFAULT_ABI, 2, &ffi_type_void, h_args) != FFI_OK) {
 		abort_ffi();
 	}
@@ -347,19 +347,19 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	instance->closed = 0;
 	instance->restricted = 1;
 	
-	return (jlong) instance;
+	return (jlong) (uintptr_t) instance;
 }
 
 // this can be called from any thread!
 // we shouldn't have to worry about anything here though, just a few dereferencing and
 // setting a volatile flag.
 JNIEXPORT void JNICALL Java_jni_LuaEngine_kill(JNIEnv* env, jobject this, jlong ptr) {
-	engine_inst* inst = (engine_inst*) ptr;
+	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	inst->killed = 1;
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw) {
-	engine_inst* inst = (engine_inst*) ptr;
+	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	lua_State* state = inst->state;
 	const char* characters = (*env)->GetStringUTFChars(env, jraw, 0);
 	size_t len = strlen(characters);
@@ -376,7 +376,7 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
 }
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this, jlong ptr) {
-	engine_inst* inst = (engine_inst*) ptr;
+	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	if (inst->restricted) {
 		luaopen_package(inst->state);
 		luaopen_io(inst->state);
@@ -391,7 +391,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this,
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_settable
 (JNIEnv* env, jobject this, jlong ptr, jstring jtable, jstring jkey, jobject jvalue) {
-	engine_inst* inst = (engine_inst*) ptr;
+	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	lua_State* state = inst->state;
 	const char* table = (*env)->GetStringUTFChars(env, jtable, 0);
 	const char* key = (*env)->GetStringUTFChars(env, jkey, 0);
@@ -425,7 +425,7 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_settable
 }
 
 JNIEXPORT jint JNICALL Java_jni_LuaEngine_destroyinst(JNIEnv* env, jobject this, jlong ptr) {
-	engine_close(env, (engine_inst*) ptr);
+	engine_close(env, (engine_inst*) (uintptr_t) ptr);
 	return 0;
 }
 
@@ -442,7 +442,7 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, 
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject this, jlong ptr) {
-	engine_inst* inst = (engine_inst*) ptr;
+	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	engine_value* v = engine_newvalue(env, inst);
 	v->type = ENGINE_LUA_GLOBALS;
 	return engine_wrap(env, v);
@@ -669,7 +669,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	}
 	
 	wrapper->closure = closure;
-	wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION;
+	wrapper->type = ENGINE_JAVA_LAMBDA_FUNCTION;
 	wrapper->data.lambda.ret = (uint8_t) ret;
 	wrapper->data.lambda.args = (uint8_t) args;
 	wrapper->data.lambda.id = mid;

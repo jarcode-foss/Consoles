@@ -33,7 +33,7 @@ pair_map* pair_map_create(JNIEnv* env) {
 	return m;
 }
 
-static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, uint64_t ptr, uint8_t type) {
+static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, uintptr_t ptr, uint8_t type) {
 	WAIT_FOR_WRITE(env, m);
 	uint8_t valid = 0;
 	int64_t t;
@@ -114,13 +114,13 @@ void pair_map_append(JNIEnv* env, pair_map* m, jobject java, void* native) {
 }
 void pair_map_rm_java(JNIEnv* env, pair_map* m, jobject java) {
 	if (m->size == 0) return;
-	int64_t t = lookup_idx(env, m, &(m->java_pair), (uint64_t) java, 0);
+	int64_t t = lookup_idx(env, m, &(m->java_pair), (uintptr_t) java, 0);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
 void pair_map_rm_native(JNIEnv* env, pair_map* m, void* native) {
 	if (m->size == 0) return;
-	int64_t t = lookup_idx(env, m, &(m->native_pair), (uint64_t) native, 1);
+	int64_t t = lookup_idx(env, m, &(m->native_pair), (uintptr_t) native, 1);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
