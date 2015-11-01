@@ -1,6 +1,8 @@
 # Consoles
 A powerful set of plugins that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
 
+**[[Reporting Bugs|Reporting-Bugs]]**
+
 ### Licensing
 
 [LGPL Version 3](http://www.gnu.org/licenses/lgpl-3.0.en.html) for `consoles-api`
