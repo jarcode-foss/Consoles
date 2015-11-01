@@ -1,7 +1,7 @@
 # Consoles
 A powerful set of plugins that provides programmable computers and a powerful map rendering API for craftbukkit and spigot servers. **Requires Java 8!**
 
-**[[Reporting Bugs|Reporting-Bugs]]**
+**[Reporting Bugs](https://github.com/wacossusca34/Consoles/wiki/Reporting-Bugs)**
 
 ### Licensing
 
