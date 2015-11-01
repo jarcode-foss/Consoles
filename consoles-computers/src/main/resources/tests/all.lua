@@ -1,0 +1,1 @@
+-- These are tests to be ran when the plugin is running in debug mode

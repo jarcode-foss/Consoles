@@ -7,6 +7,7 @@ import ca.jarcode.consoles.computer.MapDataStore;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
 import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.consoles.computer.interpreter.LuaDefaults;
 import ca.jarcode.consoles.computer.interpreter.luaj.LuaJEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
@@ -154,6 +155,9 @@ public class Computers extends JavaPlugin {
 		catch (IllegalAccessException | InstantiationException e) {
 			e.printStackTrace();
 		}
+
+		if (Consoles.debug)
+			LuaDefaults.cacheTests();
 
 	}
 	public void onDisable() {

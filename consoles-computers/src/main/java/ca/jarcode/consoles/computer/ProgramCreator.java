@@ -31,9 +31,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 	@Override
 	public void from(String input) {
 
-		String absPath = null;
-
-		String argument;
+		String absPath, argument;
 
 		// string encapsulation
 		if (input.startsWith("\"")) {

@@ -60,6 +60,7 @@ public class Kernel extends FSProvidedProgram {
 		program(0x15, new SkriptProgram());
 		program(0x16, new ExecuteProgram());
 		program(0x17, new DestroyProgram());
+		program(0x18, Consoles.debug ? new InstallTestsProgram() : new StubProgram("You must be in debug mode"));
 	}
 
 	private static void program(int id, FSProvidedProgram providedProgram) {
@@ -97,7 +98,7 @@ public class Kernel extends FSProvidedProgram {
 				root.contents.put("home", home);
 				root.contents.put("bin", bin);
 				root.contents.put("dev", dev);
-				root.contents.put("tmp", new FSFolder());
+				root.contents.put("tmp", new FSFolder()); // not actually temporary
 				root.contents.put("X11", x11);
 				root.contents.put("etc", new FSFolder());
 				home.contents.put("admin", new FSFolder());
@@ -130,7 +131,7 @@ public class Kernel extends FSProvidedProgram {
 		// mapProgram(0x07, root, "clear");
 		mapProgram(0x08, root, "flash");
 		mapProgram(0x09, root, "view");
-		mapProgram(0x0A, root, "edit", "emacs");
+		mapProgram(0x0A, root, "edit", "emacs"); // kek
 		mapProgram(0x0B, root, "touch");
 		mapProgram(0x0C, root, "rm");
 		// mapProgram(0x0D, root, "help");
@@ -143,8 +144,9 @@ public class Kernel extends FSProvidedProgram {
 		mapProgram(0x14, root, "map");
 		mapProgram(0x15, root, "skript");
 		mapProgram(0x16, root, "exec");
+		mapProgram(0x17, root, "loadtests");
 
-		LuaDefaults.loadInto(computer);
+		LuaDefaults.loadProvidedScripts(computer);
 	}
 	public static FSStoredFile writtenFile(String text, Computer computer) {
 		FSStoredFile file = new FSStoredFile(computer);
