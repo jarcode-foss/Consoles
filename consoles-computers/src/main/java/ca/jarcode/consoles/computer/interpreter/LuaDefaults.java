@@ -51,7 +51,8 @@ public class LuaDefaults {
 						read = stream.read(buf, read, size - read);
 					String content = new String(buf, StandardCharsets.UTF_8);
 					stream.close();
-					String formatted = entry.getName().substring(4, entry.getName().length() - 4);
+					String formatted = entry.getName().substring(dir.length() + 1, entry.getName().length()
+							- (dir.length() + 1));
 					if (Computers.debug)
 						Computers.getInstance().getLogger().info("[DEBUG] Loaded: " + formatted);
 					consumer.accept(formatted, content);

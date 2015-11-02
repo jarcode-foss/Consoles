@@ -14,8 +14,27 @@
 #include <ffi.h>
 
 #include <LuaEngine.h>
+#include <setjmp.h>
 
 #include "engine.h"
+
+// definitions
+jclass class_type = 0;
+jmethodID id_comptype = 0;
+jclass class_lua = 0;
+jmethodID id_translatevalue = 0;
+jmethodID id_translate = 0;
+jmethodID id_methodresolve = 0;
+jmethodID id_methodid = 0;
+jclass class_method = 0;
+jmethodID id_methodcall = 0;
+jmethodID id_methodcount = 0;
+jmethodID id_methodtypes = 0;
+jclass class_object = 0;
+jmethodID id_hashcode = 0;
+jclass exclass = 0;
+
+uint32_t function_index = 0;
 
 static int engine_debug = 0;
 static uint8_t setup = 0;
@@ -193,13 +212,18 @@ static void setup_closures() {
 	}
 }
 
-static void setup_classes(JNIEnv* env) {
+static void setup_classes(JNIEnv* env, jmp_buf handle) {
+	
+	if (engine_debug) {
+		printf("\nRegistering global refs to classes\n");
+	}
+	
 	// class registering
-	classreg(env, "java/lang/Object", &class_object);
-	classreg(env, ENGINE_CLASS, &class_type);
-	classreg(env, ENGINE_LUA_CLASS, &class_lua);
-	classreg(env, ENGINE_ERR_CLASS, &exclass);
-	classreg(env, "java/lang/reflect/Method", &class_method);
+	classreg(env, "java/lang/Object", &class_object, handle);
+	classreg(env, ENGINE_CLASS, &class_type, handle);
+	classreg(env, ENGINE_LUA_CLASS, &class_lua, handle);
+	classreg(env, ENGINE_ERR_CLASS, &exclass, handle);
+	classreg(env, "java/lang/reflect/Method", &class_method, handle);
 	
 	// Object ids
 	id_hashcode = (*env)->GetMethodID(env, class_object, "hashCode", "()I");
@@ -276,11 +300,19 @@ int engine_handleobjcall(lua_State* state) {
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
 	
 	if (!setup) {
+		
+		static jmp_buf reg_handle;
+		
+		if (setjmp(reg_handle)) {
+			throw(env, "C: failed to register classes");
+			return 0;
+		}
+		
 		function_index = 0;
 		
 		setup_closures();
-		setup_classes(env);
-		setup_value(env);
+		setup_classes(env, reg_handle);
+		setup_value(env, reg_handle);
 		
 		setup = 1;
 	}

@@ -7,6 +7,8 @@
 
 #include <ffi.h>
 
+#include <setjmp.h>
+
 /*
  * Engine header file - this header (and the implementation) interfaces with the lua API and JNI for
  * type mapping and function wrapper magic.
@@ -86,31 +88,34 @@
 #define ENGINE_TYPE_KEY "__impl"
 #define ENGINE_TYPE "native"
 
+#define CHECKEX(e, b) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { longjmp(b, 1); } } while (0)
+		
+
 // class 'Class'
-jclass class_type;
-jmethodID id_comptype;
+extern jclass class_type;
+extern jmethodID id_comptype;
 
 // class 'Lua'
-jclass class_lua;
-jmethodID id_translatevalue;
-jmethodID id_translate;
-jmethodID id_methodresolve;
-jmethodID id_methodid;
+extern jclass class_lua;
+extern jmethodID id_translatevalue;
+extern jmethodID id_translate;
+extern jmethodID id_methodresolve;
+extern jmethodID id_methodid;
 
 // class 'Method'
-jclass class_method;
-jmethodID id_methodcall;
-jmethodID id_methodcount;
-jmethodID id_methodtypes;
+extern jclass class_method;
+extern jmethodID id_methodcall;
+extern jmethodID id_methodcount;
+extern jmethodID id_methodtypes;
 
 // class 'Object'
-jclass class_object;
-jmethodID id_hashcode;
+extern jclass class_object;
+extern jmethodID id_hashcode;
 
 // exception type
-jclass exclass;
+extern jclass exclass;
 
-uint32_t function_index;
+extern uint32_t function_index;
 
 // A lua function is an index in a lua table of functions that have been (or need to be)
 // exposed to a engine value. Functions are cached in this table when needed in C.
@@ -246,7 +251,7 @@ struct engine_value_ {
 };
 
 // sets up method ids and class references
-void setup_value(JNIEnv* env);
+void setup_value(JNIEnv* env, jmp_buf handle);
 
 // create engine value
 engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
@@ -284,7 +289,7 @@ jint throw(JNIEnv* env, const char* message);
 // utils
 
 // register global ref to class at memory
-void classreg(JNIEnv* env, const char* name, jclass* mem);
+void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf buf);
 
 void engine_swap(lua_State* state, int a, int b);
 

@@ -4,19 +4,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 
 #include "engine.h"
 
-void classreg(JNIEnv* env, const char* name, jclass* mem) {
-	*mem = (*env)->FindClass(env, name);
-	if (*mem == 0) {
+void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf err_buf) {
+	jobject local = (*env)->FindClass(env, name);
+	CHECKEX(env, err_buf);
+	if (local == 0) {
 		fprintf(stderr, "\ncould not init class (%s)\n", name);
 		exit(-1);
 	}
-	*mem = (*env)->NewGlobalRef(env, *mem);
+	*mem = (*env)->NewGlobalRef(env, local);
+	CHECKEX(env, err_buf);
+	(*env)->DeleteLocalRef(env, local);
+	CHECKEX(env, err_buf);
 }
 inline jint throw(JNIEnv* env, const char* message) {
-	return (*env)->ThrowNew(env, exclass, message);
+	if (exclass)
+		return (*env)->ThrowNew(env, exclass, message);
+	else return 0;
 }
 inline void engine_swap(lua_State* state, int a, int b) {
 	// make a copy of both elements

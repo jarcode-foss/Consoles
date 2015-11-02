@@ -64,10 +64,10 @@ static inline engine_value* findnative(JNIEnv* env, jobject ref) {
 	}
 }
 
-void setup_value(JNIEnv* env) {
+void setup_value(JNIEnv* env, jmp_buf handle) {
 	if (!setup) {
-		classreg(env, ENGINE_VALUE_CLASS, &value_type);
-		classreg(env, "java/lang/reflect/Array", &class_array); // for generic array setting
+		classreg(env, ENGINE_VALUE_CLASS, &value_type, handle);
+		classreg(env, "java/lang/reflect/Array", &class_array, handle); // for generic array setting
 		value_constructor = (*env)->GetMethodID(env, value_type, "<init>", "()V");
 		handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
 		id_newarray = (*env)->GetStaticMethodID(env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;");
