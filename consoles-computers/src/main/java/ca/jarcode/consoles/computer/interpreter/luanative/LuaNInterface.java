@@ -4,6 +4,9 @@ import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
 
 // engine interface for lua and luajit
 public interface LuaNInterface {
+	// utility method for naming the current thread for debugging purposes.
+	// this method singlehandely breaks Windows compatibility
+	void pthread_name(String name);
 	// sets up a new interface
 	long setupinst(int impl, long heap, int interruptcheck);
 	// unrestricts an instance
@@ -23,6 +26,10 @@ public interface LuaNInterface {
 	// this uses a debug hooks that runs every n instructions and exits using setjmp/longjmp
 	// this method of killing lua VMs is _much_ better than the LuaJ implementation
 	void kill(long ptr);
+	// sets the interrupt timer
 	void interruptreset(long ptr);
+	// sets the maximum time before an instance is interrupted
 	void setmaxtime(int time);
+	// setup the native interface (called during install)
+	void setup();
 }

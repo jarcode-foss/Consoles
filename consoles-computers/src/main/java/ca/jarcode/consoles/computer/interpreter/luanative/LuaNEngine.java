@@ -1,7 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter.luanative;
 
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.interpreter.ComputerLibrary;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
 import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
@@ -28,34 +27,58 @@ public class LuaNEngine implements ScriptEngine {
 		LuaNEngine.IMPL = impl;
 		FunctionFactory.assign(new LuaNFunctionFactory());
 		ValueFactory.assign(new LuaNValueFactory());
-		ScriptEngine.assign(new LuaNEngine());
+		LuaNEngine luaN = new LuaNEngine();
+		ScriptEngine.assign(luaN);
 		NATIVE_ENGINE = new LuaEngine();
 		NATIVE_ENGINE.setdebug(Computers.debug ? 1 : 0);
 		NATIVE_ENGINE.setmaxtime(Computers.maxTimeWithoutInterrupt);
+		NATIVE_ENGINE.setup();
+		luaN.L = NATIVE_ENGINE;
 	}
 
-	private List<Long> ptrs = new ArrayList<>();
-	private List<ScriptValue> values = new ArrayList<>();
-	private List<Integer> ids = new ArrayList<>();
-	private final LuaNInterface L = NATIVE_ENGINE;
+	private List<LuaNInstance> instances = new ArrayList<>();
+	private LuaNInterface L;
 
-	private void register(long ptr, ScriptValue val, int id) {
-		ptrs.add(ptr);
-		values.add(val);
-		ids.add(id);
+	private static class LuaNInstance {
+		long ptr;
+		ScriptValue globals;
+		int taskId;
+		Runnable threadNameRestore;
+
+		@Override
+		public boolean equals(Object another) {
+			return (another instanceof LuaNInstance && ((LuaNInstance) another).globals == globals);
+		}
+
+		LuaNInstance(ScriptValue val) {
+			this.globals = val;
+		}
+
+		LuaNInstance() {}
+	}
+
+	private LuaNInstance register(long ptr, ScriptValue val, int id) {
+		LuaNInstance inst = new LuaNInstance();
+		inst.ptr = ptr;
+		inst.globals = val;
+		inst.taskId = id;
+		instances.add(inst);
+		return inst;
 	}
 
 	private void unregister(ScriptValue val) {
-		int idx = values.indexOf(val);
-		int id = ids.get(idx);
-		values.remove(idx);
-		ptrs.remove(idx);
-		ids.remove(idx);
-		Bukkit.getScheduler().cancelTask(id);
+		int idx = instances.indexOf(new LuaNInstance(val));
+		LuaNInstance inst = instances.get(idx);
+		instances.remove(idx);
+		Bukkit.getScheduler().cancelTask(inst.taskId);
 	}
 
 	private long ptr(ScriptValue val) {
-		return ptrs.get(values.indexOf(val));
+		return inst(val).ptr;
+	}
+
+	private LuaNInstance inst(ScriptValue val) {
+		return instances.get(instances.indexOf(new LuaNInstance(val)));
 	}
 
 	@Override
@@ -75,7 +98,16 @@ public class LuaNEngine implements ScriptEngine {
 	                               OutputStream stdout, long heap) {
 		long ptr; // this is actually a pointer (sue me)
 		ptr = L.setupinst(IMPL.val, heap, Computers.interruptCheckInterval);
+		if (Computers.debug) {
+			Computers.getInstance().getLogger().info("Built new LuaN instance: " + Long.toHexString(ptr));
+		}
 		ScriptValue globals = L.wrapglobals(ptr);
+		if (globals == null) {
+			throw new LuaNError("recieved null globals");
+		}
+		if (Computers.debug) {
+			Computers.getInstance().getLogger().info("Built LuaN instance!");
+		}
 		// schedule task on the main thread to constantly check if our program was killed
 		// (this could be done in any thread, but it's easiest to use our scheduler)
 		AtomicBoolean killed = new AtomicBoolean(false);
@@ -85,7 +117,12 @@ public class LuaNEngine implements ScriptEngine {
 				killed.set(true);
 			}
 		}, 1, 1);
-		register(ptr, globals, id);
+		LuaNInstance inst = register(ptr, globals, id);
+		Thread current =  Thread.currentThread();
+		String name = current.getName();
+		inst.threadNameRestore = () -> current.setName(name);
+		current.setName("LuaN Thread");
+		L.pthread_name("LuaN");
 		return globals;
 	}
 
@@ -101,6 +138,13 @@ public class LuaNEngine implements ScriptEngine {
 
 	@Override
 	public void close(ScriptValue globals) {
+		LuaNInstance inst = inst(globals);
+		if (Computers.debug) {
+			Computers.getInstance().getLogger().info("Closing LuaN instance: " + Long.toHexString(inst.ptr));
+		}
+		if (inst.threadNameRestore != null)
+			inst.threadNameRestore.run();
+		L.pthread_name("java");
 		long ptr = ptr(globals);
 		unregister(globals);
 		L.destroyinst(ptr);

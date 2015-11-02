@@ -16,6 +16,8 @@
 #include <LuaEngine.h>
 #include <setjmp.h>
 
+#include <pthread.h>
+
 #include "engine.h"
 
 // definitions
@@ -226,31 +228,31 @@ static void setup_classes(JNIEnv* env, jmp_buf handle) {
 	classreg(env, "java/lang/reflect/Method", &class_method, handle);
 	
 	// Object ids
-	id_hashcode = (*env)->GetMethodID(env, class_object, "hashCode", "()I");
+	id_hashcode = method_resolve(env, class_object, "hashCode", "()I", handle);
 	
 	// Method ids
-	id_methodcall = (*env)->GetMethodID(env, class_method, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
-	id_methodcount = (*env)->GetMethodID(env, class_method, "getParameterCount", "()I");
-	id_methodtypes = (*env)->GetMethodID(env, class_method, "getParameterTypes", "()[Ljava/lang/Class;");
+	id_methodcall = method_resolve(env, class_method, "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;", handle);
+	id_methodcount = method_resolve(env, class_method, "getParameterCount", "()I", handle);
+	id_methodtypes = method_resolve(env, class_method, "getParameterTypes", "()[Ljava/lang/Class;", handle);
 	
 	// Class ids
-	id_comptype = (*env)->GetMethodID(env, class_type, "getComponentType", "()Ljava/lang/Class;");
+	id_comptype = method_resolve(env, class_type, "getComponentType", "()Ljava/lang/Class;", handle);
 	
 	// Lua ids
-	id_methodresolve = (*env)->GetStaticMethodID(env, class_lua, "resolveMethod", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;");
-	id_methodid = (*env)->GetStaticMethodID(env, class_lua, "methodId", "(Ljava/lang/reflect/Method;)J");
+	id_methodresolve = static_method_resolve(env, class_lua, "resolveMethod", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/reflect/Method;", handle);
+	id_methodid = static_method_resolve(env, class_lua, "methodId", "(Ljava/lang/reflect/Method;)J", handle);
 	
 	char buf[128] = {0};
 	strcat(buf, "(Ljava/lang/Object;)L");
 	strcat(buf, ENGINE_VALUE_INTERFACE);
 	strcat(buf, ";");
-	id_translatevalue = (*env)->GetStaticMethodID(env, class_lua, "translateToScriptValue", buf);
+	id_translatevalue = static_method_resolve(env, class_lua, "translateToScriptValue", buf, handle);
 	
 	memset(buf, 0, sizeof(buf));
 	strcat(buf, "(Ljava/lang/Class;L");
 	strcat(buf, ENGINE_VALUE_INTERFACE);
 	strcat(buf, ";)Ljava/lang/Object;");
-	id_translate = (*env)->GetStaticMethodID(env, class_lua, "translate", buf);
+	id_translate = static_method_resolve(env, class_lua, "translate", buf, handle);
 }
 
 // This function allows users to release the global reference
@@ -297,16 +299,11 @@ int engine_handleobjcall(lua_State* state) {
 	return 1;
 }
 
-JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
-	
+JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
 	if (!setup) {
-		
 		static jmp_buf reg_handle;
 		
-		if (setjmp(reg_handle)) {
-			throw(env, "C: failed to register classes");
-			return 0;
-		}
+		if (setjmp(reg_handle)) { return; }
 		
 		function_index = 0;
 		
@@ -316,6 +313,9 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 		
 		setup = 1;
 	}
+}
+
+JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
 	
 	engine_inst* instance = malloc(sizeof(engine_inst));
 	
@@ -684,7 +684,11 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	if (ret) strcat(buf, ")Ljava/lang/Object;");
 	else strcat(buf, ")V");
 	
-	jmethodID mid = (*env)->GetMethodID(env, jfunctype, "call", buf);
+	static jmp_buf handle;
+	
+	if (setjmp(handle)) { return; }
+	
+	jmethodID mid = method_resolve(env, jfunctype, "call", buf, handle);
 	void *func_binding = 0; // our function pointer
 	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	

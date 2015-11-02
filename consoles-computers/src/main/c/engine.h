@@ -89,6 +89,20 @@
 #define ENGINE_TYPE "native"
 
 #define CHECKEX(e, b) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { longjmp(b, 1); } } while (0)
+
+extern inline jmethodID method_resolve
+(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
+	jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
+	CHECKEX(env, buf);
+	return ret;
+}
+
+extern inline jmethodID static_method_resolve
+(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
+	jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
+	CHECKEX(env, buf);
+	return ret;
+}
 		
 
 // class 'Class'

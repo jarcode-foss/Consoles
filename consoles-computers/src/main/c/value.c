@@ -69,9 +69,12 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
 		classreg(env, ENGINE_VALUE_CLASS, &value_type, handle);
 		classreg(env, "java/lang/reflect/Array", &class_array, handle); // for generic array setting
 		value_constructor = (*env)->GetMethodID(env, value_type, "<init>", "()V");
+		CHECKEX(env, handle);
 		handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
 		id_newarray = (*env)->GetStaticMethodID(env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;");
+		CHECKEX(env, handle);
 		id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V");
+		CHECKEX(env, handle);
 		
 		pair_map_init(env, &m);
 		setup = 1;

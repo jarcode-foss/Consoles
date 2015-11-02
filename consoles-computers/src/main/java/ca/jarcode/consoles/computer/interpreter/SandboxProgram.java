@@ -432,7 +432,8 @@ public abstract class SandboxProgram {
 			}
 
 			// close resources
-			ScriptEngine.get().close(globals);
+			if (globals != null)
+				ScriptEngine.get().close(globals);
 		}
 	}
 
