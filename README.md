@@ -19,7 +19,11 @@ credit to wolfmitchell for website and repository hosting!
 
 I also deploy jars to the maven repository that have dependencies packed with them, which can be used as working builds of the plugin. Check out my [module browser](http://jarcode.ca/modules.php) on my website to browse through releases of Consoles (and other projects).
 
-**warning:** snapshot builds of `consoles-computers` may crash your JVM.
+**warning:** use snapshot builds with care, they can be extremely unstable.
+
+### Bug Reporting
+
+Bug reporting is done using GitHub's bug tracker. For how to create detailed reports, see **[reporting bugs](https://github.com/wacossusca34/Consoles/wiki/Reporting-Bugs)**.
 
 ### API Overview
 
