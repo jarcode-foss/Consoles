@@ -18,6 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -108,6 +109,8 @@ public class Computers extends JavaPlugin {
 		debugHook = getConfig().getBoolean("debug-hook", debugHook);
 		debugHookCommand = getConfig().getString("debug-command", debugHookCommand);
 
+		boolean disableWatchdog = getConfig().getBoolean("disable-watchdog", false);
+
 		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
 			ATTEMPTED_NATIVES_LOAD = true;
 			// extract JNI library and load it
@@ -188,7 +191,25 @@ public class Computers extends JavaPlugin {
 		if (Computers.debug)
 			LuaDefaults.cacheTests();
 
+		if (disableWatchdog) {
+			getServer().getScheduler().scheduleSyncDelayedTask(this, this::killWatchdog);
+		}
 	}
+
+	// This kills the watchdog thread. Thankfully there is a nice method for it.
+	// Reflection is used so that we don't have to worry about breaking this plugin for
+	// people using pure craftbukkit builds.
+	@SuppressWarnings("unchecked")
+	public void killWatchdog() {
+		try {
+			Class type = Class.forName("org.spigotmc.WatchdogThread");
+			Method method = type.getMethod("doStop");
+			method.invoke(null);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+
 	public void onDisable() {
 		Lua.killAll = true;
 	}
