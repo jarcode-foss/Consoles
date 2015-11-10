@@ -25,12 +25,16 @@ public class FuncPool {
 		Lua.pools.put(context, this);
 	}
 	public SandboxProgram getProgram() {
+		if (program == null)
+			throw new IllegalStateException("program is null");
 		return program;
 	}
 	public void cleanup() {
 		Lua.pools.remove(context);
 	}
 	public Computer getComputer() {
+		if (program == null)
+			throw new IllegalStateException("program is null");
 		return program.getComputer();
 	}
 }

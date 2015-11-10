@@ -16,8 +16,6 @@
 #include <LuaEngine.h>
 #include <setjmp.h>
 
-#include <pthread.h>
-
 #include "engine.h"
 
 // definitions

@@ -58,7 +58,7 @@ public class Computers extends JavaPlugin {
 	// debug hook
 	public static boolean debugHook = false;
 	// debug hook command
-	public static String debugHookCommand = "screen,-S%N,-Xgdb -p %I";
+	public static String debugHookCommand = "x-terminal-emulator,-e,gdb,-p,%I";
 
 	public static File jarFile;
 

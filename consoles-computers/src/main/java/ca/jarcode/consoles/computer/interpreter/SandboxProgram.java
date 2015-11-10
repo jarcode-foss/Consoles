@@ -2,7 +2,6 @@ package ca.jarcode.consoles.computer.interpreter;
 
 import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.*;
 import ca.jarcode.consoles.computer.bin.TouchProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;

@@ -42,7 +42,7 @@ public class LuaNEngine implements ScriptEngine {
 	private static class LuaNInstance {
 		long ptr;
 		ScriptValue globals;
-		int taskId;
+		int taskId = -1;
 		Runnable threadNameRestore;
 
 		@Override
@@ -70,7 +70,8 @@ public class LuaNEngine implements ScriptEngine {
 		int idx = instances.indexOf(new LuaNInstance(val));
 		LuaNInstance inst = instances.get(idx);
 		instances.remove(idx);
-		Bukkit.getScheduler().cancelTask(inst.taskId);
+		if (inst.taskId != -1)
+			Bukkit.getScheduler().cancelTask(inst.taskId);
 	}
 
 	private long ptr(ScriptValue val) {
@@ -110,14 +111,18 @@ public class LuaNEngine implements ScriptEngine {
 		}
 		// schedule task on the main thread to constantly check if our program was killed
 		// (this could be done in any thread, but it's easiest to use our scheduler)
-		AtomicBoolean killed = new AtomicBoolean(false);
-		int id = Bukkit.getScheduler().scheduleSyncRepeatingTask(Computers.getInstance(), () -> {
-			if (terminated.getAsBoolean() && !killed.get()) {
-				L.kill(ptr);
-				killed.set(true);
-			}
-		}, 1, 1);
-		LuaNInstance inst = register(ptr, globals, id);
+		LuaNInstance inst;
+		if (terminated != null) {
+			AtomicBoolean killed = new AtomicBoolean(false);
+			int id = Bukkit.getScheduler().scheduleSyncRepeatingTask(Computers.getInstance(), () -> {
+				if (terminated.getAsBoolean() && !killed.get()) {
+					L.kill(ptr);
+					killed.set(true);
+				}
+			}, 1, 1);
+			inst = register(ptr, globals, id);
+		}
+		else inst = register(ptr, globals, -1);
 		Thread current =  Thread.currentThread();
 		String name = current.getName();
 		inst.threadNameRestore = () -> current.setName(name);
