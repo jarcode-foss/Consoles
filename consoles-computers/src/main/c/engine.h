@@ -300,6 +300,8 @@ engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int 
 
 jint throw(JNIEnv* env, const char* message);
 
+void engine_abort(void);
+
 // utils
 
 // register global ref to class at memory

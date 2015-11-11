@@ -53,8 +53,6 @@ public class NativeLayerTest {
 	@Test
 	public void testNativeLayer() throws Throwable {
 
-		stdout.print("\n");
-
 		log("Loading tests and setting up engine");
 
 		File library = new File(
@@ -153,6 +151,9 @@ public class NativeLayerTest {
 			debuggerProcess.waitFor();
 		}
 	}
+
+	@Test
+	public void postCheck() {}
 
 	@After
 	public void cleanup() throws InterruptedException {

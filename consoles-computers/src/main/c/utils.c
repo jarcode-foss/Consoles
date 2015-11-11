@@ -6,15 +6,18 @@
 #include <string.h>
 #include <setjmp.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "engine.h"
+
+static int ABORT_SLEEP_TIME = 1000;
 
 void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf err_buf) {
 	jobject local = (*env)->FindClass(env, name);
 	CHECKEX(env, err_buf);
 	if (local == 0) {
 		fprintf(stderr, "\ncould not init class (%s)\n", name);
-		exit(-1);
+		engine_abort();
 	}
 	*mem = (*env)->NewGlobalRef(env, local);
 	CHECKEX(env, err_buf);
@@ -35,6 +38,12 @@ inline void engine_swap(lua_State* state, int a, int b) {
 	lua_replace(state, a > 0 ? a : a - 2);
 	// replace new top value (a) at position b, and pop
 	lua_replace(state, b > 0 ? b : b - 1);
+}
+
+inline void engine_abort() {
+	fprintf(stdout, "LuaN: a fatal error occurred, aborting...\n");
+	usleep(1000 * ABORT_SLEEP_TIME);
+	exit(-1);
 }
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_pthread_1name(JNIEnv* env, jobject this, jstring jname) {
