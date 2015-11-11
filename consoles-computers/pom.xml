@@ -140,7 +140,7 @@
                         </goals>
                         <configuration>
                             <targetPlatforms>ELF32,ELF64</targetPlatforms>
-                            <arguments>-O2 -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
+                            <arguments><!-- -O2 --> -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -173,6 +173,12 @@
 
                     <!-- Handle assertion errors -->
                     <enableAssertions>true</enableAssertions>
+
+                    <!-- Run in alphabetical order -->
+                    <runOrder>alphabetical</runOrder>
+
+                    <!-- Do not timeout -->
+                    <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
                 </configuration>
             </plugin>
             <plugin>

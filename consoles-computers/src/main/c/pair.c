@@ -21,6 +21,7 @@ void pair_map_init(JNIEnv* env, pair_map* m) {
 	m->rm_native = &pair_map_rm_native;
 	m->close = &pair_map_close;
 	m->append = &pair_map_append;
+    m->rm = &pair_map_rm;
 	jclass obj_type = (*env)->FindClass(env, PAIR_JAVA_LOCK_OBJECT);
 	jmethodID mid = (*env)->GetMethodID(env, obj_type, "<init>", "()V");
 	m->lock = (*env)->NewObject(env, obj_type, mid);

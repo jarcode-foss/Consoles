@@ -1,3 +1,4 @@
+package ca.jarcode.consoles.computers.tests;
 
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
@@ -8,9 +9,6 @@ import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNError;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
-
-import org.junit.After;
-import org.junit.Test;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -29,9 +27,9 @@ import java.util.function.Function;
  */
 
 @SuppressWarnings("unused")
-public class NativeLayerTest {
+public class NativeLayerTask {
 
-	public static boolean DEBUG = false;
+	public static boolean DEBUG = true;
 
 	public static String GDB_CMD = "x-terminal-emulator,-e,gdb,-p,%I";
 
@@ -47,11 +45,11 @@ public class NativeLayerTest {
 
 	FuncPool pool;
 	ScriptValue globals;
+	ScriptValue chunk;
 
 	public int loglen = 0;
 
-	@Test
-	public void testNativeLayer() throws Throwable {
+	public void init() throws Throwable {
 
 		log("Loading tests and setting up engine");
 
@@ -65,27 +63,6 @@ public class NativeLayerTest {
 		assert library.isFile();
 
 		System.load(library.getAbsolutePath());
-
-		// load our program into a string
-		String program;
-
-		File tests = new File(
-				System.getProperty("user.dir") +
-				"/src/test/lua/tests.lua".replace("/", File.separator)
-		);
-
-		assert tests.exists();
-
-		try (InputStream is = new FileInputStream(tests)) {
-			byte[] buf = new byte[is.available()];
-			int i;
-			int cursor = 0;
-			while (cursor < buf.length) {
-				int r = buf.length - cursor;
-				cursor += is.read(buf, cursor, 1024 > r ? r : 1024);
-			}
-			program = new String(buf, StandardCharsets.UTF_8);
-		}
 
 		LuaNEngine.install(LuaNImpl.JIT);
 
@@ -104,21 +81,47 @@ public class NativeLayerTest {
 
 		if (DEBUG) {
 			debuggerProcess = attachDebugger(library.getAbsolutePath());
-			Thread.sleep(1000);
+			Thread.sleep(2000);
 		}
 
 		log("Building new engine instance");
 		globals = ScriptEngine.get().newInstance(pool, null, System.in, System.out, -1);
 		logn(DONE);
+	}
+
+	public void loadAndCallChunk() throws Throwable {
+
+		// load our program into a string
+		String program;
+
+		File tests = new File(
+				System.getProperty("user.dir") +
+						"/src/test/lua/tests.lua".replace("/", File.separator)
+		);
+
+		assert tests.exists();
+
+		try (InputStream is = new FileInputStream(tests)) {
+			byte[] buf = new byte[is.available()];
+			int i;
+			int cursor = 0;
+			while (cursor < buf.length) {
+				int r = buf.length - cursor;
+				cursor += is.read(buf, cursor, 1024 > r ? r : 1024);
+			}
+			program = new String(buf, StandardCharsets.UTF_8);
+		}
 
 		log("Loading program chunk");
-		ScriptValue chunk = ScriptEngine.get().load(globals, program);
+		chunk = ScriptEngine.get().load(globals, program);
 		logn(DONE);
 
 		log("Calling program chunk");
 		chunk.call();
 		logn(DONE);
+	}
 
+	public void loadAndCallTests() {
 		log("Indexing test() function");
 		ScriptValue testFunction = chunk.get(ValueFactory.get().translate("test", globals));
 		logn(DONE);
@@ -139,23 +142,8 @@ public class NativeLayerTest {
 		else {
 			throw new RuntimeException("non-integral response returned from test() lua function");
 		}
-
-		// these should be cleaned up anyway, but if releasing doesn't work for some reason, we
-		// should call these anyway.
-		chunk.release();
-		testFunction.release();
-		result.release();
-
-		if (DEBUG) {
-			debuggerProcess.destroyForcibly();
-			debuggerProcess.waitFor();
-		}
 	}
 
-	@Test
-	public void postCheck() {}
-
-	@After
 	public void cleanup() throws InterruptedException {
 		if (globals != null) {
 			ScriptEngine.get().close(globals);

@@ -90,14 +90,14 @@
 
 #define CHECKEX(e, b) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { longjmp(b, 1); } } while (0)
 
-extern inline jmethodID method_resolve
+static inline jmethodID method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
 	jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
 	CHECKEX(env, buf);
 	return ret;
 }
 
-extern inline jmethodID static_method_resolve
+static inline jmethodID static_method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
 	jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
 	CHECKEX(env, buf);
@@ -265,48 +265,48 @@ struct engine_value_ {
 };
 
 // sets up method ids and class references
-void setup_value(JNIEnv* env, jmp_buf handle);
+extern void setup_value(JNIEnv* env, jmp_buf handle);
 
 // create engine value
-engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
-engine_value* engine_newsharedvalue(JNIEnv* env);
+extern engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
+extern engine_value* engine_newsharedvalue(JNIEnv* env);
 
-void engine_releasevalue(JNIEnv* env, engine_value* value);
+extern void engine_releasevalue(JNIEnv* env, engine_value* value);
 
-void engine_clearvalues(JNIEnv* env, engine_inst* inst);
+extern void engine_clearvalues(JNIEnv* env, engine_inst* inst);
 // unwraps the java script value to C engine_value
 // NOTHING IS ALLOCATED, it just looks up a pair and finds an existing allocation to the value
-engine_value* engine_unwrap(JNIEnv* env, jobject obj);
+extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);
 // same thing, just in reverse
-jobject engine_wrap(JNIEnv* env, engine_value* value);
+extern jobject engine_wrap(JNIEnv* env, engine_value* value);
 // get info from lambda function class
-engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype);
+extern engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype);
 
 // wrap lua value to script value
 // this operates on the value on the top of the lua stack, popping it after
-engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state);
-void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value);
+extern engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state);
+extern void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value);
 // pushes a lambda onto the stack as a wrapped C function
-void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
-void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
+extern void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
+extern void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
 
-void engine_addfloating(engine_inst* inst, jobject reference);
-void engine_removefloating(engine_inst* inst, jobject reference);
+extern void engine_addfloating(engine_inst* inst, jobject reference);
+extern void engine_removefloating(engine_inst* inst, jobject reference);
 
-void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
-void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj);
+extern void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
+extern void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj);
 
-engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs);
+extern engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs);
 
-jint throw(JNIEnv* env, const char* message);
+extern jint throw(JNIEnv* env, const char* message);
 
-void engine_abort(void);
+extern void engine_abort(void);
 
 // utils
 
 // register global ref to class at memory
-void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf buf);
+extern void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf buf);
 
-void engine_swap(lua_State* state, int a, int b);
+extern void engine_swap(lua_State* state, int a, int b);
 
 #endif // ENGINE_H_

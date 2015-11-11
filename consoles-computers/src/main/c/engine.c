@@ -81,7 +81,7 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 		if (inst->wrappers[t]->type == ENGINE_JAVA_REFLECT_FUNCTION) {
 			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data.reflect.method);
 		}
-		
+
 		free(inst->wrappers[t]);
 	}
 	
@@ -97,13 +97,17 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 	engine_clearvalues(env, inst);
 	
 	// free wrapper stack
-	free(inst->wrappers);
-	inst->wrappers = 0;
+    if (inst->wrappers) {
+        free(inst->wrappers);
+        inst->wrappers = 0;
+    }
 	inst->wrappers_amt = 0;
 	
-	// free floating object stack
-	free(inst->floating_objects);
-	inst->floating_objects = 0;
+    // free floating object stack
+    if (inst->floating_objects) {
+        free(inst->floating_objects);
+        inst->floating_objects = 0;
+    }
 	inst->floating_objects_amt = 0;
 	
 	// free closure used for hook function
@@ -316,6 +320,9 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
 	
 	engine_inst* instance = malloc(sizeof(engine_inst));
+    memset(instance, 0, sizeof(engine_inst));
+    
+	instance->restricted = 1;
 	
 	void* hook_binding = 0;
 	instance->closure = ffi_closure_alloc(sizeof(ffi_closure), &hook_binding); // allocate hook closure
@@ -374,8 +381,6 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_setglobal(state, FUNCTION_REGISTRY);
 	
 	instance->state = state;
-	instance->closed = 0;
-	instance->restricted = 1;
 	
 	return (jlong) (uintptr_t) instance;
 }

@@ -59,3 +59,13 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_pthread_1name(JNIEnv* env, jobject thi
 	pthread_setname_np(current, buf);
 	(*env)->ReleaseStringUTFChars(env, jname, characters);
 }
+
+
+
+
+
+
+
+
+
+

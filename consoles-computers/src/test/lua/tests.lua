@@ -14,12 +14,9 @@ add_tasks({ "basic" })
 
 -- Any compile-time tests can be ran by this script.
 function test()
-
     print("Running Lua tests...")
-
     for i=1,#tasks do
         print("Running test: '" .. tasks[i][1] .. "'")
         tasks[i][2]();
     end
-
 end

@@ -35,7 +35,6 @@
  */
 
 static pair_map m;
-
 static jclass value_type;
 static jmethodID value_constructor;
 
