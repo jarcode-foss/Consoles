@@ -11,17 +11,17 @@ import org.bukkit.craftbukkit.v1_8_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_8_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_8_R2.entity.CraftItemFrame;
 import org.bukkit.craftbukkit.v1_8_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_8_R2.util.CraftMagicNumbers;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.spigotmc.WatchdogThread;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.UUID;
 
 public class GeneralUtils implements GeneralInternals {
 
@@ -143,6 +143,50 @@ public class GeneralUtils implements GeneralInternals {
 	public boolean hasItemNBTTag(ItemStack stack) {
 		net.minecraft.server.v1_8_R2.ItemStack nms = nmsStack(stack);
 		return nms.getTag() != null;
+	}
+
+	@Override
+	public void modPlayerHead(ItemStack head, UUID owner, String texValue) {
+		if (!hasHandle(head)) {
+			initHandle(head);
+		}
+
+		net.minecraft.server.v1_8_R2.ItemStack nms = nmsStack(head);
+		NBTTagCompound tag = nms.hasTag() ? nms.getTag() : new NBTTagCompound();
+		NBTTagCompound profile = new NBTTagCompound();
+		NBTTagCompound properties = new NBTTagCompound();
+		NBTTagList textures = new NBTTagList();
+		profile.set("Id", new NBTTagString(owner.toString()));
+		properties.set("textures", textures);
+		textures.add(new NBTTagString(texValue));
+		profile.set("Properties", properties);
+		tag.set("SkullOwner", profile);
+		nms.setTag(tag);
+	}
+
+	@Override
+	public void initHandle(ItemStack stack) {
+		Item item = CraftMagicNumbers.getItem(stack.getType());
+		if(item != null) {
+			net.minecraft.server.v1_8_R2.ItemStack nms = new net.minecraft.server.v1_8_R2.ItemStack(item,
+					stack.getAmount(), stack.getDurability());
+			if(stack.hasItemMeta()) {
+				CraftItemStack.setItemMeta(nms, stack.getItemMeta());
+			}
+			try {
+				ITEM_STACK_HANDLE.set(stack, nms);
+			} catch (IllegalAccessException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+
+	private boolean hasHandle(ItemStack stack) {
+		try {
+			return ITEM_STACK_HANDLE.get(stack) != null;
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override

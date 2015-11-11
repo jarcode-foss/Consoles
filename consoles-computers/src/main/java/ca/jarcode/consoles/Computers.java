@@ -41,6 +41,11 @@ public class Computers extends JavaPlugin {
 	public static String commandPrefix;
 	// self-explanatory
 	public static int maxComputers = 3;
+	// whether to use player heads as items for computers
+	public static boolean useHeads = true;
+	// head to use for computer items
+	public static String headUUID = "df045cc0-7ec9-4cbc-8219-2ea32ee0cd84";
+	public static String headTexture = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWQxZTk5NzkyODlmMDMwOTlhN2M1ODdkNTJkNDg4ZTI2ZTdiYjE3YWI1OTRiNjlmOTI0MzhkNzdlYWJjIn19fQ==";
 	// hide save messages
 	public static boolean hideSaveMessages = false;
 	// maximum time that a program is allowed to run before being interrupted
@@ -99,6 +104,9 @@ public class Computers extends JavaPlugin {
 		allowCrafting = getConfig().getBoolean("allow-computer-crafting", allowCrafting);
 		commandPrefix = getConfig().getString("command-prefix", commandPrefix).trim();
 		maxComputers = getConfig().getInt("computer-limit", maxComputers);
+		useHeads = getConfig().getBoolean("use-heads", useHeads);
+		headUUID = getConfig().getString("head-uuid", headUUID);
+		headTexture = getConfig().getString("head-texture", headTexture);
 		hideSaveMessages = getConfig().getBoolean("hide-save-messages", hideSaveMessages);
 		maxTimeWithoutInterrupt = getConfig().getInt("max-time-without-interrupt", maxTimeWithoutInterrupt);
 		wgetChunkSize = getConfig().getInt("wget-chunk-size", wgetChunkSize);

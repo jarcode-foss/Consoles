@@ -9,6 +9,17 @@ allow-comptuer-crafting: true
 # The permissions computer.limit.ignore will override this
 computer-limit: 3
 
+# Whether or not to use player heads as new computer items
+use-heads: true
+
+# If the use-heads is set to true, this will determine the
+# UUID of the head set for new computer items
+head-uuid: df045cc0-7ec9-4cbc-8219-2ea32ee0cd84
+
+# If the use-heads is set to true, this will determine the
+# encoded texture set for new computer items.
+head-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWQxZTk5NzkyODlmMDMwOTlhN2M1ODdkNTJkNDg4ZTI2ZTdiYjE3YWI1OTRiNjlmOTI0MzhkNzdlYWJjIn19fQ=="
+
 # Command prefix when sending commands to a computer. You may
 # want to change this for BungeeCord servers, as it will
 # interrupt commands that may have been designated for a computer.

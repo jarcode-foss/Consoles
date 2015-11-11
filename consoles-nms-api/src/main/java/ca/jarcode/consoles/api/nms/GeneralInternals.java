@@ -9,6 +9,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 public interface GeneralInternals {
 
@@ -31,6 +32,8 @@ public interface GeneralInternals {
 	String getItemNBTString(ItemStack stack, String key);
 	boolean getItemNBTBoolean(ItemStack stack, String key);
 	boolean hasItemNBTTag(ItemStack stack);
+	void modPlayerHead(ItemStack head, UUID owner, String texValue);
+	void initHandle(ItemStack stack);
 
 	ItemStack itemStackBuild(Material m, int i, short data, ItemMeta meta);
 }

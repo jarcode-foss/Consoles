@@ -27,6 +27,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -104,14 +105,25 @@ public class ComputerHandler implements Listener {
 
 	@SuppressWarnings("RedundantCast")
 	public static ItemStack newComputerStack(String hostname) {
-		ItemMeta meta = Bukkit.getItemFactory().getItemMeta(Material.STAINED_GLASS);
+		ItemMeta meta;
+
+		meta = Bukkit.getItemFactory().getItemMeta(Computers.useHeads ? Material.SKULL : Material.STAINED_GLASS);
 		meta.setDisplayName(ChatColor.GREEN + lang.getString("computer-item-name") + ChatColor.GRAY
 				+ (hostname != null ? " (" + hostname + ")" : ""));
 		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + lang.getString("computer-item-tooltip")));
 
-		ItemStack stack = ConsolesNMS.internals.itemStackBuild(Material.STAINED_GLASS, 1, (short) 15, meta);
+		ItemStack stack = ConsolesNMS.internals.itemStackBuild(
+				Computers.useHeads ? Material.SKULL : Material.STAINED_GLASS,
+				1, (short) 15, meta);
 
-		ConsolesNMS.internals.fakeEnchantItem(stack);
+		if (Computers.useHeads) {
+			// mod the skull item with the proper NBT data, such that clients will be able to see a certain
+			// texture. You cannot do this properly with Bukkit in 1.8.x versions.
+			ConsolesNMS.internals.modPlayerHead(stack, UUID.fromString(Computers.headUUID), Computers.headTexture);
+		}
+		// fake enchant the item if we're using the old block style
+		else ConsolesNMS.internals.fakeEnchantItem(stack);
+
 		// this is why I go through the effort to set custom NBT tags
 		// this prevents players from creating a computer without crafting
 		// it, unless they are setting the NBT tags explicitly - which
@@ -509,10 +521,9 @@ public class ComputerHandler implements Listener {
 	private String getHostname(ItemStack stack) {
 		return ConsolesNMS.internals.getItemNBTString(stack, "hostname");
 	}
+	// we only check for a special NBT tab to see if the item is a computer
 	private boolean isComputer(ItemStack stack) {
-		return stack.getType() == Material.STAINED_GLASS
-				&& ConsolesNMS.internals.hasItemNBTTag(stack)
-				&& ConsolesNMS.internals.getItemNBTBoolean(stack, "computer");
+		return ConsolesNMS.internals.hasItemNBTTag(stack) && ConsolesNMS.internals.getItemNBTBoolean(stack, "computer");
 	}
 	public boolean hostnameTaken(String hostname) {
 		return inactiveHosts.contains(hostname) || computers.stream()

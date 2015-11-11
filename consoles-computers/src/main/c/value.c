@@ -49,7 +49,7 @@ static uint8_t setup = 0;
 static inline void handle_null_const(jmethodID v, const char* message) {
 	if (v == 0) {
 		fprintf(stderr, "\nfailed to find value constructor (%s)\n", message);
-		exit(-1);
+		engine_abort();
 	}
 }
 

@@ -178,23 +178,23 @@ static void handle_hook(ffi_cif* cif, void* ret, void* args[], void* user_data) 
 
 static inline void abort_ffi() {
 	fprintf(stderr, "\nfailed to prepare ffi caller interface for C function wrappers\n");
-	exit(-1);
+	engine_abort();
 }
 
 static inline void abort_ffi_alloc() {
 	fprintf(stderr, "\nfailed to allocate ffi closure\n");
-	exit(-1);
+	engine_abort();
 }
 
 static inline void abort_ffi_prep() {
 	fprintf(stderr, "\nfailed to prepare ffi closure\n");
-	exit(-1);
+	engine_abort();
 }
 
 static void setup_closures() {
 	if (!FFI_CLOSURES) {
 		fprintf(stderr, "\nFFI_CLOSURES are not supported on this architecture (libffi)\n");
-		exit(-1);
+		engine_abort();
 	}
 	
 	// ffi function args
@@ -341,7 +341,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	luaopen_table(state);
 	luaopen_math(state);
 	luaopen_string(state);
-	luaopen_table(state);
+    luaopen_table(state);
 	luaopen_debug(state);
 	
 	// I/O is handled by overloading print/write in Java code. Unlike LuaJ (which does its own
