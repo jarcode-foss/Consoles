@@ -2,7 +2,7 @@ package ca.jarcode.consoles.computers.tests;
 
 import org.junit.Test;
 
-public class C_LuaTest {
+public class LuaNTest {
 	@Test
 	public void test() throws Throwable {
 		NativeLayerTask task = new NativeLayerTask();

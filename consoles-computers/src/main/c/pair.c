@@ -39,7 +39,10 @@ static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, uintptr_t pt
 	uint8_t valid = 0;
 	int64_t t;
 	for (t = 0; t < m->size; t++) {
-		if (type ? ((void**) pair_set)[t] == (void*) ptr : ((jobject*) pair_set)[t] == (jobject) ptr) {
+        int8_t flag;
+        if (type) flag = (*(void***) pair_set)[t] == (void*) ptr;
+        else flag = (*env)->IsSameObject(env, (*(jobject**) pair_set)[t], (jobject) ptr);
+		if (flag) {
 			valid = 1;
 			break;
 		}

@@ -3,10 +3,7 @@ package ca.jarcode.consoles.computer.interpreter.luanative;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.interpreter.ComputerLibrary;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
-import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptEngine;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
+import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import jni.LuaEngine;
 import org.bukkit.Bukkit;
 
@@ -14,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
@@ -99,15 +97,9 @@ public class LuaNEngine implements ScriptEngine {
 	                               OutputStream stdout, long heap) {
 		long ptr; // this is actually a pointer (sue me)
 		ptr = L.setupinst(IMPL.val, heap, Computers.interruptCheckInterval);
-		if (Computers.debug) {
-			Computers.getInstance().getLogger().info("Built new LuaN instance: " + Long.toHexString(ptr));
-		}
 		ScriptValue globals = L.wrapglobals(ptr);
 		if (globals == null) {
 			throw new LuaNError("recieved null globals");
-		}
-		if (Computers.debug) {
-			Computers.getInstance().getLogger().info("Built LuaN instance!");
 		}
 		// schedule task on the main thread to constantly check if our program was killed
 		// (this could be done in any thread, but it's easiest to use our scheduler)
@@ -128,6 +120,14 @@ public class LuaNEngine implements ScriptEngine {
 		inst.threadNameRestore = () -> current.setName(name);
 		current.setName("LuaN Thread");
 		L.pthread_name("LuaN");
+
+		// load functions from our pool
+		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {
+			ScriptValue key = ValueFactory.get().translate(entry.getKey(), globals);
+			globals.set(key, entry.getValue().getAsValue());
+			key.release();
+		}
+
 		return globals;
 	}
 
@@ -144,9 +144,6 @@ public class LuaNEngine implements ScriptEngine {
 	@Override
 	public void close(ScriptValue globals) {
 		LuaNInstance inst = inst(globals);
-		if (Computers.debug) {
-			Computers.getInstance().getLogger().info("Closing LuaN instance: " + Long.toHexString(inst.ptr));
-		}
 		if (inst.threadNameRestore != null)
 			inst.threadNameRestore.run();
 		L.pthread_name("java");

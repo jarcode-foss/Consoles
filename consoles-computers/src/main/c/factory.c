@@ -24,7 +24,13 @@
 
 void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v) {
 	v->type = ENGINE_LUA_FUNCTION;
-	
+
+    if (!lua_isfunction(state, -1) && !lua_iscfunction(state, -1)) {
+        fprintf(stderr, "FATAL: engine_handleregistry(...) called without function on top of stack");
+        fflush(stderr);
+        exit(EXIT_FAILURE);
+    }
+    
 	// make copy of function, and put it on the top of the stack
 	lua_pushvalue(state, -1);
 	// push registry on the stack
@@ -36,8 +42,10 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 	lua_gettable(state, -2);
 	if (lua_isnil(state, -1)) { // no function mapped
 		// pop the nil value
-		lua_pop(state, -1);
-		// (we are now back to the original function at the top)
+		lua_pop(state, 1);
+		// (we are now back to then func registry (-1) and then the original function (-2) on top)
+        // let's swap that
+        engine_swap(state, -1, -2);
 		// increment and push new function index
 		function_index++;
 		lua_pushinteger(state, function_index);
@@ -134,7 +142,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 		engine_handleregistry(env, inst, state, v);
 	}
 	else if (lua_iscfunction(state, -1)) {
-		// we can register C functions in the registry too
+        // we can register C functions as lua functions, they are called the same way
 		engine_handleregistry(env, inst, state, v);
 	}
 	// threads should _not_ be happening
@@ -349,7 +357,8 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	const char* characters = (*env)->GetStringUTFChars(env, str, 0);
 	value->type = ENGINE_STRING;
 	size_t len = strlen(characters);
-	value->data.str = malloc(sizeof(char) * len);
+	value->data.str = malloc(sizeof(char) * (len + 1));
+    value->data.str[len] = '\0';
 	memmove(value->data.str, characters, len);
 	(*env)->ReleaseStringUTFChars(env, str, characters);
 	return engine_wrap(env, value);

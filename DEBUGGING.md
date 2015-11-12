@@ -12,7 +12,7 @@ This document is intended for those who are working with source code of Consoles
 
 `consoles-computers` has tests for the native layer that can fail, so starting a GDB hook for those tests may be nessecary. A benefit of debugging the native layer during the test phase is that you can avoid most bogus SIGSEGV's from the server that would normally be running.
 
-To debug during the test phase, change `DEBUG` to `true` in `consoles-computers/src/test/NativeLayerTest.java`.
+To debug during the test phase, add `-DdebugTests=true` to your maven command.
 
 ### Attaching GDB
 

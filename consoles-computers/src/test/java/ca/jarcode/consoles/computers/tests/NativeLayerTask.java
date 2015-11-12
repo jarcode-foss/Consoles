@@ -1,9 +1,11 @@
 package ca.jarcode.consoles.computers.tests;
 
+import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
 import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptEngine;
+import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
 import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
 import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
@@ -29,13 +31,14 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class NativeLayerTask {
 
-	public static boolean DEBUG = true;
-
-	public static String GDB_CMD = "x-terminal-emulator,-e,gdb,-p,%I";
+	public static boolean DEBUG = "true".equals(System.getProperty("debugTests"));
+	// catch syscall exit exit_group
+	public static String GDB_CMD = "x-terminal-emulator,-e,gdb,-p,%I,-ex,break exit,-ex,cont";
 
 	private static final int LOG_TAB = 69;
 
 	private static final String DONE = "[DONE]";
+	private static final String FAIL = "[FAIL]";
 
 	// getting original stdout, don't want to use JUnit's crap
 	OutputStream out = new FileOutputStream(FileDescriptor.out);
@@ -50,6 +53,8 @@ public class NativeLayerTask {
 	public int loglen = 0;
 
 	public void init() throws Throwable {
+
+		Computers.debug = true;
 
 		log("Loading tests and setting up engine");
 
@@ -80,68 +85,96 @@ public class NativeLayerTask {
 		logn(DONE);
 
 		if (DEBUG) {
+			// catch syscall exit exit_group
 			debuggerProcess = attachDebugger(library.getAbsolutePath());
 			Thread.sleep(2000);
 		}
 
 		log("Building new engine instance");
 		globals = ScriptEngine.get().newInstance(pool, null, System.in, System.out, -1);
+		ScriptEngine.get().removeRestrictions(globals); // we need extra packages
 		logn(DONE);
 	}
 
 	public void loadAndCallChunk() throws Throwable {
 
-		// load our program into a string
-		String program;
+		try {
+			// load our program into a string
+			String program;
 
-		File tests = new File(
-				System.getProperty("user.dir") +
-						"/src/test/lua/tests.lua".replace("/", File.separator)
-		);
+			File tests = new File(
+					System.getProperty("user.dir") +
+							"/src/test/lua/tests.lua".replace("/", File.separator)
+			);
 
-		assert tests.exists();
+			assert tests.exists();
 
-		try (InputStream is = new FileInputStream(tests)) {
-			byte[] buf = new byte[is.available()];
-			int i;
-			int cursor = 0;
-			while (cursor < buf.length) {
-				int r = buf.length - cursor;
-				cursor += is.read(buf, cursor, 1024 > r ? r : 1024);
+			try (InputStream is = new FileInputStream(tests)) {
+				byte[] buf = new byte[is.available()];
+				int i;
+				int cursor = 0;
+				while (cursor < buf.length) {
+					int r = buf.length - cursor;
+					cursor += is.read(buf, cursor, 1024 > r ? r : 1024);
+				}
+				program = new String(buf, StandardCharsets.UTF_8);
 			}
-			program = new String(buf, StandardCharsets.UTF_8);
+
+			log("Loading program chunk");
+			chunk = ScriptEngine.get().load(globals, program);
+			logn(DONE);
+
+			log("Calling program chunk");
+			chunk.call();
+			logn(DONE);
+		}
+		// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
+		// happen. This is probably due to how exceptions are instantiated through the JNI.
+		catch (ScriptError error) {
+			logn(FAIL);
+			stdout.println(error.getMessage());
+			stdout.flush();
+			throw new RuntimeException(error);
 		}
 
-		log("Loading program chunk");
-		chunk = ScriptEngine.get().load(globals, program);
-		logn(DONE);
-
-		log("Calling program chunk");
-		chunk.call();
-		logn(DONE);
 	}
 
 	public void loadAndCallTests() {
-		log("Indexing test() function");
-		ScriptValue testFunction = chunk.get(ValueFactory.get().translate("test", globals));
-		logn(DONE);
 
-		log("Calling test() function");
-		ScriptValue result = testFunction.getAsFunction().call();
-		logn(DONE);
+		try {
+			log("Indexing test() function");
+			ScriptValue testFunction = globals.get(ValueFactory.get().translate("test", globals));
+			logn(DONE);
 
-		log("\n");
+			log("Calling test() function");
+			ScriptValue result = testFunction.getAsFunction().call(
+					ValueFactory.get().translate(System.getProperty("user.dir"), globals)
+			);
+			logn(DONE);
 
-		if (result.canTranslateInt()) {
-			int i = result.translateInt();
-			if (i != 0) {
-				throw new RuntimeException("test() return value: " + i);
+			log("\n");
+
+			if (result.canTranslateInt()) {
+				int i = result.translateInt();
+				if (i != 0) {
+					throw new RuntimeException("test() return value: " + i);
+				}
+				logn("test() return value: " + i);
+			} else {
+				throw new RuntimeException("non-integral response returned from test() lua function");
 			}
-			logn("test() return value: " + i);
 		}
-		else {
-			throw new RuntimeException("non-integral response returned from test() lua function");
+		catch (ScriptError error) {
+			logn(FAIL);
+			stdout.println(error.getMessage());
+			stdout.flush();
+			throw new RuntimeException(error);
 		}
+	}
+
+	public void sendToDebugger(String cmd) throws IOException {
+		OutputStream out = debuggerProcess.getOutputStream();
+		debuggerProcess.getOutputStream().write((cmd + "\n").getBytes(StandardCharsets.UTF_8));
 	}
 
 	public void cleanup() throws InterruptedException {
@@ -154,6 +187,10 @@ public class NativeLayerTask {
 		if (debuggerProcess != null && debuggerProcess.isAlive()) {
 			debuggerProcess.destroyForcibly();
 			debuggerProcess.waitFor();
+		}
+		// give time for the previous GDB instance to exit
+		if (DEBUG) {
+			Thread.sleep(1000);
 		}
 	}
 

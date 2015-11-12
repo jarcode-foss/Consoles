@@ -39,29 +39,28 @@
 #define ENGINE_H_
 
 // primitives
-#define ENGINE_INTEGRAL 0
-#define ENGINE_FLOATING 1
-#define ENGINE_BOOLEAN 2
+#define ENGINE_NULL 0
+#define ENGINE_INTEGRAL 1
+#define ENGINE_FLOATING 2
+#define ENGINE_BOOLEAN 3
 
 // strings are just converted from null-terminated to lua or through the JNI
-#define ENGINE_STRING 3
+#define ENGINE_STRING 4
 // a java object, either passed directly back to Java or wrapped in lua as userdata
-#define ENGINE_JAVA_OBJECT 4
+#define ENGINE_JAVA_OBJECT 5
 // a java _lambda_ function, which means it is defined by one of the OneArgFunc, NoArgFunc, etc. types
-#define ENGINE_JAVA_LAMBDA_FUNCTION 5
+#define ENGINE_JAVA_LAMBDA_FUNCTION 6
 // a _reflected_ java function, meaning it is defined by a list of argument classes, the method id, and
 // a global reference to the instance
-#define ENGINE_JAVA_REFLECT_FUNCTION 6
+#define ENGINE_JAVA_REFLECT_FUNCTION 7
 // a lua function
-#define ENGINE_LUA_FUNCTION 7
+#define ENGINE_LUA_FUNCTION 8
 // an array of values (simplified table from lua)
-#define ENGINE_ARRAY 8
+#define ENGINE_ARRAY 9
 // this is a special type, unlike every other type that is translated into an
 // engine_value, the globals type just wraps access to lua_getglobal and
 // lua_setglobal functions
-#define ENGINE_LUA_GLOBALS 9
-// null value
-#define ENGINE_NULL 10
+#define ENGINE_LUA_GLOBALS 10
 
 // this macro does not replace _all_ instances of the class string.
 #define ENGINE_CLASS "java/lang/Class"
@@ -130,6 +129,8 @@ extern jmethodID id_hashcode;
 extern jclass exclass;
 
 extern uint32_t function_index;
+
+extern int engine_debug;
 
 // A lua function is an index in a lua table of functions that have been (or need to be)
 // exposed to a engine value. Functions are cached in this table when needed in C.

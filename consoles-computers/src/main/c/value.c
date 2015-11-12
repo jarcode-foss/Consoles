@@ -53,7 +53,7 @@ static inline void handle_null_const(jmethodID v, const char* message) {
 }
 
 static inline engine_value* findnative(JNIEnv* env, jobject ref) {
-	engine_value* value = engine_unwrap(env, ref);
+	engine_value* value = m.native(env, &m, ref);
 	if (value) {
 		return value;
 	}
@@ -88,8 +88,6 @@ engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst) {
 }
 engine_value* engine_newsharedvalue(JNIEnv* env) {
 	engine_value* v = malloc(sizeof(engine_value));
-	// even though the type is null, v->data is probably garbage memory
-	v->type = ENGINE_NULL;
 	v->inst = 0;
 	jobject obj = (*env)->NewObject(env, value_type, value_constructor);
 	obj = (*env)->NewGlobalRef(env, obj);
@@ -575,10 +573,10 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 			throw(env, "C: internal error: null string value (bad value)");
 			return;
 		}
-		lua_State* state = value->data.state;
+		lua_State* state = this_value->data.state;
 		engine_pushvalue(env, this_value->inst, state, value);
 		// pops a value from the stack
-		lua_setglobal(state, value->data.str);
+		lua_setglobal(state, key->data.str);
 	}
 	else {
 		throw(env, "C: tried to set non-global value");
@@ -650,6 +648,9 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		// pops after
 		// this function builds a new value (memory!)
 		engine_value* retvalue = engine_popvalue(env, value->inst, state);
+        if (engine_debug) {
+            printf("Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
+        }
 		return engine_wrap(env, retvalue);
 	}
 	else {
@@ -696,7 +697,7 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 				}
 			}
 			engine_value* ret = engine_call(env, inst, state, len);
-			return engine_wrap(env, ret);
+			return ret ? engine_wrap(env, ret) : 0;
 		}
 		else {
 			throw(env, "C: internal error: lua function is a shared value");
@@ -704,7 +705,14 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 		}	
 	}
 	else {
-		throw(env, "C: tried to call value as function");
+        const char* prefix = "C: tried to call value as function";
+        size_t len = strlen(prefix) + 8;
+        char message[len];
+        memset(message, 0, len);
+        strcat(message, prefix);
+        strcat(message, ": ");
+        sprintf(message + (strlen(prefix) + 2), "%d");
+		throw(env, message);
 		return 0;
 	}
 }

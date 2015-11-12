@@ -36,7 +36,7 @@ jclass exclass = 0;
 
 uint32_t function_index = 0;
 
-static int engine_debug = 0;
+int engine_debug = 0;
 static uint8_t setup = 0;
 
 // we use a single caller interface for wrapping Java -> C -> Lua functions,
@@ -413,12 +413,7 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this, jlong ptr) {
 	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	if (inst->restricted) {
-		luaopen_package(inst->state);
-		luaopen_io(inst->state);
-		luaopen_ffi(inst->state);
-		luaopen_jit(inst->state);
-		luaopen_os(inst->state);
-		luaopen_bit(inst->state);
+		luaL_openlibs(inst->state);
 		inst->restricted = 0;
 	}
 	return ptr;
@@ -480,6 +475,7 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject th
 	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	engine_value* v = engine_newvalue(env, inst);
 	v->type = ENGINE_LUA_GLOBALS;
+    v->data.state = inst->state;
 	return engine_wrap(env, v);
 }
 
@@ -497,10 +493,14 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 			vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
 			break;
 	}
-	
+
+    int passed = lua_gettop(state);
+    if (passed != vargs) {
+        printf("WARNING: calling java function with bad arguments (expected: %d, got: %d)", vargs, passed);
+    }
 	// something should be done to truncate extra arguments, because we're
 	// operating on the top of the stack
-	lua_settop(state, vargs); // truncate
+	lua_settop(state, (int) vargs); // truncate
 	
 	engine_value* v_args[vargs];
 	
@@ -810,26 +810,51 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 // should be called with function in stack, followed by arguments
 engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs) {
 	inst->runtime_env = env;
-	lua_getglobal(state, "debug");
-	lua_getfield(state, -1, "traceback");
-	lua_remove(state, -2);
-	int idx = -nargs - 2;
-	lua_insert(state, idx);
+
+    if (!lua_isfunction(state, -nargs - 1) && !lua_iscfunction(state, -nargs - 1)) {
+        throw(env, "C: internal error: engine_call(...) called without function on stack");
+        lua_pop(state, nargs + 1);
+        return 0;
+    }
+    
 	int err = 0;
 	if (!(inst->killed))
-		err = lua_pcall(state, nargs, 1, idx);
+		err = lua_pcall(state, nargs, 1, 0);
+    else {
+        // clear values off stack, don't want to corrupt it even if the instance was killed
+        lua_pop(state, nargs + 1);
+    }
+    
+    uint8_t abort = 1;
 	switch (err) {
-		case LUA_ERRRUN: // runtime error
-			throw(env, "C: runtime error");
-			break;
-		case LUA_ERRMEM: // memory alloc error (no lua error is thrown)
-			throw(env, "C: memory allocation error");
-			break;
-		case LUA_ERRERR: // error in error handler
-			throw(env, "C: error in error handler");
-			break;
+    case LUA_ERRRUN: { // runtime error
+        const char* str = lua_tostring(state, -1);
+        const char* prefix = "C: runtime error";
+        size_t len = strlen(prefix) + strlen(str) + 3;
+        char message[len];
+        memset(message, 0, len);
+        strcat(message, prefix);
+        strcat(message, ": ");
+        strcat(message, str);
+        throw(env, message);
+        lua_pop(state, 1);
+        break;
+    }
+    case LUA_ERRMEM: // memory alloc error (no lua error is thrown)
+        throw(env, "C: memory allocation error");
+        lua_pop(state, 1);
+        break;
+    case LUA_ERRERR: // error in error handler
+        throw(env, "C: error in error handler");
+        lua_pop(state, 1);
+        break;
+    case 0:
+        abort = 0;
+        break;
 	}
-	engine_value* ret = engine_popvalue(env, inst, state);
-	lua_pop(state, 1);
+    engine_value* ret = 0;
+    if (!abort) {
+        ret = engine_popvalue(env, inst, state);
+    }
 	return ret;
 }

@@ -167,10 +167,6 @@
                     <!-- Dump our test info to the console instead. -->
                     <useFile>false</useFile>
 
-                    <!-- We need to run our tests in a separate JVM instance to test for VM crashes. -->
-                    <forkCount>1</forkCount>
-                    <reuseForks>false</reuseForks>
-
                     <!-- Handle assertion errors -->
                     <enableAssertions>true</enableAssertions>
 
@@ -179,6 +175,14 @@
 
                     <!-- Do not timeout -->
                     <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
+
+                    <!-- Pass through system propertery for debugging tests -->
+                    <systemProperties>
+                        <property>
+                            <name>debugTests</name>
+                            <value>${debugTests}</value>
+                        </property>
+                    </systemProperties>
                 </configuration>
             </plugin>
             <plugin>
