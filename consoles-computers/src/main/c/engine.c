@@ -47,6 +47,9 @@ static ffi_cif hook_cif;
 
 static int maxtime = 7000;
 
+static ffi_type* f_args[1];
+static ffi_type* h_args[2];
+
 /*
  * There are some resources that accumulate over the life of the Lua VM. The reason
  * why we cannot collect these during the VM's lifetime is because it's impossible
@@ -202,13 +205,13 @@ static void setup_closures() {
 	}
 	
 	// ffi function args
-	ffi_type* f_args[1];
 	f_args[0] = &ffi_type_pointer;
 	// prepare caller interface
 	if (ffi_prep_cif(&func_cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint, f_args) != FFI_OK) {
 		abort_ffi();
 	}
-	ffi_type* h_args[2];
+
+    // args for hook function
 	h_args[0] = &ffi_type_pointer;
 	h_args[1] = &ffi_type_pointer;
 	if (ffi_prep_cif(&hook_cif, FFI_DEFAULT_ABI, 2, &ffi_type_void, h_args) != FFI_OK) {
@@ -400,7 +403,8 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
 	size_t len = strlen(characters);
 	// I am using malloc instead of doing this on the stack,
 	// because this string could potentially be very large
-	char* raw = malloc(sizeof(char) * len);
+	char* raw = malloc(sizeof(char) * (len + 1));
+    raw[len] = '\0';
 	memmove(raw, characters, len);
 	(*env)->ReleaseStringUTFChars(env, jraw, characters);
 	luaL_loadstring(state, raw);
@@ -493,10 +497,18 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 			vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
 			break;
 	}
-
+    
+    // Lua doesn't know that it needs to match the function/method signature, so we can expect bad arguments
+    // this is technically valid Lua code and errors shouldn't be thrown, but we'll still complain if debug
+    // mode is enabled.
     int passed = lua_gettop(state);
-    if (passed != vargs) {
-        printf("WARNING: calling java function with bad arguments (expected: %d, got: %d)", vargs, passed);
+    if (passed != vargs && engine_debug) {
+        printf("WARNING: calling java function with bad arguments (expected: %d, got: %d)\n", vargs, passed);
+    }
+    
+    if (passed < 0) {
+        printf("FATAL: corrupt Lua API stack\n");
+        exit(EXIT_FAILURE);
     }
 	// something should be done to truncate extra arguments, because we're
 	// operating on the top of the stack
@@ -739,7 +751,7 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 		}
 	}
 	
-	void *func_binding; // our function pointer
+	void* func_binding; // our function pointer
 	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	
 	// this shouldn't happen
