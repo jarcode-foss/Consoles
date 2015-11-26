@@ -55,8 +55,8 @@ debug-hook: false
 # By default, this command will start GDB in a seperate
 # terminal on Linux. You can uncomment the second line
 # if you need a command for a headless server install.
-debug-command: "x-terminal-emulator,-e,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont"
-#debug-command: "screen,-S,%N,-X,gdb,-p,%I"
+debug-command: "x-terminal-emulator,-e,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont,-ex,handle SIGSEGV pass"
+#debug-command: "screen,-S,%N,-X,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont,-ex,handle SIGSEGV pass"
 
 #
 #   FUNCTION SETTINGS

@@ -1,5 +1,7 @@
 
 return function()
-    print(testFunction(42, "foo"))
-    print(lambdaTestFunction(42, "foo"))
+    log("testIntegralValue: " .. testIntegralValue);
+    if (testIntegralValue ~= 42) then
+        error("failed test: failed to pass expected value")
+    end
 end

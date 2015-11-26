@@ -40,6 +40,10 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 	// swap function (top) with value from function table
 	// (result should be nil or a number)
 	lua_gettable(state, -2);
+    // stack:
+    //  -1: nil or function index
+    //  -2: __function table
+    //  -3: copy of original function
 	if (lua_isnil(state, -1)) { // no function mapped
 		// pop the nil value
 		lua_pop(state, 1);
@@ -71,8 +75,8 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 		if (!(v->data.func)) {
 			v->type = ENGINE_NULL;
 		}
-		// pop registry and id
-		lua_pop(state, 2);
+		// pop id, registry, and function under the registry
+		lua_pop(state, 3);
 	}
 }
 
@@ -97,10 +101,12 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 	if (lua_isnumber(state, -1)) {
 		v->type = ENGINE_FLOATING;
 		v->data.d = (double) lua_tonumber(state, -1);
+        lua_pop(state, 1);
 	}
 	else if (lua_isboolean(state, -1)) {
 		v->type = ENGINE_BOOLEAN;
 		v->data.i = (long) lua_toboolean(state, -1);
+        lua_pop(state, 1);
 	}
 	else if (lua_isstring(state, -1)) {
 		v->type = ENGINE_STRING;
@@ -122,6 +128,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 		}
 		
 		v->data.str = s;
+        lua_pop(state, 1);
 	}
 	else if (lua_isnoneornil(state, -1)) {
 		lua_pop(state, 1);
@@ -149,6 +156,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 	// if we run into this, scream at stderr and return null
 	else if (lua_isthread(state, -1)) {
 		fprintf(stderr, "\ntried to convert thread value from native lua engine (wat)\n");
+        lua_pop(state, 1);
 	}
 	
 	// standard behaviour from the script layer is to convert into an array

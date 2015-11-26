@@ -1,4 +1,7 @@
 
+-- flush output automatically
+io.output():setvbuf("no")
+
 tasks = {};
 
 function add_tasks(names)
@@ -12,11 +15,17 @@ function test(workingDir)
     -- search tasks directory (the working directory is inherited from the maven module)
     package.path = package.path .. ";" .. workingDir .. "/src/test/lua/tasks/?.lua"
 
-    add_tasks({ "basic" })
+    add_tasks({ "basic", "functions" })
 
-    print("Running Lua tests...")
+    log("Running Lua tests")
     for i=1,#tasks do
-        print("Running test: '" .. tasks[i][1] .. "'")
+        log("Running test: '" .. tasks[i][1] .. "'")
         tasks[i][2]();
     end
 end
+
+function log(message)
+    print("L: " .. message)
+end
+
+log("reached end of main chunk")

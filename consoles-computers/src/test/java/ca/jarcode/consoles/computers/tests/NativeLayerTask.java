@@ -30,12 +30,13 @@ public class NativeLayerTask {
 
 	public static boolean DEBUG = "true".equals(System.getProperty("debugTests"));
 	// catch syscall exit exit_group
-	public static String GDB_CMD = "x-terminal-emulator,-e,gdb,-p,%I,-ex,break exit,-ex,cont";
+	public static String GDB_CMD = Computers.debugHookCommand;
 
 	private static final int LOG_TAB = 69;
 
 	private static final String DONE = "[DONE]";
 	private static final String FAIL = "[FAIL]";
+	private static final String STARTED = "[STARTED]";
 
 	// getting original stdout, don't want to use JUnit's crap
 	OutputStream out = new FileOutputStream(FileDescriptor.out);
@@ -55,29 +56,33 @@ public class NativeLayerTask {
 
 		log("Loading tests and setting up engine");
 
-		File library = new File(
-				System.getProperty("user.dir") + File.separator +
-				"target/natives" + File.separator +
-				NativeLoader.libraryFormat(NativeLoader.getNativeTarget()).apply("computerimpl")
-		);
+		File library;
 
-		assert library.exists();
-		assert library.isFile();
+		try {
+			library = new File(
+					System.getProperty("user.dir") + File.separator +
+							"target/natives" + File.separator +
+							NativeLoader.libraryFormat(NativeLoader.getNativeTarget()).apply("computerimpl")
+			);
 
-		System.load(library.getAbsolutePath());
+			assert library.exists();
+			assert library.isFile();
 
-		LuaNEngine.init();
+			System.load(library.getAbsolutePath());
 
-		// map a lambda vesion of our test function
-		Lua.map(this::lua$testFunction, "lambdaTestFunction");
+			LuaNEngine.install(LuaNImpl.JIT);
 
-		pool = new FuncPool(null);
+			// map a lambda vesion of our test function
+			Lua.map(this::lua$testFunction, "lambdaTestFunction");
 
-		// register the current thread
-		pool.register(Thread.currentThread());
+			pool = new FuncPool(() -> globals);
 
-		// register any lua functions
-		Lua.find(this, pool);
+			// register the current thread
+			pool.register(Thread.currentThread());
+		}
+		catch (Throwable e) {
+			throw wrapException(e, true);
+		}
 
 		logn(DONE);
 
@@ -88,9 +93,36 @@ public class NativeLayerTask {
 		}
 
 		log("Building new environment");
-		globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
-		globals.removeRestrictions(); // we need extra packages
+
+		try {
+			globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
+
+			globals.set(
+					globals.getValueFactory().translate("testIntegralValue", globals),
+					globals.getValueFactory().translate(42, globals)
+			);
+
+			pool.mapStaticFunctions();
+
+			// register any lua functions
+			Lua.find(this, pool);
+
+			globals.removeRestrictions(); // we need extra packages
+		}
+		catch (Throwable e) {
+			throw wrapException(e, true);
+		}
+
 		logn(DONE);
+	}
+
+	public RuntimeException wrapException(Throwable e, boolean failType) {
+		if (failType)
+			logn(FAIL);
+		else stdout.println("TEST: failed during a call or internal error");
+		stdout.println(e.getMessage());
+		stdout.flush();
+		return new RuntimeException(e);
 	}
 
 	public void loadAndCallChunk() throws Throwable {
@@ -118,20 +150,19 @@ public class NativeLayerTask {
 			}
 
 			log("Loading program chunk");
+			logn(STARTED);
 			chunk = globals.load(program);
-			logn(DONE);
 
 			log("Calling program chunk");
+			logn(STARTED);
+			stdout.print("\n");
 			chunk.call();
-			logn(DONE);
+			stdout.print("\n");
 		}
 		// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
 		// happen. This is probably due to how exceptions are instantiated through the JNI.
-		catch (ScriptError error) {
-			logn(FAIL);
-			stdout.println(error.getMessage());
-			stdout.flush();
-			throw new RuntimeException(error);
+		catch (Throwable e) {
+			throw wrapException(e, false);
 		}
 
 	}
@@ -140,16 +171,19 @@ public class NativeLayerTask {
 
 		try {
 			log("Indexing test() function");
-			ScriptValue testFunction = globals.get(globals.getValueFactory().translate("test", globals));
 			logn(DONE);
+			stdout.print("\n");
+			ScriptValue testFunction = globals.get(globals.getValueFactory().translate("test", globals));
+			stdout.print("\n");
 
 			log("Calling test() function");
+			logn(STARTED);
+			stdout.print("\n");
+
 			ScriptValue result = testFunction.getAsFunction().call(
 					globals.getValueFactory().translate(System.getProperty("user.dir"), globals)
 			);
-			logn(DONE);
-
-			log("\n");
+			stdout.print("\n");
 
 			if (result.canTranslateInt()) {
 				int i = result.translateInt();
@@ -161,11 +195,8 @@ public class NativeLayerTask {
 				throw new RuntimeException("non-integral response returned from test() lua function");
 			}
 		}
-		catch (ScriptError error) {
-			logn(FAIL);
-			stdout.println(error.getMessage());
-			stdout.flush();
-			throw new RuntimeException(error);
+		catch (ScriptError e) {
+			throw wrapException(e, false);
 		}
 	}
 
@@ -196,6 +227,7 @@ public class NativeLayerTask {
 		return "ret: ('" + arg1 + "', " + arg0 + ")";
 	}
 
+	/*
 	public void lua$write(String str) {
 		stdout.println(str);
 		stdout.flush();
@@ -209,6 +241,7 @@ public class NativeLayerTask {
 		if (str.startsWith("PANIC:"))
 			throw new LuaNError(str);
 	}
+	*/
 
 	public void log(String message) {
 		stdout.print(message);

@@ -45,6 +45,7 @@ public class Computers extends JavaPlugin {
 	public static boolean useHeads = true;
 	// head to use for computer items
 	public static String headUUID = "df045cc0-7ec9-4cbc-8219-2ea32ee0cd84";
+	// texture for computer head items
 	public static String headTexture = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZWQxZTk5NzkyODlmMDMwOTlhN2M1ODdkNTJkNDg4ZTI2ZTdiYjE3YWI1OTRiNjlmOTI0MzhkNzdlYWJjIn19fQ==";
 	// hide save messages
 	public static boolean hideSaveMessages = false;
@@ -63,7 +64,8 @@ public class Computers extends JavaPlugin {
 	// debug hook
 	public static boolean debugHook = false;
 	// debug hook command
-	public static String debugHookCommand = "x-terminal-emulator,-e,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont";
+	public static String debugHookCommand = "x-terminal-emulator,-e,gdb,-p,%I,-ex," +
+			"catch syscall exit exit_group,-ex,cont,-ex,handle SIGSEGV pass";
 
 	public static File jarFile;
 

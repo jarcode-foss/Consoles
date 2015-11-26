@@ -141,7 +141,7 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 		if (!valid) return;
 		if (t != inst->wrappers_amt) {
 			engine_jfuncwrapper** ptr = &(inst->wrappers[t]); // pointer to element t
-			memmove(ptr, ptr + 1, (inst->wrappers_amt - (t + 1)) * sizeof(void*));
+			memmove(ptr, ptr + sizeof(void*), (inst->wrappers_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
 	}
@@ -225,7 +225,7 @@ static void setup_closures() {
 static void setup_classes(JNIEnv* env, jmp_buf handle) {
 	
 	if (engine_debug) {
-		printf("\nRegistering global refs to classes\n");
+		printf("C: registering global references to classes\n");
 	}
 	
 	// class registering
@@ -544,8 +544,8 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	// so much more overhead doing it this way.
 	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		if (wrapper->data.lambda.ret) {
+            jobject paramtypes = wrapper->data.lambda.class_array;
 			switch (vargs) {
-                jobject paramtypes = wrapper->data.lambda.class_array;
 				case 0:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
 					break;
@@ -824,7 +824,7 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 		if (!valid) return;
 		if (t != inst->floating_objects_amt) {
 			jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
-			memmove(ptr, ptr + 1, (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
+			memmove(ptr, ptr + sizeof(void*), (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
 	}

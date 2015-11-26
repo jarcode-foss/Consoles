@@ -270,18 +270,20 @@ public abstract class SandboxProgram {
 			// all static functions that were already mapped are automatically added to this pool
 			pool.register(Thread.currentThread());
 
+			// Create our globals for the default scripting engine
+			globals = ScriptEngine.newEnvironment(pool, terminated, in, out, Computers.scriptHeapSize);
+
+			// map static functions, which are functions that are not associated with any script engine
+			pool.mapStaticFunctions();
+
 			// map functions from this program instance to the pool
 			map();
-
-			// create our globals for Lua. We use a special kind of globals
-			// that allows us to finalize variables.
-			globals = ScriptEngine.newEnvironment(pool, terminated, in, out, Computers.scriptHeapSize);
 
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
 					.filter((lib) -> !lib.isRestricted || !restricted)
-					.forEach((lib) -> globals.load(lib));
+					.forEach(globals::load);
 
 			if (!restricted)
 				globals.removeRestrictions();
@@ -321,7 +323,7 @@ public abstract class SandboxProgram {
 				// we don't return if we encountered an error in the default chunk,
 				// instead we continue and attempt to run the main chunk.
 				catch (ScriptError err) {
-					handleLuaError(err);
+					handleScriptError(err);
 				}
 			}
 
@@ -370,7 +372,7 @@ public abstract class SandboxProgram {
 			}
 			// if we encountered an error, we go through quite the process to handle it
 			catch (ScriptError err) {
-				handleLuaError(err);
+				handleScriptError(err);
 			}
 			// regardless if we encountered an error or not, we try to call our exit function.
 			finally {
@@ -390,7 +392,7 @@ public abstract class SandboxProgram {
 						}
 						// if there was an error, handle it the same way.
 						catch (ScriptError err) {
-							handleLuaError(err);
+							handleScriptError(err);
 						}
 					}
 					// release resources
@@ -498,7 +500,7 @@ public abstract class SandboxProgram {
 
 	// handles an uncaught LuaError that occured while attempting to run a lua program
 	// this can either print to the terminal, or dump the stack contents to a file (if too large)
-	private void handleLuaError(ScriptError err) {
+	private void handleScriptError(ScriptError err) {
 
 		// print stack trace in console if in debug mode
 		if (Computers.debug)

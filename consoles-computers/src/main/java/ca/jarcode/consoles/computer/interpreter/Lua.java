@@ -2,10 +2,7 @@ package ca.jarcode.consoles.computer.interpreter;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.interpreter.func.*;
-import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptFunction;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
+import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import net.jodah.typetools.TypeResolver;
 import org.bukkit.Bukkit;
 
@@ -14,6 +11,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * This is meant to make method lambdas (using :: operator) usable
@@ -26,106 +24,106 @@ public class Lua {
 	public static boolean killAll = false;
 
 	public static Map<String, ComputerLibrary> libraries = new ConcurrentHashMap<>();
-	public static Map<String, ScriptFunction> staticFunctions = new ConcurrentHashMap<>();
+	public static Map<String, Function<FuncPool, ScriptFunction>> staticFunctions = new ConcurrentHashMap<>();
 	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
 
 	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
 	// unique piece of code that I have written.
 
 	public static <R, T1, T2, T3, T4> void map(FourArgFunc<R, T1, T2, T3, T4> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, FourArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2, T3> void map(ThreeArgFunc<R, T1, T2, T3> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, ThreeArgFunc.class, true), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2> void map(TwoArgFunc<R, T1, T2> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, TwoArgFunc.class, true), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
 	}
 	public static <R, T1> void map(OneArgFunc<R, T1> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, OneArgFunc.class, true), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, OneArgFunc.class, true), func, pool));
 	}
 
 	public static <T1, T2, T3, T4> void map(FourArgVoidFunc<T1, T2, T3, T4> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, FourArgVoidFunc.class, false), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2, T3> void map(ThreeArgVoidFunc<T1, T2, T3> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2> void map(TwoArgVoidFunc<T1, T2> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1> void map(OneArgVoidFunc<T1> func, String luaName) {
-		staticFunctions.put(luaName, link(resolveArgTypes(func, OneArgVoidFunc.class, false), func));
+		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
 	}
 	public static <R> void map(NoArgFunc<R> func, String luaName) {
-		staticFunctions.put(luaName, link(new Class[0], func));
+		staticFunctions.put(luaName, pool -> link(new Class[0], func, pool));
 	}
 	public static void map(NoArgVoidFunc func, String luaName) {
-		staticFunctions.put(luaName, link(new Class[0], func));
+		staticFunctions.put(luaName, pool -> link(new Class[0], func, pool));
 	}
 
 
 	public static <R, T1, T2, T3, T4> void put(FourArgFunc<R, T1, T2, T3, T4> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2, T3> void put(ThreeArgFunc<R, T1, T2, T3> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgFunc.class, true), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2> void put(TwoArgFunc<R, T1, T2> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgFunc.class, true), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
 	}
 	public static <R, T1> void put(OneArgFunc<R, T1> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgFunc.class, true), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgFunc.class, true), func, pool));
 	}
 
 	public static <T1, T2, T3, T4> void put(FourArgVoidFunc<T1, T2, T3, T4> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgVoidFunc.class, false), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2, T3> void put(ThreeArgVoidFunc<T1, T2, T3> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2> void put(TwoArgVoidFunc<T1, T2> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1> void put(OneArgVoidFunc<T1> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgVoidFunc.class, false), func));
+		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
 	}
 	public static <R> void put(NoArgFunc<R> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(new Class[0], func));
+		pool.functions.put(luaName, link(new Class[0], func, pool));
 	}
 	public static void put(NoArgVoidFunc func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(new Class[0], func));
+		pool.functions.put(luaName, link(new Class[0], func, pool));
 	}
 
-	public static <R, T1, T2, T3, T4> ScriptFunction link(FourArgFunc<R, T1, T2, T3, T4> func) {
-		return link(resolveArgTypes(func, FourArgFunc.class, true), func);
+	public static <R, T1, T2, T3, T4> ScriptFunction link(FourArgFunc<R, T1, T2, T3, T4> func, FuncPool pool) {
+		return link(resolveArgTypes(func, FourArgFunc.class, true), func, pool);
 	}
-	public static <R, T1, T2, T3> ScriptFunction link(ThreeArgFunc<R, T1, T2, T3> func) {
-		return link(resolveArgTypes(func, ThreeArgFunc.class, true), func);
+	public static <R, T1, T2, T3> ScriptFunction link(ThreeArgFunc<R, T1, T2, T3> func, FuncPool pool) {
+		return link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool);
 	}
-	public static <R, T1, T2> ScriptFunction link(TwoArgFunc<R, T1, T2> func) {
-		return link(resolveArgTypes(func, TwoArgFunc.class, true), func);
+	public static <R, T1, T2> ScriptFunction link(TwoArgFunc<R, T1, T2> func, FuncPool pool) {
+		return link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool);
 	}
-	public static <R, T1> ScriptFunction link(OneArgFunc<R, T1> func) {
-		return link(resolveArgTypes(func, OneArgFunc.class, true), func);
+	public static <R, T1> ScriptFunction link(OneArgFunc<R, T1> func, FuncPool pool) {
+		return link(resolveArgTypes(func, OneArgFunc.class, true), func, pool);
 	}
-	public static <T1, T2, T3, T4> ScriptFunction link(FourArgVoidFunc<T1, T2, T3, T4> func) {
-		return link(resolveArgTypes(func, FourArgVoidFunc.class, false), func);
+	public static <T1, T2, T3, T4> ScriptFunction link(FourArgVoidFunc<T1, T2, T3, T4> func, FuncPool pool) {
+		return link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1, T2, T3> ScriptFunction link(ThreeArgVoidFunc<T1, T2, T3> func) {
-		return link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func);
+	public static <T1, T2, T3> ScriptFunction link(ThreeArgVoidFunc<T1, T2, T3> func, FuncPool pool) {
+		return link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1, T2> ScriptFunction link(TwoArgVoidFunc<T1, T2> func) {
-		return link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func);
+	public static <T1, T2> ScriptFunction link(TwoArgVoidFunc<T1, T2> func, FuncPool pool) {
+		return link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1> ScriptFunction link(OneArgVoidFunc<T1> func) {
-		return link(resolveArgTypes(func, OneArgVoidFunc.class, false), func);
+	public static <T1> ScriptFunction link(OneArgVoidFunc<T1> func, FuncPool pool) {
+		return link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool);
 	}
-	public static ScriptFunction link(NoArgVoidFunc func) {
-		return link(new Class[0], func);
+	public static ScriptFunction link(NoArgVoidFunc func, FuncPool pool) {
+		return link(new Class[0], func, pool);
 	}
-	public static <R> ScriptFunction link(NoArgFunc<R> func) {
-		return link(new Class[0], func);
+	public static <R> ScriptFunction link(NoArgFunc<R> func, FuncPool pool) {
+		return link(new Class[0], func, pool);
 	}
 	public static void find(Object inst, FuncPool pool) {
 		find(inst.getClass(), inst, pool);
@@ -140,7 +138,7 @@ public class Lua {
 				.filter(m -> m.getName().startsWith("lua$"))
 				.peek(m -> m.setAccessible(true))
 				.map(m -> new AbstractMap.SimpleEntry<>(m.getName().substring(4),
-						FunctionFactory.getDefaultFactory().createFunction(m, inst)))
+						pool.getGlobals().getFunctionFactory().createFunction(m, inst)))
 				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
 	}
 	public static Object[] toJavaAndRelease(Class[] types, Object... args) {
@@ -176,50 +174,51 @@ public class Lua {
 		System.arraycopy(arr, 1, ret, 0, ret.length - 1);
 		return ret;
 	}
-	public static ScriptFunction link(Class[] types, Object func) {
-		return FunctionFactory.getDefaultFactory().createFunction(types, func);
+	public static ScriptFunction link(Class[] types, Object func, FuncPool pool) {
+		return pool.getGlobals().getFunctionFactory().createFunction(types, func);
 	}
 	public static ScriptValue translateToScriptValue(Object java) {
-		ScriptValue globals = findPool().getProgram().globals.value();
+		ScriptGlobals G = findPool().getGlobals();
+		ScriptValue globals = G.value();
 		if (java == null) {
-			return ValueFactory.getDefaultFactory().nullValue(globals);
+			return G.getValueFactory().nullValue(globals);
 		}
 		else if (java instanceof ScriptValue) {
 			return (ScriptValue) java;
 		}
 		else if (java instanceof Boolean) {
-			return ValueFactory.getDefaultFactory().translate((Boolean) java, globals);
+			return G.getValueFactory().translate((Boolean) java, globals);
 		}
 		else if (java instanceof Integer) {
-			return ValueFactory.getDefaultFactory().translate((Integer) java, globals);
+			return G.getValueFactory().translate((Integer) java, globals);
 		}
 		else if (java instanceof Byte) {
-			return ValueFactory.getDefaultFactory().translate((Byte) java, globals);
+			return G.getValueFactory().translate((Byte) java, globals);
 		}
 		else if (java instanceof Short) {
-			return ValueFactory.getDefaultFactory().translate((Short) java, globals);
+			return G.getValueFactory().translate((Short) java, globals);
 		}
 		else if (java instanceof Long) {
-			return ValueFactory.getDefaultFactory().translate((Long) java, globals);
+			return G.getValueFactory().translate((Long) java, globals);
 		}
 		else if (java instanceof Double) {
-			return ValueFactory.getDefaultFactory().translate((Double) java, globals);
+			return G.getValueFactory().translate((Double) java, globals);
 		}
 		else if (java instanceof Float) {
-			return ValueFactory.getDefaultFactory().translate((Float) java, globals);
+			return G.getValueFactory().translate((Float) java, globals);
 		}
 		else if (java instanceof Character) {
-			return ValueFactory.getDefaultFactory().translate(new String(new char[]{(Character) java}), globals);
+			return G.getValueFactory().translate(new String(new char[]{(Character) java}), globals);
 		}
 		else if (java instanceof String) {
-			return ValueFactory.getDefaultFactory().translate((String) java, globals);
+			return G.getValueFactory().translate((String) java, globals);
 		}
 		// recursive
 		else if (java.getClass().isArray()) {
 			Object[] arr = new Object[Array.getLength(java)];
 			for (int t = 0; t < arr.length; t++)
 				arr[t] = Array.get(java, t);
-			return ValueFactory.getDefaultFactory().list(
+			return G.getValueFactory().list(
 					Arrays.asList(arr).stream()
 					.map(Lua::translateToScriptValue)
 					.toArray(ScriptValue[]::new),
@@ -228,7 +227,7 @@ public class Lua {
 		else {
 			if (Computers.debug)
 				Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
-			return ValueFactory.getDefaultFactory().translateObj(java, globals);
+			return G.getValueFactory().translateObj(java, globals);
 		}
 	}
 

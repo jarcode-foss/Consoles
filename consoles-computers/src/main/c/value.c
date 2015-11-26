@@ -649,7 +649,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		// this function builds a new value (memory!)
 		engine_value* retvalue = engine_popvalue(env, value->inst, state);
         if (engine_debug) {
-            printf("Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
+            printf("C: Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
         }
 		return engine_wrap(env, retvalue);
 	}

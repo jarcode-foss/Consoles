@@ -33,7 +33,7 @@ public class ScriptGlobals {
 	}
 
 	public void set(ScriptValue key, ScriptValue value) {
-		value.set(key, value);
+		this.value.set(key, value);
 	}
 
 	public FunctionFactory getFunctionFactory() {
