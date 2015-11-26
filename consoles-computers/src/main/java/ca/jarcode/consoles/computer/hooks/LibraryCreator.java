@@ -52,7 +52,7 @@ public class LibraryCreator {
 	}
 	private static ComputerLibrary.NamedFunction toLua(Method m, Object inst) {
 		ComputerLibrary.NamedFunction function =
-				new ComputerLibrary.NamedFunction(FunctionFactory.get().createFunction(m, inst));
+				new ComputerLibrary.NamedFunction(FunctionFactory.getDefaultFactory().createFunction(m, inst));
 		if (m.isAnnotationPresent(LuaName.class)) {
 			LuaName annotation = m.getAnnotation(LuaName.class);
 			function.setName(annotation.name());

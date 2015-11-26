@@ -17,21 +17,61 @@ import java.util.function.BooleanSupplier;
 
 public class LuaNEngine implements ScriptEngine {
 
-	public static LuaNInterface NATIVE_ENGINE;
+	// keep in mind the static init (<sinit>) code cannot reference
+	// any classes that require JNI libraries, just in case they
+	// aren't loaded yet, or failed to load.
+
+	public static LuaNInterface ENGINE_INTERFACE;
 
 	private static LuaNImpl IMPL = null;
 
+	private static FunctionFactory FUNCTION_FACTORY;
+	private static ValueFactory VALUE_FACTORY;
+	private static ScriptEngine LUA_NATIVE_ENGINE;
+
+	private static volatile boolean enabled = false;
+
+	public static ScriptGlobals newEnvironment(FuncPool pool, BooleanSupplier terminated,
+	                                    InputStream stdin, OutputStream stdout, long heap) {
+		return new ScriptGlobals(
+				LUA_NATIVE_ENGINE.newInstance(pool, terminated, stdin, stdout, heap),
+				LUA_NATIVE_ENGINE, FUNCTION_FACTORY, VALUE_FACTORY
+		);
+	}
+
+	public static FunctionFactory getFunctionFactory() {
+		return FUNCTION_FACTORY;
+	}
+
+	public static ValueFactory getValueFactory() {
+		return VALUE_FACTORY;
+	}
+
+	public static void init() {
+		LUA_NATIVE_ENGINE = new LuaNEngine();
+		FUNCTION_FACTORY = new LuaNFunctionFactory();
+		VALUE_FACTORY = new LuaNValueFactory();
+		IMPL = LuaNImpl.JIT;
+		enabled = true;
+	}
+
+	public static void setImplementation(LuaNImpl implementation) {
+		IMPL = implementation;
+	}
+
 	public static void install(LuaNImpl impl) {
+		if (!enabled) {
+			init();
+		}
 		LuaNEngine.IMPL = impl;
-		FunctionFactory.assign(new LuaNFunctionFactory());
-		ValueFactory.assign(new LuaNValueFactory());
-		LuaNEngine luaN = new LuaNEngine();
-		ScriptEngine.assign(luaN);
-		NATIVE_ENGINE = new LuaEngine();
-		NATIVE_ENGINE.setdebug(Computers.debug ? 1 : 0);
-		NATIVE_ENGINE.setmaxtime(Computers.maxTimeWithoutInterrupt);
-		NATIVE_ENGINE.setup();
-		luaN.L = NATIVE_ENGINE;
+		FunctionFactory.assign(FUNCTION_FACTORY);
+		ValueFactory.assign(VALUE_FACTORY);
+		ScriptEngine.assign(LUA_NATIVE_ENGINE);
+		ENGINE_INTERFACE = new LuaEngine();
+		ENGINE_INTERFACE.setdebug(Computers.debug ? 1 : 0);
+		ENGINE_INTERFACE.setmaxtime(Computers.maxTimeWithoutInterrupt);
+		ENGINE_INTERFACE.setup();
+		((LuaNEngine) LUA_NATIVE_ENGINE).L = ENGINE_INTERFACE;
 	}
 
 	private List<LuaNInstance> instances = new ArrayList<>();
@@ -123,7 +163,7 @@ public class LuaNEngine implements ScriptEngine {
 
 		// load functions from our pool
 		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {
-			ScriptValue key = ValueFactory.get().translate(entry.getKey(), globals);
+			ScriptValue key = ValueFactory.getDefaultFactory().translate(entry.getKey(), globals);
 			globals.set(key, entry.getValue().getAsValue());
 			key.release();
 		}

@@ -11,7 +11,16 @@ public interface ScriptEngine {
 
 	ScriptEngine[] factory = new ScriptEngine[1];
 
-	static ScriptEngine get() {
+	// The 'preferred' way to create a new script environment.
+	static ScriptGlobals newEnvironment(FuncPool pool, BooleanSupplier terminated,
+	                                    InputStream stdin, OutputStream stdout, long heap) {
+		return new ScriptGlobals(
+				getDefaultEngine().newInstance(pool, terminated, stdin, stdout, heap),
+				getDefaultEngine(), FunctionFactory.getDefaultFactory(), ValueFactory.getDefaultFactory()
+		);
+	}
+
+	static ScriptEngine getDefaultEngine() {
 		return factory[0];
 	}
 

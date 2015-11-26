@@ -1,6 +1,5 @@
 package ca.jarcode.consoles.computer.interpreter;
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.interpreter.func.*;
 import ca.jarcode.consoles.computer.interpreter.interfaces.FunctionFactory;
@@ -141,7 +140,7 @@ public class Lua {
 				.filter(m -> m.getName().startsWith("lua$"))
 				.peek(m -> m.setAccessible(true))
 				.map(m -> new AbstractMap.SimpleEntry<>(m.getName().substring(4),
-						FunctionFactory.get().createFunction(m, inst)))
+						FunctionFactory.getDefaultFactory().createFunction(m, inst)))
 				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
 	}
 	public static Object[] toJavaAndRelease(Class[] types, Object... args) {
@@ -178,49 +177,49 @@ public class Lua {
 		return ret;
 	}
 	public static ScriptFunction link(Class[] types, Object func) {
-		return FunctionFactory.get().createFunction(types, func);
+		return FunctionFactory.getDefaultFactory().createFunction(types, func);
 	}
 	public static ScriptValue translateToScriptValue(Object java) {
-		ScriptValue globals = findPool().getProgram().globals;
+		ScriptValue globals = findPool().getProgram().globals.value();
 		if (java == null) {
-			return ValueFactory.get().nullValue(globals);
+			return ValueFactory.getDefaultFactory().nullValue(globals);
 		}
 		else if (java instanceof ScriptValue) {
 			return (ScriptValue) java;
 		}
 		else if (java instanceof Boolean) {
-			return ValueFactory.get().translate((Boolean) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Boolean) java, globals);
 		}
 		else if (java instanceof Integer) {
-			return ValueFactory.get().translate((Integer) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Integer) java, globals);
 		}
 		else if (java instanceof Byte) {
-			return ValueFactory.get().translate((Byte) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Byte) java, globals);
 		}
 		else if (java instanceof Short) {
-			return ValueFactory.get().translate((Short) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Short) java, globals);
 		}
 		else if (java instanceof Long) {
-			return ValueFactory.get().translate((Long) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Long) java, globals);
 		}
 		else if (java instanceof Double) {
-			return ValueFactory.get().translate((Double) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Double) java, globals);
 		}
 		else if (java instanceof Float) {
-			return ValueFactory.get().translate((Float) java, globals);
+			return ValueFactory.getDefaultFactory().translate((Float) java, globals);
 		}
 		else if (java instanceof Character) {
-			return ValueFactory.get().translate(new String(new char[]{(Character) java}), globals);
+			return ValueFactory.getDefaultFactory().translate(new String(new char[]{(Character) java}), globals);
 		}
 		else if (java instanceof String) {
-			return ValueFactory.get().translate((String) java, globals);
+			return ValueFactory.getDefaultFactory().translate((String) java, globals);
 		}
 		// recursive
 		else if (java.getClass().isArray()) {
 			Object[] arr = new Object[Array.getLength(java)];
 			for (int t = 0; t < arr.length; t++)
 				arr[t] = Array.get(java, t);
-			return ValueFactory.get().list(
+			return ValueFactory.getDefaultFactory().list(
 					Arrays.asList(arr).stream()
 					.map(Lua::translateToScriptValue)
 					.toArray(ScriptValue[]::new),
@@ -229,7 +228,7 @@ public class Lua {
 		else {
 			if (Computers.debug)
 				Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
-			return ValueFactory.get().translateObj(java, globals);
+			return ValueFactory.getDefaultFactory().translateObj(java, globals);
 		}
 	}
 

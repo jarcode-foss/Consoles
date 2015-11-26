@@ -593,7 +593,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
-	
+    
 	engine_value* key = engine_unwrap(env, script_value);
 	// this happens if some retard calls this method with a script value that isn't LuaNScriptValue or null
 	if (key == 0) {

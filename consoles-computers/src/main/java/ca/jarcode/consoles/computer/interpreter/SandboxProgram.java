@@ -7,10 +7,7 @@ import ca.jarcode.consoles.computer.bin.TouchProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
 import ca.jarcode.consoles.computer.interpreter.func.TwoArgFunc;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptEngine;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
+import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import ca.jarcode.consoles.computer.interpreter.libraries.Libraries;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFile;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFrame;
@@ -161,7 +158,7 @@ public abstract class SandboxProgram {
 	protected String args;
 	protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	protected List<Integer> allocatedSessions = new ArrayList<>();
-	protected ScriptValue globals;
+	protected ScriptGlobals globals;
 
 	protected Runnable terminator;
 	protected BooleanSupplier terminated;
@@ -278,16 +275,16 @@ public abstract class SandboxProgram {
 
 			// create our globals for Lua. We use a special kind of globals
 			// that allows us to finalize variables.
-			globals = ScriptEngine.get().newInstance(pool, terminated, in, out, Computers.scriptHeapSize);
+			globals = ScriptEngine.newEnvironment(pool, terminated, in, out, Computers.scriptHeapSize);
 
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
 					.filter((lib) -> !lib.isRestricted || !restricted)
-					.forEach((lib) -> ScriptEngine.get().load(globals, lib));
+					.forEach((lib) -> globals.load(lib));
 
 			if (!restricted)
-				ScriptEngine.get().removeRestrictions(globals);
+				globals.removeRestrictions();
 
 			// our main program chunk and the default chunk
 			ScriptValue chunk, def;
@@ -351,17 +348,17 @@ public abstract class SandboxProgram {
 				// just called, and all the methods in said chunk have been declared.
 
 				// get our main function
-				ScriptValue value = globals.get(ValueFactory.get().translate("main", globals));
+				ScriptValue value = globals.get(ValueFactory.getDefaultFactory().translate("main", globals));
 
 				// set the exit function
-				exit = globals.get(ValueFactory.get().translate("exit", globals));
+				exit = globals.get(ValueFactory.getDefaultFactory().translate("exit", globals));
 
 				// if the main function exists, call it.
 				//
 				// some programs won't have a main method. That's fine, in that case
 				// most of the code will be in the chunk itself.
 				if (value.isFunction()) {
-					value.getAsFunction().call(ValueFactory.get().translate(args, globals));
+					value.getAsFunction().call(ValueFactory.getDefaultFactory().translate(args, globals));
 				}
 
 				// release resources
@@ -432,7 +429,7 @@ public abstract class SandboxProgram {
 
 			// close resources
 			if (globals != null)
-				ScriptEngine.get().close(globals);
+				globals.close();
 		}
 	}
 
@@ -446,7 +443,7 @@ public abstract class SandboxProgram {
 		try {
 			// try to load in the program
 			// this will try to compile the Lua string into Java bytecode
-			chunk = ScriptEngine.get().load(globals, raw);
+			chunk = globals.load(raw);
 
 		}
 		// if we run into a compile error, print out the details and exit.
@@ -564,7 +561,7 @@ public abstract class SandboxProgram {
 				// grab Lua version
 				String version;
 				try {
-					version = globals.get(ValueFactory.get().translate("_VERSION", globals)).translateString();
+					version = globals.get(ValueFactory.getDefaultFactory().translate("_VERSION", globals)).translateString();
 				}
 				catch (ScriptError ignored) {
 					version = "?";
@@ -625,6 +622,6 @@ public abstract class SandboxProgram {
 		if (restricted) ProgramUtils.sleep(ms);
 	}
 	public void resetInterrupt() {
-		ScriptEngine.get().resetInterrupt(globals);
+		globals.resetInterrupt();
 	}
 }

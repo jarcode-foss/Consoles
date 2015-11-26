@@ -87,7 +87,15 @@
 #define ENGINE_TYPE_KEY "__impl"
 #define ENGINE_TYPE "native"
 
+// check for java exception and jump to buffer if one has been thrown
 #define CHECKEX(e, b) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { longjmp(b, 1); } } while (0)
+
+// translate engine value to a java object (unwrap and call Lua.translate(...))
+// this is done on an array of engine values (v) and a java Class[] array (a)
+// used for translating arguments in function calls
+#define TOJAVA(e, v, a, i) (*e)->CallStaticObjectMethod(e, class_lua, id_translate, \
+                                                        (*e)->GetObjectArrayElement(e, a, i), \
+                                                        engine_wrap(env, v[i]))
 
 static inline jmethodID method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
@@ -158,7 +166,7 @@ typedef struct {
 		struct {
 			jmethodID id; // id of lambda method
 			uint8_t ret; // >0 if there is a return value
-			uint8_t args; // argument count
+			jobject class_array; // Class[] global ref
 		} lambda;
 		struct {
 			jobject method; // Method instance
@@ -281,7 +289,7 @@ extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);
 // same thing, just in reverse
 extern jobject engine_wrap(JNIEnv* env, engine_value* value);
 // get info from lambda function class
-extern engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype);
+extern engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype, jobject class_array);
 
 // wrap lua value to script value
 // this operates on the value on the top of the lua stack, popping it after

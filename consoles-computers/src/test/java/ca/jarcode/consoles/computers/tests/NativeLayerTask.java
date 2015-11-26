@@ -4,10 +4,7 @@ import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
 import ca.jarcode.consoles.computer.interpreter.Lua;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptEngine;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
-import ca.jarcode.consoles.computer.interpreter.interfaces.ValueFactory;
+import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNError;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
@@ -47,7 +44,7 @@ public class NativeLayerTask {
 	Process debuggerProcess;
 
 	FuncPool pool;
-	ScriptValue globals;
+	ScriptGlobals globals;
 	ScriptValue chunk;
 
 	public int loglen = 0;
@@ -69,7 +66,7 @@ public class NativeLayerTask {
 
 		System.load(library.getAbsolutePath());
 
-		LuaNEngine.install(LuaNImpl.JIT);
+		LuaNEngine.init();
 
 		// map a lambda vesion of our test function
 		Lua.map(this::lua$testFunction, "lambdaTestFunction");
@@ -90,9 +87,9 @@ public class NativeLayerTask {
 			Thread.sleep(2000);
 		}
 
-		log("Building new engine instance");
-		globals = ScriptEngine.get().newInstance(pool, null, System.in, System.out, -1);
-		ScriptEngine.get().removeRestrictions(globals); // we need extra packages
+		log("Building new environment");
+		globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
+		globals.removeRestrictions(); // we need extra packages
 		logn(DONE);
 	}
 
@@ -121,7 +118,7 @@ public class NativeLayerTask {
 			}
 
 			log("Loading program chunk");
-			chunk = ScriptEngine.get().load(globals, program);
+			chunk = globals.load(program);
 			logn(DONE);
 
 			log("Calling program chunk");
@@ -143,12 +140,12 @@ public class NativeLayerTask {
 
 		try {
 			log("Indexing test() function");
-			ScriptValue testFunction = globals.get(ValueFactory.get().translate("test", globals));
+			ScriptValue testFunction = globals.get(globals.getValueFactory().translate("test", globals));
 			logn(DONE);
 
 			log("Calling test() function");
 			ScriptValue result = testFunction.getAsFunction().call(
-					ValueFactory.get().translate(System.getProperty("user.dir"), globals)
+					globals.getValueFactory().translate(System.getProperty("user.dir"), globals)
 			);
 			logn(DONE);
 
@@ -179,7 +176,7 @@ public class NativeLayerTask {
 
 	public void cleanup() throws InterruptedException {
 		if (globals != null) {
-			ScriptEngine.get().close(globals);
+			globals.close();
 		}
 		if (pool != null) {
 			pool.cleanup();
@@ -195,6 +192,7 @@ public class NativeLayerTask {
 	}
 
 	public String lua$testFunction(int arg0, String arg1) {
+		stdout.println("J: testFunction sucessfully called from Lua!");
 		return "ret: ('" + arg1 + "', " + arg0 + ")";
 	}
 

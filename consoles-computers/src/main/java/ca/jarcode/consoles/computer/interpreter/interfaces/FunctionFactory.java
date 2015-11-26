@@ -14,7 +14,7 @@ public interface FunctionFactory {
 
 	FunctionFactory[] factory = new FunctionFactory[1];
 
-	static FunctionFactory get() {
+	static FunctionFactory getDefaultFactory() {
 		return factory[0];
 	}
 

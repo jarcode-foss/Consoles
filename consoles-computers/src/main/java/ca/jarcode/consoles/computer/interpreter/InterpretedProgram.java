@@ -1,6 +1,5 @@
 package ca.jarcode.consoles.computer.interpreter;
 
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.Lang;
 import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.ComputerHandler;
@@ -112,9 +111,9 @@ public final class InterpretedProgram extends SandboxProgram {
 				restricted = false;
 				Lua.libraries.values().stream()
 						.filter((lib) -> lib.isRestricted)
-						.forEach((lib) -> ScriptEngine.get().load(globals, lib));
+						.forEach(globals::load);
 
-				ScriptEngine.get().removeRestrictions(globals);
+				globals.removeRestrictions();
 			} else {
 				print("\nlua: " + lang.getString("lua-perm"));
 				terminate();
@@ -142,7 +141,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		try {
 			while (locked.get() && !terminated()) {
 				Thread.sleep(10);
-				ScriptEngine.get().resetInterrupt(globals);
+				globals.resetInterrupt();
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -197,7 +196,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			@Arg(name="channel",info="name of the channel to register") String channel) {
 		delay(40);
 		if (!computer.isChannelRegistered(channel)) {
-			LuaChannel ch = new LuaChannel(() -> ScriptEngine.get().resetInterrupt(globals), () -> {
+			LuaChannel ch = new LuaChannel(globals::resetInterrupt, () -> {
 				computer.unregisterMessageListener(channel);
 				registeredChannels.remove(channel);
 			}, this::terminated);
@@ -296,7 +295,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		String text = file.read();
 		ScriptValue value;
 		try {
-			value = ScriptEngine.get().load(globals, text);
+			value = globals.load(text);
 		}
 		catch (ScriptError err) {
 			if (Computers.debug)
@@ -321,7 +320,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		allocatedSessions.add(index);
 		BufferedFrameComponent component = new BufferedFrameComponent(computer);
 		computer.setComponent(index, component);
-		return new LuaBuffer(this, index, component, () -> ScriptEngine.get().resetInterrupt(globals));
+		return new LuaBuffer(this, index, component, globals::resetInterrupt);
 	}
 	@FunctionManual("Appends text to the terminal. This will not suffix a newline (\\n) character, " +
 			"unlike the print function.")
@@ -409,12 +408,12 @@ public final class InterpretedProgram extends SandboxProgram {
 	public void lua$sleep(
 			@Arg(name = "ms", info = "the duration in which to sleep") Integer ms) {
 		try {
-			ScriptEngine.get().resetInterrupt(globals);
+			globals.resetInterrupt();
 			long target = System.currentTimeMillis() + ms;
 			while (System.currentTimeMillis() < target && !terminated()) {
 				Thread.sleep(8);
 			}
-			ScriptEngine.get().resetInterrupt(globals);
+			globals.resetInterrupt();
 		}
 		catch (InterruptedException e) {
 			throw new GenericScriptError(e);

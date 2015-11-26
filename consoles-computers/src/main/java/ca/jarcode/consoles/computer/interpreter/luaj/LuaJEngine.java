@@ -21,7 +21,34 @@ import java.util.function.BooleanSupplier;
 
 public class LuaJEngine implements ScriptEngine {
 
+	private static FunctionFactory FUNCTION_FACTORY;
+	private static ValueFactory VALUE_FACTORY;
+
+	private static ScriptEngine LUA_JAVA_ENGINE;
+
+	private static volatile boolean enabled = false;
+
+	public static void init() {
+		FUNCTION_FACTORY = new LuaJFunctionFactory();
+
+		VALUE_FACTORY = new LuaJValueFactory();
+
+		LUA_JAVA_ENGINE = new LuaJEngine();
+		enabled = true;
+	}
+
+	public static FunctionFactory getFunctionFactory() {
+		return FUNCTION_FACTORY;
+	}
+
+	public static ValueFactory getValueFactory() {
+		return VALUE_FACTORY;
+	}
+
 	public static void install() {
+		if (!enabled) {
+			init();
+		}
 		FunctionFactory.assign(new LuaJFunctionFactory());
 		ValueFactory.assign(new LuaJValueFactory());
 		ScriptEngine.assign(new LuaJEngine());

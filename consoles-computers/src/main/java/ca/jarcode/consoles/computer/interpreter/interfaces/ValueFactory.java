@@ -7,7 +7,7 @@ public interface ValueFactory {
 
 	ValueFactory[] factory = new ValueFactory[1];
 
-	static ValueFactory get() {
+	static ValueFactory getDefaultFactory() {
 		return factory[0];
 	}
 
@@ -30,4 +30,52 @@ public interface ValueFactory {
 	ScriptValue nullValue(ScriptValue globals);
 
 	ScriptValue translateObj(Object obj, ScriptValue globals);
+
+	default ScriptValue translate(boolean b, ScriptGlobals globals) {
+		return translate(b, globals.value());
+	}
+
+	default ScriptValue translate(float f, ScriptGlobals globals) {
+		return translate(f, globals.value());
+	}
+
+	default ScriptValue translate(double d, ScriptGlobals globals) {
+		return translate(d, globals.value());
+	}
+
+	default ScriptValue translate(String str, ScriptGlobals globals) {
+		return translate(str, globals.value());
+	}
+
+	default ScriptValue translate(int i, ScriptGlobals globals) {
+		return translate(i, globals.value());
+	}
+
+	default ScriptValue translate(long l, ScriptGlobals globals) {
+		return translate(l, globals.value());
+	}
+
+	default ScriptValue translate(short s, ScriptGlobals globals) {
+		return translate(s, globals.value());
+	}
+
+	default ScriptValue translate(byte b, ScriptGlobals globals) {
+		return translate(b, globals.value());
+	}
+
+	default ScriptValue translate(char c, ScriptGlobals globals) {
+		return translate(c, globals.value());
+	}
+
+	default ScriptValue list(ScriptValue[] values, ScriptGlobals globals) {
+		return list(values, globals.value());
+	}
+
+	default ScriptValue nullValue(ScriptGlobals globals) {
+		return nullValue(globals.value());
+	}
+
+	default ScriptValue translateObj(Object obj, ScriptGlobals globals) {
+		return translateObj(obj, globals.value());
+	}
 }

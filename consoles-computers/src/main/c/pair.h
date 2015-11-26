@@ -5,6 +5,11 @@
 
 #define PAIR_JAVA_LOCK_OBJECT "java/lang/Object"
 
+// locking and unlocking macros
+#define LOCK(x, m) (*x)->MonitorEnter(x, m->lock)
+#define UNLOCK(x, m) (*x)->MonitorExit(x, m->lock)
+#define WAIT_FOR_WRITE(x, m) LOCK(x, m); UNLOCK(x, m)
+
 // this is a pair map that is synchronized on a java object (through the JNI)
 // this map should be used for storing native class members in the C implementations of a class
 typedef struct pair_map_ {

@@ -84,6 +84,9 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 		if (inst->wrappers[t]->type == ENGINE_JAVA_REFLECT_FUNCTION) {
 			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data.reflect.method);
 		}
+        else if (inst->wrappers[t]->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data.lambda.class_array);
+        }
 
 		free(inst->wrappers[t]);
 	}
@@ -138,7 +141,7 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 		if (!valid) return;
 		if (t != inst->wrappers_amt) {
 			engine_jfuncwrapper** ptr = &(inst->wrappers[t]); // pointer to element t
-			memmove(ptr, ptr + 1, inst->wrappers_amt - (t + 1));
+			memmove(ptr, ptr + 1, (inst->wrappers_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
 	}
@@ -491,7 +494,7 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	uint8_t vargs = 0;
 	switch (wrapper->type) {
 		case ENGINE_JAVA_LAMBDA_FUNCTION:
-			vargs = wrapper->data.lambda.args;
+			vargs = (*env)->GetArrayLength(env, wrapper->data.lambda.class_array);
 			break;
 		case ENGINE_JAVA_REFLECT_FUNCTION:
 			vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
@@ -542,25 +545,31 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
 		if (wrapper->data.lambda.ret) {
 			switch (vargs) {
+                jobject paramtypes = wrapper->data.lambda.class_array;
 				case 0:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
 					break;
 				case 1:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]));
+                                                   TOJAVA(env, v_args, paramtypes, 0));
 					break;
 				case 2:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]));
+                                                   TOJAVA(env, v_args, paramtypes, 0),
+                                                   TOJAVA(env, v_args, paramtypes, 1));
 					break;
 				case 3:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]), engine_wrap(env, v_args[2]));
+                                                   TOJAVA(env, v_args, paramtypes, 0),
+                                                   TOJAVA(env, v_args, paramtypes, 1),
+                                                   TOJAVA(env, v_args, paramtypes, 2));
 					break;
 				case 4:
 					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]), engine_wrap(env, v_args[2]),
-						engine_wrap(env, v_args[3]));
+                                                   TOJAVA(env, v_args, paramtypes, 0),
+                                                   TOJAVA(env, v_args, paramtypes, 1),
+                                                   TOJAVA(env, v_args, paramtypes, 2),
+                                                   TOJAVA(env, v_args, paramtypes, 3));
 					break;
 			}
 		}
@@ -658,11 +667,10 @@ void engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user
 	*(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
 }
 
-engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype) {
+engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype, jobject class_array) {
 	jfieldID fid_return = (*env)->GetStaticFieldID(env, jfunctype, "C_RETURN", "I");
-	jfieldID fid_args = (*env)->GetStaticFieldID(env, jfunctype, "C_ARGS", "I");
 	jint ret = (*env)->GetStaticIntField(env, jfunctype, fid_return);
-	jint args = (*env)->GetStaticIntField(env, jfunctype, fid_args); 
+	jint args = (*env)->GetArrayLength( env, class_array);
 	engine_lambda_info info = {.ret = ret, .args = args};
 	return info;
 }
@@ -670,9 +678,6 @@ engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass j
 // magic to turn Java lambda function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
 // and then pushes it onto the lua stack.
 void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array) {
-	if (engine_debug) {
-		printf("\nwrapping java lambda function from C\n");
-	}
 	
 	// get class
 	jclass jfunctype = (*env)->GetObjectClass(env, jfunc);
@@ -680,7 +685,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	// obtain func (lambda) info
 	uint8_t ret, args;
 	{
-		engine_lambda_info info = engine_getlambdainfo(env, inst, jfunctype);
+		engine_lambda_info info = engine_getlambdainfo(env, inst, jfunctype, class_array);
 		ret = info.ret;
 		args = info.args;
 	}
@@ -701,7 +706,10 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	
 	static jmp_buf handle;
 	
-	if (setjmp(handle)) { return; }
+	if (setjmp(handle)) {
+        fprintf(stderr, "C: SEVERE: failed to resolve call(?) method for lambda (%s)", buf);
+        return;
+    }
 	
 	jmethodID mid = method_resolve(env, jfunctype, "call", buf, handle);
 	void *func_binding = 0; // our function pointer
@@ -718,11 +726,21 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	if (ffi_prep_closure_loc(closure, &func_cif, &engine_handlecall_binding, wrapper, func_binding) != FFI_OK) {
 		abort_ffi_prep();
 	}
+
+    if (engine_debug) {
+		printf("\nC: wrapping java lambda function (signature: '%s')\n", buf);
+        if (class_array) {
+            printf("C: method parameter types: %d", (*env)->GetArrayLength(env, class_array));
+        }
+        else {
+            printf("C: SEVERE: null parameter types");
+        }
+    }
 	
 	wrapper->closure = closure;
 	wrapper->type = ENGINE_JAVA_LAMBDA_FUNCTION;
 	wrapper->data.lambda.ret = (uint8_t) ret;
-	wrapper->data.lambda.args = (uint8_t) args;
+	wrapper->data.lambda.class_array = (*env)->NewGlobalRef(env, class_array);
 	wrapper->data.lambda.id = mid;
 	wrapper->obj_inst = (*env)->NewGlobalRef(env, jfunc);
 	wrapper->engine = inst;
@@ -734,9 +752,6 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 // this implementation to find methods that have already been wrapped to consverve memory over
 // the lifetime of a lua VM/interpreter.
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
-	if (engine_debug) {
-		printf("\nwrapping java reflect function from C\n");
-	}
 	
 	// compute method id
 	long id = (*env)->CallStaticLongMethod(env, class_lua, id_methodid, reflect_method);
@@ -749,6 +764,10 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 			lua_pushcfunction(inst->state, wrapper->func);
 			return;
 		}
+	}
+    
+	if (engine_debug) {
+		printf("\nC: wrapping java reflect function (id: %ld)\n", id);
 	}
 	
 	void* func_binding; // our function pointer
@@ -805,7 +824,7 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 		if (!valid) return;
 		if (t != inst->floating_objects_amt) {
 			jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
-			memmove(ptr, ptr + 1, inst->floating_objects_amt - (t + 1));
+			memmove(ptr, ptr + 1, (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
 	}

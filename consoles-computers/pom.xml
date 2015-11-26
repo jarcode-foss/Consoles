@@ -46,7 +46,11 @@
                 <version>2.5</version>
                 <inherited>false</inherited>
             </plugin>
-            <!-- header plugin -->
+
+            <!--
+            The native layer requires to be built against headers generated using javah. We use a small
+            plugin for that. I don't like this plugin, because you have to list out every class.
+            -->
             <plugin>
                 <groupId>com.alexkasko.maven</groupId>
                 <artifactId>jni-headers-maven-plugin</artifactId>
@@ -127,6 +131,13 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!--
+            I wrote a maven plugin for this project. Instead of working around the (terrible)
+            abstractions that the maven NAR plugin provides, I just made a simple plugin that allows
+            me to use a compiler with certain arguments, recursively against a source folder, and with
+            certain compile targets.
+            -->
             <plugin>
                 <groupId>ca.jarcode</groupId>
                 <artifactId>gcc-maven-plugin</artifactId>
@@ -158,6 +169,16 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!--
+            The native layer for the Lua API <-> Java needs to pass various tests, this is because
+            issues with JNI calls will not be checked on normal execution in the server, and will
+            lead to obscure errors. Instead, we check it during the debug phase.
+
+            Additonally, we run tests without a Spigot/Craftbukkit server instance. This makes
+            debugging segfaults much easier since the JVM will be unlikely to throw bogus
+            segfaults at us with its signal handling.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -172,6 +193,9 @@
 
                     <!-- Run in alphabetical order -->
                     <runOrder>alphabetical</runOrder>
+
+                    <!-- Check JNI calls -->
+                    <argLine>-Xcheck:jni</argLine>
 
                     <!-- Do not timeout -->
                     <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>

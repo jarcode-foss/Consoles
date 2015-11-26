@@ -7,10 +7,6 @@
 
 #include "pair.h"
 
-#define LOCK(x, m) (*x)->MonitorEnter(x, m->lock)
-#define UNLOCK(x, m) (*x)->MonitorExit(x, m->lock)
-#define WAIT_FOR_WRITE(x, m) LOCK(x, m); UNLOCK(x, m)
-
 // this implementation is free of memory barriers,
 // since everything works on locks.
 
@@ -34,14 +30,14 @@ pair_map* pair_map_create(JNIEnv* env) {
 	return m;
 }
 
-static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, uintptr_t ptr, uint8_t type) {
+static int64_t lookup_idx(JNIEnv* env, pair_map* m, void* pair_set, void* ptr, uint8_t type) {
 	WAIT_FOR_WRITE(env, m);
 	uint8_t valid = 0;
 	int64_t t;
 	for (t = 0; t < m->size; t++) {
         int8_t flag;
-        if (type) flag = (*(void***) pair_set)[t] == (void*) ptr;
-        else flag = (*env)->IsSameObject(env, (*(jobject**) pair_set)[t], (jobject) ptr);
+        if (type) flag = (*(void***) pair_set)[t] == *(void**) ptr;
+        else flag = (*env)->IsSameObject(env, (*(jobject**) pair_set)[t], *(jobject*) ptr);
 		if (flag) {
 			valid = 1;
 			break;
@@ -62,7 +58,7 @@ static void m_remove(JNIEnv* env, pair_map* m, int64_t t, int8_t locked) {
 			if (t != m->size) {
 				jobject* java_ptr = &(m->java_pair[t]);
 				void** native_ptr = &(m->native_pair[t]);
-				int64_t chunkamt = m->size - (t + 1);
+				int64_t chunkamt = (m->size - (t + 1)) * sizeof(void*);
 				memmove(java_ptr, java_ptr + 1, chunkamt);
 				memmove(native_ptr, native_ptr + 1, chunkamt);
 			}
@@ -118,13 +114,13 @@ void pair_map_append(JNIEnv* env, pair_map* m, jobject java, void* native) {
 }
 void pair_map_rm_java(JNIEnv* env, pair_map* m, jobject java) {
 	if (m->size == 0) return;
-	int64_t t = lookup_idx(env, m, &(m->java_pair), (uintptr_t) java, 0);
+	int64_t t = lookup_idx(env, m, &(m->java_pair), &java, 0);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
 void pair_map_rm_native(JNIEnv* env, pair_map* m, void* native) {
 	if (m->size == 0) return;
-	int64_t t = lookup_idx(env, m, &(m->native_pair), (uintptr_t) native, 1);
+	int64_t t = lookup_idx(env, m, &(m->native_pair), &native, 1);
 	if (t == -1) return;
 	m_remove(env, m, t, 0);
 }
