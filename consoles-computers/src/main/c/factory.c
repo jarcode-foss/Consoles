@@ -37,7 +37,7 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 	lua_getglobal(state, FUNCTION_REGISTRY);
 	// swap registry and lua function, so that the function is on top
 	engine_swap(state, -1, -2);
-	// swap function (top) with value from function table
+	// swap function (top) with value from function tablelua function as index
 	// (result should be nil or a number)
 	lua_gettable(state, -2);
     // stack:
@@ -58,9 +58,9 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 		lua_pushinteger(state, function_index);
 		// copy function to top of stack
 		lua_pushvalue(state, -3);
-		// push association (function, id)
-		lua_settable(state, -5);
 		// push association (id, function)
+		lua_settable(state, -5);
+		// push association (function, id)
 		lua_settable(state, -3);
 		// pop registry
 		lua_pop(state, -1);
@@ -68,10 +68,9 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 		v->data.func = function_index;
 	}
 	else { // if there is a function mapped already
+        
 		v->data.func = (uint32_t) lua_tonumber(state, -1);
-		// if the function is nil, then the mappings are corrupt
-		// this can happen if the user tampers with the __function
-		// variable
+        // corrupt mappings
 		if (!(v->data.func)) {
 			v->type = ENGINE_NULL;
 		}
@@ -95,6 +94,7 @@ void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject
 	// it pops itself off the stack and assigns itself to index -2
 	lua_setmetatable(state, -2);
 }
+
 // boring mapping
 engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) {
 	engine_value* v = engine_newvalue(env, inst);
@@ -148,14 +148,15 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 	else if (lua_isfunction(state, -1)) {
 		engine_handleregistry(env, inst, state, v);
 	}
+    // we don't need to return function pointers back to Java, they are
+    // either utility functions from LuaN or LuaJIT, or closures that
+    // wrap java functions.
 	else if (lua_iscfunction(state, -1)) {
-        // we can register C functions as lua functions, they are called the same way
-		engine_handleregistry(env, inst, state, v);
+        lua_pop(state, 1);
 	}
 	// threads should _not_ be happening
 	// if we run into this, scream at stderr and return null
 	else if (lua_isthread(state, -1)) {
-		fprintf(stderr, "\ntried to convert thread value from native lua engine (wat)\n");
         lua_pop(state, 1);
 	}
 	

@@ -33,6 +33,10 @@ jmethodID id_methodtypes = 0;
 jclass class_object = 0;
 jmethodID id_hashcode = 0;
 jclass exclass = 0;
+jclass class_ex = 0;
+jmethodID id_getmessage = 0;
+jmethodID id_classname = 0;
+jmethodID id_exhandle = 0;
 
 uint32_t function_index = 0;
 
@@ -141,7 +145,7 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 		if (!valid) return;
 		if (t != inst->wrappers_amt) {
 			engine_jfuncwrapper** ptr = &(inst->wrappers[t]); // pointer to element t
-			memmove(ptr, ptr + sizeof(void*), (inst->wrappers_amt - (t + 1)) * sizeof(void*));
+			memmove(ptr, ptr + 1, (inst->wrappers_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
 	}
@@ -234,6 +238,7 @@ static void setup_classes(JNIEnv* env, jmp_buf handle) {
 	classreg(env, ENGINE_LUA_CLASS, &class_lua, handle);
 	classreg(env, ENGINE_ERR_CLASS, &exclass, handle);
 	classreg(env, "java/lang/reflect/Method", &class_method, handle);
+    classreg(env, "java/lang/Throwable", &class_ex, handle);
 	
 	// Object ids
 	id_hashcode = method_resolve(env, class_object, "hashCode", "()I", handle);
@@ -245,10 +250,15 @@ static void setup_classes(JNIEnv* env, jmp_buf handle) {
 	
 	// Class ids
 	id_comptype = method_resolve(env, class_type, "getComponentType", "()Ljava/lang/Class;", handle);
+    id_classname = method_resolve(env, class_type, "getSimpleName", "()Ljava/lang/String;", handle);
 	
 	// Lua ids
 	id_methodresolve = static_method_resolve(env, class_lua, "resolveMethod", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/reflect/Method;", handle);
 	id_methodid = static_method_resolve(env, class_lua, "methodId", "(Ljava/lang/reflect/Method;)J", handle);
+    id_exhandle = static_method_resolve(env, class_lua, "handleJavaException", "(Ljava/lang/Throwable;)V", handle);
+
+    // Throwable ids
+    id_getmessage = method_resolve(env, class_ex, "getMessage", "()Ljava/lang/String;", handle);
 	
 	char buf[128] = {0};
 	strcat(buf, "(Ljava/lang/Object;)L");
@@ -629,6 +639,44 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
 	for (t = 0; t < vargs; t++) {
 		engine_releasevalue(env, v_args[t]);
 	}
+
+    // if an exception occurred, we need to handle it and pass it to lua
+    // we also call a Java helper method to further handle the exception.
+    if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
+        
+        jobject ex = (*env)->ExceptionOccurred(env);
+        (*env)->ExceptionClear(env);
+        
+        jobject jmsg = (*env)->CallObjectMethod(env, ex, id_getmessage);
+        jclass type_ex = (*env)->GetObjectClass(env, ex);
+        jobject jtype = (*env)->CallObjectMethod(env, type_ex, id_classname);
+        
+        const char* characters = jmsg ? (*env)->GetStringUTFChars(env, jmsg, 0) : 0;
+        const char* type_chars = (*env)->GetStringUTFChars(env, jtype, 0);
+        
+        char stack_characters[(jmsg ? strlen(characters) : 0) + 1];
+        if (jmsg) {
+            stack_characters[strlen(characters)] = '\0';
+            memmove(stack_characters, characters, strlen(characters));
+        }
+        char stack_type_chars[strlen(type_chars) + 1];
+        stack_type_chars[strlen(type_chars)] = '\0';
+        memmove(stack_type_chars, type_chars, strlen(type_chars));
+        
+        (*env)->ReleaseStringUTFChars(env, jtype, characters);
+        if (jmsg) {
+            (*env)->ReleaseStringUTFChars(env, jmsg, type_chars);
+        }
+
+        (*env)->CallStaticVoidMethod(env, class_lua, id_exhandle, ex);
+        
+        if (jmsg) {
+            luaL_error(state, "J: %s -> %s", stack_type_chars, stack_characters);
+        }
+        else {
+            luaL_error(state, "J: %s", stack_type_chars);
+        }
+    }
 			
 	// directly returned null, or no return value, just push nil
 	if (!ret) {
@@ -707,7 +755,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	static jmp_buf handle;
 	
 	if (setjmp(handle)) {
-        fprintf(stderr, "C: SEVERE: failed to resolve call(?) method for lambda (%s)", buf);
+        fprintf(stderr, "C: SEVERE: failed to resolve call(?) method for lambda (%s)\n", buf);
         return;
     }
 	
@@ -728,9 +776,9 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 	}
 
     if (engine_debug) {
-		printf("\nC: wrapping java lambda function (signature: '%s')\n", buf);
+		printf("C: wrapping java lambda function (signature: '%s')\n", buf);
         if (class_array) {
-            printf("C: method parameter types: %d", (*env)->GetArrayLength(env, class_array));
+            printf("C: method parameter types: %d\n", (*env)->GetArrayLength(env, class_array));
         }
         else {
             printf("C: SEVERE: null parameter types");
@@ -765,12 +813,8 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 			return;
 		}
 	}
-    
-	if (engine_debug) {
-		printf("\nC: wrapping java reflect function (id: %ld)\n", id);
-	}
 	
-	void* func_binding; // our function pointer
+	void* func_binding = 0; // our function pointer
 	ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
 	
 	// this shouldn't happen
@@ -794,6 +838,11 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
 	wrapper->func = (lua_CFunction) func_binding;
 	
 	lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
+    
+    
+	if (engine_debug) {
+		printf("C: wrapped java reflect function (id: %ld, ptr: %p)\n", id, func_binding);
+	}
 }
 
 void engine_addfloating(engine_inst* inst, jobject reference) {
@@ -824,21 +873,14 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 		if (!valid) return;
 		if (t != inst->floating_objects_amt) {
 			jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
-			memmove(ptr, ptr + sizeof(void*), (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
+			memmove(ptr, ptr + 1, (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
 	}
 	inst->floating_objects_amt--;
 }
 
-// this is how we handle function calls from Java, but it needs to be improved to properly
-// pass errors to Java as exceptions.
-//
-// errors are currently just printed to stderr (cannot be changed), so this is a stub. The
-// proper way to do this would to wrap it in a Java exception and let it do what it wants
-// with the strings.
-//
-// should be called with function in stack, followed by arguments
+// this is how we handle function calls from Java
 engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs) {
 	inst->runtime_env = env;
 
@@ -860,12 +902,11 @@ engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int 
 	switch (err) {
     case LUA_ERRRUN: { // runtime error
         const char* str = lua_tostring(state, -1);
-        const char* prefix = "C: runtime error";
-        size_t len = strlen(prefix) + strlen(str) + 3;
+        const char* prefix = "C: runtime error: ";
+        size_t len = strlen(prefix) + strlen(str) + 1;
         char message[len];
         memset(message, 0, len);
         strcat(message, prefix);
-        strcat(message, ": ");
         strcat(message, str);
         throw(env, message);
         lua_pop(state, 1);

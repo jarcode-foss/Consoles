@@ -59,8 +59,8 @@ static void m_remove(JNIEnv* env, pair_map* m, int64_t t, int8_t locked) {
 				jobject* java_ptr = &(m->java_pair[t]);
 				void** native_ptr = &(m->native_pair[t]);
 				int64_t chunkamt = (m->size - (t + 1)) * sizeof(void*);
-				memmove(java_ptr, java_ptr + sizeof(void*), chunkamt);
-				memmove(native_ptr, native_ptr + sizeof(void*), chunkamt);
+				memmove(java_ptr, java_ptr + 1, chunkamt);
+				memmove(native_ptr, native_ptr + 1, chunkamt);
 			}
 			m->java_pair = realloc(m->java_pair, newlen);
 			m->native_pair = realloc(m->native_pair, newlen);

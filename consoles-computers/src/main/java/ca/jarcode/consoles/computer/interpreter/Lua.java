@@ -4,6 +4,7 @@ import ca.jarcode.consoles.computer.Computer;
 import ca.jarcode.consoles.computer.interpreter.func.*;
 import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import net.jodah.typetools.TypeResolver;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.Bukkit;
 
 import java.lang.reflect.Array;
@@ -270,11 +271,13 @@ public class Lua {
 					+ value.getClass().getSimpleName() + ")");
 	}
 	public static Object translate(Class<?> type, ScriptValue value) {
-		if (type != null && FunctionBind.class.isAssignableFrom(type)
+		if (type != null && ScriptValue.class.isAssignableFrom(type)) {
+			return value;
+		} else if (type != null && PartialFunctionBind.class.isAssignableFrom(type)) {
+			return javaCallable(value);
+		} else if (type != null && FunctionBind.class.isAssignableFrom(type)
 				|| (value.isFunction() && (TypeResolver.Unknown.class == type || type == null))) {
 			return javaFunction(value);
-		} else if (type != null && ScriptValue.class.isAssignableFrom(type)) {
-			return value;
 		}
 		// some of these are unsupported on non Oracle/Open JSE VMs
 		else if (type == Runnable.class) {
@@ -386,4 +389,24 @@ public class Lua {
 		return (long) hash << 32 | argmask & 0xFFFFFFFFL;
 	}
 
+	// This is called by engines to further handle exceptions after
+	// the engine has already passed the exception to lua as an error.
+	//
+	// LuaJ does not use this method, it instead passes the exception as
+	// a cause under a LuaJError
+	@SuppressWarnings("unused")
+	public static void handleJavaException(Throwable ex) {
+		if (Computers.debug) {
+			if (Computers.getInstance() != null) {
+				Computers.getInstance().getLogger().warning(
+						"Exception thrown in Java method during execution of Lua program:"
+				);
+				Computers.getInstance().getLogger().warning("\n" + ExceptionUtils.getFullStackTrace(ex));
+			}
+			else {
+				System.out.println("Exception thrown in Java method during execution of Lua program:");
+				System.out.println("\n" + ExceptionUtils.getFullStackTrace(ex));
+			}
+		}
+	}
 }

@@ -3,7 +3,9 @@ package ca.jarcode.consoles.computers.tests;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.interpreter.FuncPool;
+import ca.jarcode.consoles.computer.interpreter.FunctionBind;
 import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.consoles.computer.interpreter.PartialFunctionBind;
 import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNError;
@@ -13,6 +15,7 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /*
  * Debugging JNI code is a pain in the ass, especially when you have an entire craftbukkit/spigot server running
@@ -50,6 +53,12 @@ public class NativeLayerTask {
 
 	public int loglen = 0;
 
+	{
+		System.setOut(stdout);
+	}
+
+	// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
+	// happen. This is probably due to how exceptions are instantiated through the JNI.
 	public void init() throws Throwable {
 
 		Computers.debug = true;
@@ -94,6 +103,8 @@ public class NativeLayerTask {
 
 		log("Building new environment");
 
+		String loaded;
+
 		try {
 			globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
 
@@ -102,10 +113,20 @@ public class NativeLayerTask {
 					globals.getValueFactory().translate(42, globals)
 			);
 
+			assert globals.get(
+					globals.getValueFactory().translate("testIntegralValue", globals)
+			).translateInt() == 42;
+
 			pool.mapStaticFunctions();
 
 			// register any lua functions
 			Lua.find(this, pool);
+
+			loaded = pool.functions.entrySet().stream()
+					.map((entry) -> entry.getKey() + ": " + valueString(entry.getValue().getAsValue()))
+					.collect(Collectors.joining(", "));
+
+			globals.load(pool);
 
 			globals.removeRestrictions(); // we need extra packages
 		}
@@ -114,6 +135,22 @@ public class NativeLayerTask {
 		}
 
 		logn(DONE);
+
+		stdout.println("J: loaded: " + loaded);
+	}
+
+	public String valueString(ScriptValue value) {
+		if (value.isNull())
+			return "null";
+		else if (value.isFunction())
+			return "function";
+		else if (value.canTranslateString())
+			return "str: '" + value + "'";
+		else if (value.canTranslateDouble())
+			return Double.toString(value.translateDouble());
+		else if (value.canTranslateArray())
+			return "table";
+		else return "?";
 	}
 
 	public RuntimeException wrapException(Throwable e, boolean failType) {
@@ -159,12 +196,9 @@ public class NativeLayerTask {
 			chunk.call();
 			stdout.print("\n");
 		}
-		// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
-		// happen. This is probably due to how exceptions are instantiated through the JNI.
 		catch (Throwable e) {
 			throw wrapException(e, false);
 		}
-
 	}
 
 	public void loadAndCallTests() {
@@ -188,9 +222,9 @@ public class NativeLayerTask {
 			if (result.canTranslateInt()) {
 				int i = result.translateInt();
 				if (i != 0) {
-					throw new RuntimeException("test() return value: " + i);
+					throw new RuntimeException("J: test() return value: " + i);
 				}
-				logn("test() return value: " + i);
+				stdout.println("J: test() return value: " + i);
 			} else {
 				throw new RuntimeException("non-integral response returned from test() lua function");
 			}
@@ -227,21 +261,22 @@ public class NativeLayerTask {
 		return "ret: ('" + arg1 + "', " + arg0 + ")";
 	}
 
-	/*
-	public void lua$write(String str) {
-		stdout.println(str);
-		stdout.flush();
-		if (str.startsWith("PANIC:"))
-			throw new LuaNError(str);
+	public void lua$throwSomething() {
+		throw new IllegalStateException("foo");
 	}
 
-	public void lua$print(String str) {
-		stdout.println(str);
-		stdout.flush();
-		if (str.startsWith("PANIC:"))
-			throw new LuaNError(str);
+	public void lua$submitCallback(FunctionBind bind) {
+		assert (Double) bind.call(2, 6) == 8;
 	}
-	*/
+
+	public void lua$submitPartialCallback(PartialFunctionBind bind) {
+		assert bind.call(5, 3).translateInt() == 8;
+	}
+
+	public void lua$submitValueCallback(ScriptValue value) {
+		ScriptValue four = globals.getValueFactory().translate(4, globals);
+		assert value.getAsFunction().call(four, four).translateInt() == 8;
+	}
 
 	public void log(String message) {
 		stdout.print(message);

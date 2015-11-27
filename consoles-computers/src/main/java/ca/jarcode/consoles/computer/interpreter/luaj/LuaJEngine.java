@@ -65,6 +65,14 @@ public class LuaJEngine implements ScriptEngine {
 	}
 
 	@Override
+	public void load(ScriptValue globals, FuncPool pool) {
+		// load functions from our pool
+		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {
+			((LuaJScriptValue) globals).val.set(entry.getKey(), ((LuaJScriptFunction) entry.getValue()).func);
+		}
+	}
+
+	@Override
 	public ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream in,
 	                               OutputStream out, long heap) {
 
@@ -100,11 +108,6 @@ public class LuaJEngine implements ScriptEngine {
 		globals.set("dofile", LuaValue.NIL);
 
 		globals.set("__impl", LuaValue.valueOf("luaj"));
-		
-		// load functions from our pool
-		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {
-			globals.set(entry.getKey(), ((LuaJScriptFunction) entry.getValue()).func);
-		}
 
 		// set stdout
 		if (out == null)
@@ -125,10 +128,6 @@ public class LuaJEngine implements ScriptEngine {
 			globals.STDIN = SandboxProgram.dummyInputStream();
 		else
 			globals.STDIN = in;
-
-		// finalize all entries. This means programs cannot modify any created
-		// globals at this point.
-		globals.finalizeEntries();
 
 		return new LuaJScriptValue(globals);
 	}

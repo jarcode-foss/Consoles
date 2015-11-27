@@ -85,11 +85,16 @@ public class LuaNEngine implements ScriptEngine {
 
 		@Override
 		public boolean equals(Object another) {
-			return (another instanceof LuaNInstance && ((LuaNInstance) another).globals == globals);
+			return (another instanceof LuaNInstance &&
+					(((LuaNInstance) another).globals == globals || ((LuaNInstance) another).ptr == ptr));
 		}
 
 		LuaNInstance(ScriptValue val) {
 			this.globals = val;
+		}
+
+		LuaNInstance(long ptr) {
+			this.ptr = ptr;
 		}
 
 		LuaNInstance() {}
@@ -118,6 +123,10 @@ public class LuaNEngine implements ScriptEngine {
 
 	private LuaNInstance inst(ScriptValue val) {
 		return instances.get(instances.indexOf(new LuaNInstance(val)));
+	}
+
+	private ScriptValue globals(long ptr) {
+		return instances.get(instances.indexOf(new LuaNInstance(ptr))).globals;
 	}
 
 	@Override
@@ -161,14 +170,17 @@ public class LuaNEngine implements ScriptEngine {
 		current.setName("LuaN Thread");
 		L.pthread_name("LuaN");
 
+		return globals;
+	}
+
+	@Override
+	public void load(ScriptValue globals, FuncPool pool) {
 		// load functions from our pool
 		for (Map.Entry<String, ScriptFunction> entry : pool.functions.entrySet()) {
 			ScriptValue key = ValueFactory.getDefaultFactory().translate(entry.getKey(), globals);
 			globals.set(key, entry.getValue().getAsValue());
 			key.release();
 		}
-
-		return globals;
 	}
 
 	@Override

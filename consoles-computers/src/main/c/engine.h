@@ -115,6 +115,7 @@ static inline jmethodID static_method_resolve
 // class 'Class'
 extern jclass class_type;
 extern jmethodID id_comptype;
+extern jmethodID id_classname;
 
 // class 'Lua'
 extern jclass class_lua;
@@ -122,6 +123,7 @@ extern jmethodID id_translatevalue;
 extern jmethodID id_translate;
 extern jmethodID id_methodresolve;
 extern jmethodID id_methodid;
+extern jmethodID id_exhandle;
 
 // class 'Method'
 extern jclass class_method;
@@ -133,8 +135,12 @@ extern jmethodID id_methodtypes;
 extern jclass class_object;
 extern jmethodID id_hashcode;
 
-// exception type
+// class 'LuaNError'
 extern jclass exclass;
+
+// class 'Throwable'
+extern jclass class_ex;
+extern jmethodID id_getmessage;
 
 extern uint32_t function_index;
 

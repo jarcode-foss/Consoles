@@ -211,7 +211,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return value->data.obj;
 	}
 	else {
-		throw(env, "C: tried to translate value to object");
+		throw(env, "J->C: tried to translate value to object");
 		return 0;
 	}
 }
@@ -239,7 +239,7 @@ JNIEXPORT jstring JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return (*env)->NewStringUTF(env, value->data.str);
 	}
 	else {
-		throw(env, "C: tried to translate value to string");
+		throw(env, "J->C: tried to translate value to string");
 		return 0;
 	}
 }
@@ -271,7 +271,7 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 		return (jlong) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to long");
+		throw(env, "J->C: tried to translate value to long");
 		return 0;
 	}
 }
@@ -303,7 +303,7 @@ JNIEXPORT jshort JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 		return (jshort) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to short");
+		throw(env, "J->C: tried to translate value to short");
 		return 0;
 	}
 }
@@ -335,7 +335,7 @@ JNIEXPORT jbyte JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 		return (jbyte) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to byte");
+		throw(env, "J->C: tried to translate value to byte");
 		return 0;
 	}
 }
@@ -367,7 +367,7 @@ JNIEXPORT jint JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 		return (jint) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to int");
+		throw(env, "J->C: tried to translate value to int");
 		return 0;
 	}
 }
@@ -399,7 +399,7 @@ JNIEXPORT jfloat JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 		return (jfloat) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to float");
+		throw(env, "J->C: tried to translate value to float");
 		return 0;
 	}
 }
@@ -431,7 +431,7 @@ JNIEXPORT jdouble JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return (jdouble) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to double");
+		throw(env, "J->C: tried to translate value to double");
 		return 0;
 	}
 }
@@ -463,7 +463,7 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 		return (jbyte) value->data.i;
 	}
 	else {
-		throw(env, "C: tried to translate value to byte");
+		throw(env, "J->C: tried to translate value to byte");
 		return 0;
 	}
 }
@@ -513,7 +513,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type != ENGINE_ARRAY) {
-		throw(env, "C: tried to translate value to array");
+		throw(env, "J->C: tried to translate value to array");
 		return 0;
 	}
 	// get array component type
@@ -562,24 +562,28 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 	
 	if (this_value->type == ENGINE_LUA_GLOBALS) {
 		if (!this_value->inst) {
-			throw(env, "C: globals value is not associated with engine instance");
+			throw(env, "J->C: globals value is not associated with engine instance");
 			return;
 		}
 		if (key->type != ENGINE_STRING) {
-			throw(env, "C: tried to set global value with non-string key");
+			throw(env, "J->C: tried to set global value with non-string key");
 			return;
 		}
 		else if (key->data.str == 0) {
-			throw(env, "C: internal error: null string value (bad value)");
+			throw(env, "J->C: internal error: null string value (bad value)");
 			return;
 		}
 		lua_State* state = this_value->data.state;
 		engine_pushvalue(env, this_value->inst, state, value);
 		// pops a value from the stack
 		lua_setglobal(state, key->data.str);
+        
+        if (engine_debug) {
+            printf("J->C: Set globals with value '%s', value type: %d\n", key->data.str, (int) value->type);
+        }
 	}
 	else {
-		throw(env, "C: tried to set non-global value");
+		throw(env, "J->C: tried to set non-global value");
 	}
 }
 
@@ -597,13 +601,13 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* key = engine_unwrap(env, script_value);
 	// this happens if some retard calls this method with a script value that isn't LuaNScriptValue or null
 	if (key == 0) {
-		throw(env, "C: tried to index value with invalid key");
+		throw(env, "J->C: tried to index value with invalid key");
 		return 0;
 	}
 	if (value->type == ENGINE_ARRAY) {
 		long t;
 		if (key->type != ENGINE_FLOATING && key->type != ENGINE_INTEGRAL) {
-			throw(env, "C: tried to index value (array) with non-number key");
+			throw(env, "J->C: tried to index value (array) with non-number key");
 			return 0;
 		}
 		else if (key->type == ENGINE_FLOATING) {
@@ -619,14 +623,14 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 			// just in case this happens, handle it
 			// actual null values have their own type
 			if (result == 0) {
-				throw(env, "C: internal error: result after indexing array with valid key is somehow a null pointer (bad value table?)");
+				throw(env, "J->C: internal error: result after indexing array with valid key is somehow a null pointer (bad value table?)");
 				return 0;
 			}
 			// lookup value and get object counterpart
 			return engine_wrap(env, result);
 		}
 		else {
-			throw(env, "C: tried to index value (array) with out-of-range key");
+			throw(env, "J->C: tried to index value (array) with out-of-range key");
 			return 0;
 		}
 	}
@@ -635,11 +639,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	// bad idea.
 	else if (value->type == ENGINE_LUA_GLOBALS) {
 		if (key->type != ENGINE_STRING) {
-			throw(env, "C: the native backend does not allow indexing globals with non-string values");
+			throw(env, "J->C: the native backend does not allow indexing globals with non-string values");
 			return 0;
 		}
 		else if (key->data.str == 0) {
-			throw(env, "C: internal error: null string value (bad value)");
+			throw(env, "J->C: internal error: null string value (bad value)");
 			return 0;
 		}
 		lua_State* state = value->data.state;
@@ -649,12 +653,12 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		// this function builds a new value (memory!)
 		engine_value* retvalue = engine_popvalue(env, value->inst, state);
         if (engine_debug) {
-            printf("C: Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
+            printf("J->C: Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
         }
 		return engine_wrap(env, retvalue);
 	}
 	else {
-		throw(env, "C: tried to index non-array/non-global value");
+		throw(env, "J->C: tried to index non-array/non-global value");
 		return 0;
 	}
 }
@@ -663,11 +667,11 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		throw(env, "C: tried to call stub (lambda func)");
+		throw(env, "J->C: tried to call stub (lambda func)");
 		return 0;
 	}
 	else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		throw(env, "C: tried to call stub (reflect func)");
+		throw(env, "J->C: tried to call stub (reflect func)");
 		return 0;
 	}
 	else if (value->type == ENGINE_LUA_FUNCTION) {
@@ -679,7 +683,7 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 			lua_gettable(state, -2);
 			if (lua_isnil(state, -1)) {
 				lua_pop(state, 2);
-				throw(env, "C: internal error: failed to index function from registry");
+				throw(env, "J->C: internal error: failed to index function from registry");
 				return 0;
 			}
 			// remove table
@@ -700,12 +704,12 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 			return ret ? engine_wrap(env, ret) : 0;
 		}
 		else {
-			throw(env, "C: internal error: lua function is a shared value");
+			throw(env, "J->C: internal error: lua function is a shared value");
 			return 0;
 		}	
 	}
 	else {
-        const char* prefix = "C: tried to call value as function";
+        const char* prefix = "J->C: tried to call value as function";
         size_t len = strlen(prefix) + 8;
         char message[len];
         memset(message, 0, len);

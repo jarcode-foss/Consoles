@@ -15,13 +15,17 @@ function test(workingDir)
     -- search tasks directory (the working directory is inherited from the maven module)
     package.path = package.path .. ";" .. workingDir .. "/src/test/lua/tasks/?.lua"
 
-    add_tasks({ "basic", "functions" })
+    add_tasks({
+        "basic", "functions", "callback", "error_handle"
+    })
 
     log("Running Lua tests")
     for i=1,#tasks do
         log("Running test: '" .. tasks[i][1] .. "'")
         tasks[i][2]();
     end
+
+    return 0;
 end
 
 function log(message)

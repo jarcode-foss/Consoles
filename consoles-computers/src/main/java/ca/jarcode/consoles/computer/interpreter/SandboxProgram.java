@@ -279,6 +279,9 @@ public abstract class SandboxProgram {
 			// map functions from this program instance to the pool
 			map();
 
+			// push all our functions to the engine
+			globals.load(pool);
+
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
 			Lua.libraries.values().stream()
@@ -503,8 +506,10 @@ public abstract class SandboxProgram {
 	private void handleScriptError(ScriptError err) {
 
 		// print stack trace in console if in debug mode
-		if (Computers.debug)
-			Computers.getInstance().getLogger().severe("\n" + ExceptionUtils.getFullStackTrace(err));
+		if (Computers.debug) {
+			Computers.getInstance().getLogger().info("ScriptError stack trace:");
+			Computers.getInstance().getLogger().info("\n" + ExceptionUtils.getFullStackTrace(err));
+		}
 
 		// start of our error string
 		String errorBreakdown = err.getMessage();

@@ -1,6 +1,7 @@
 package ca.jarcode.consoles.computer.interpreter.interfaces;
 
 import ca.jarcode.consoles.computer.interpreter.ComputerLibrary;
+import ca.jarcode.consoles.computer.interpreter.FuncPool;
 
 /*
 
@@ -54,6 +55,10 @@ public class ScriptGlobals {
 
 	public ScriptValue load(String raw) {
 		return engine.load(value, raw);
+	}
+
+	public void load(FuncPool pool) {
+		engine.load(value, pool);
 	}
 
 	public void load(ComputerLibrary lib) {
