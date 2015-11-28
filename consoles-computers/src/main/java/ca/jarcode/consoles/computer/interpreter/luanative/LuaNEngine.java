@@ -130,8 +130,8 @@ public class LuaNEngine implements ScriptEngine {
 	}
 
 	@Override
-	public ScriptValue load(ScriptValue globals, String raw) {
-		return L.load(ptr(globals), raw);
+	public ScriptValue load(ScriptValue globals, String raw, String path) {
+		return L.load(ptr(globals), raw, path);
 	}
 
 	@Override

@@ -28,7 +28,7 @@ public interface ScriptEngine {
 		ScriptEngine.factory[0] = factory;
 	}
 
-	ScriptValue load(ScriptValue globals, String raw);
+	ScriptValue load(ScriptValue globals, String raw, String path);
 	void load(ScriptValue globals, ComputerLibrary lib);
 	void load(ScriptValue globals, FuncPool pool);
 	ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream stdin, OutputStream stdout, long heap);

@@ -445,19 +445,51 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_kill(JNIEnv* env, jobject this, jlong 
 	inst->killed = 1;
 }
 
-JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw) {
+struct engine_program {
+    const char* str;
+    uint8_t read;
+};
+
+static const char* loadchunk(lua_State* state, void* data, size_t* size) {
+    struct engine_program* program = (struct engine_program*) data;
+    if (program->read) {
+        *size = 0;
+        return 0;
+    }
+    else program->read = 1;
+    if (engine_debug) {
+        printf("C: loading chunk (charlen: %d)\n", (int) strlen(program->str)); 
+    }
+    *size = strlen(program->str);
+    return program->str;
+}
+
+JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw, jstring jpath) {
 	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
 	lua_State* state = inst->state;
-	const char* characters = (*env)->GetStringUTFChars(env, jraw, 0);
-	size_t len = strlen(characters);
-	// I am using malloc instead of doing this on the stack,
-	// because this string could potentially be very large
-	char* raw = malloc(sizeof(char) * (len + 1));
-    raw[len] = '\0';
-	memmove(raw, characters, len);
-	(*env)->ReleaseStringUTFChars(env, jraw, characters);
-	luaL_loadstring(state, raw);
-	free(raw);
+    
+	const char* raw = (*env)->GetStringUTFChars(env, jraw, 0);
+    const char* path = (*env)->GetStringUTFChars(env, jpath, 0);
+
+    struct engine_program program = {raw, 0};
+    
+	int result = lua_load(state, (lua_Reader) loadchunk, &program, path);
+    
+    if (result) {
+        if (lua_isstring(state, -1)) {
+            const char* message = lua_tostring(state, -1);
+            throw(env, message);
+            lua_pop(state, 1);
+        }
+        else {
+            throw(env, "C: encountered a non-standard error while trying to load chunk");
+        }
+        return 0;
+    }
+    
+	(*env)->ReleaseStringUTFChars(env, jraw, raw);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    
 	engine_value* value = engine_newvalue(env, inst);
 	engine_handleregistry(env, inst, state, value);
 	return engine_wrap(env, value);

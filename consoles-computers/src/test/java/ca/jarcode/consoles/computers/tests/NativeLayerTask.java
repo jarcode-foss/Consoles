@@ -190,7 +190,7 @@ public class NativeLayerTask {
 
 			logs("Loading program chunk");
 			logi(STARTED);
-			chunk = globals.load(program);
+			chunk = globals.load(program, "[test]");
 
 			log("Calling program chunk");
 			logn(STARTED);

@@ -54,7 +54,11 @@ public class ScriptGlobals {
 	}
 
 	public ScriptValue load(String raw) {
-		return engine.load(value, raw);
+		return engine.load(value, raw, "?");
+	}
+
+	public ScriptValue load(String raw, String path) {
+		return engine.load(value, raw, path);
 	}
 
 	public void load(FuncPool pool) {

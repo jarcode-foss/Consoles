@@ -55,8 +55,8 @@ public class LuaJEngine implements ScriptEngine {
 	}
 
 	@Override
-	public ScriptValue load(ScriptValue globals, String raw) {
-		return new LuaJScriptValue(((Globals) ((LuaJScriptValue) globals).val).load(raw));
+	public ScriptValue load(ScriptValue globals, String raw, String path) {
+		return new LuaJScriptValue(((Globals) ((LuaJScriptValue) globals).val).load(raw, path));
 	}
 
 	@Override

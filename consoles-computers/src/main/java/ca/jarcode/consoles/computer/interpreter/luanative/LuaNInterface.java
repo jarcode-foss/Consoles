@@ -19,7 +19,7 @@ public interface LuaNInterface {
 	LuaNScriptValue wrapglobals(long ptr);
 	// TODO: replace with direct file loading
 	// loads a chunk from raw text
-	ScriptValue load(long ptr, String value);
+	ScriptValue load(long ptr, String value, String path);
 	// sets the value of a table
 	void settable(long ptr, String table, String field, ScriptValue value);
 	// kills the VM, and prevents any lua chunk/function from ever running in this VM
