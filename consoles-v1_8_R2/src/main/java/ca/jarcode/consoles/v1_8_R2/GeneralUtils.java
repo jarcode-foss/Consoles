@@ -152,6 +152,9 @@ public class GeneralUtils implements GeneralInternals {
 		}
 
 		net.minecraft.server.v1_8_R2.ItemStack nms = nmsStack(head);
+		if (nms == null) {
+			throw new IllegalArgumentException();
+		}
 		NBTTagCompound tag = nms.hasTag() ? nms.getTag() : new NBTTagCompound();
 		NBTTagCompound profile = new NBTTagCompound();
 		NBTTagCompound properties = new NBTTagCompound();
@@ -178,6 +181,9 @@ public class GeneralUtils implements GeneralInternals {
 			} catch (IllegalAccessException e) {
 				throw new RuntimeException(e);
 			}
+		}
+		else {
+			throw new IllegalArgumentException(stack.toString());
 		}
 	}
 

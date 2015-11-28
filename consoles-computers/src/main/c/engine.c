@@ -154,7 +154,7 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 			}
 		}
 		if (!valid) return;
-		if (t != inst->wrappers_amt) {
+		if (t != inst->wrappers_amt - 1) {
 			engine_jfuncwrapper** ptr = &(inst->wrappers[t]); // pointer to element t
 			memmove(ptr, ptr + 1, (inst->wrappers_amt - (t + 1)) * sizeof(void*));
 		}
@@ -1002,7 +1002,7 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 			}
 		}
 		if (!valid) return;
-		if (t != inst->floating_objects_amt) {
+		if (t != inst->floating_objects_amt - 1) {
 			jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
 			memmove(ptr, ptr + 1, (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
 		}

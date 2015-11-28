@@ -112,8 +112,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 	}
 	else if (lua_isstring(state, -1)) {
 		v->type = ENGINE_STRING;
-		// strings in lua are retarded. They are null terminated but can have nulls
-		// in the middle of the string (wat)
+        
 		const char* lstring = lua_tostring(state, -1);
 		size_t len = lua_strlen(state, -1);
 		char* s = malloc(sizeof(char) * (len + 1));

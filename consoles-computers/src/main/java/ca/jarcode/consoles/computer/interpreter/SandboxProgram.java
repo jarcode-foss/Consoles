@@ -301,7 +301,7 @@ public abstract class SandboxProgram {
 			if (defaultChunk != null && !defaultChunk.isEmpty()) {
 
 				// try to load the default chunk
-				def = loadChunk(defaultChunk);
+				def = loadChunk(defaultChunk, "/bin/default");
 
 				// if the previous method returned a chunk, call it!
 				if (def != null) try {
@@ -331,7 +331,7 @@ public abstract class SandboxProgram {
 			}
 
 			// try to load the main chunk
-			chunk = loadChunk(raw);
+			chunk = loadChunk(raw, path == null ? "?" : path);
 
 			// if the previous method returned null, it didn't compile (and handled the errors)
 			// we should just exit from here
@@ -443,12 +443,12 @@ public abstract class SandboxProgram {
 	}
 
 	// loads a raw chunk and returns a LuaValue, handing errors accordingly
-	private ScriptValue loadChunk(String raw) {
+	private ScriptValue loadChunk(String raw, String name) {
 		ScriptValue chunk;
 		try {
 			// try to load in the program
 			// this will try to compile the Lua string into Java bytecode
-			chunk = globals.load(raw);
+			chunk = globals.load(raw, name);
 
 		}
 		// if we run into a compile error, print out the details and exit.

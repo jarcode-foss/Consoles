@@ -55,7 +55,7 @@ static void m_remove(JNIEnv* env, pair_map* m, int64_t t, int8_t locked) {
 		}
 		else {
 			int64_t newlen = (m->size - 1) * sizeof(void*);
-			if (t != m->size) {
+			if (t != m->size - 1) {
 				jobject* java_ptr = &(m->java_pair[t]);
 				void** native_ptr = &(m->native_pair[t]);
 				int64_t chunkamt = (m->size - (t + 1)) * sizeof(void*);
@@ -135,7 +135,9 @@ void pair_map_rm(JNIEnv* env, pair_map* m, int (*predicate) (JNIEnv* env, void* 
 void* userdata) {
 	LOCK(env, m);
 	int64_t t;
-	for (t = 0; t < m->size; t++) {
+    uint64_t s = m->size; // make copy, since m->size will change
+    // backwards iterate, because the right-most elements of t will shift left.
+	for (t = s - 1; t >= 0; t--) {
 		if (predicate(env, m->native_pair[t], userdata)) {
 			// can be optimized with mark & sweep
 			m_remove(env, m, t, 1);

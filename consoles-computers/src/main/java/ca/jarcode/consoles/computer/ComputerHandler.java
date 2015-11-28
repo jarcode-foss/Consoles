@@ -113,8 +113,8 @@ public class ComputerHandler implements Listener {
 		meta.setLore(Arrays.asList(ChatColor.RESET + "3x2", ChatColor.RESET + lang.getString("computer-item-tooltip")));
 
 		ItemStack stack = ConsolesNMS.internals.itemStackBuild(
-				Computers.useHeads ? Material.SKULL : Material.STAINED_GLASS,
-				1, (short) 15, meta);
+				Computers.useHeads ? Material.SKULL_ITEM : Material.STAINED_GLASS,
+				1, Computers.useHeads ? (short) 0 : 15, meta);
 
 		if (Computers.useHeads) {
 			// mod the skull item with the proper NBT data, such that clients will be able to see a certain
