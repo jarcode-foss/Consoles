@@ -76,7 +76,12 @@
 #define ENGINE_VALUE_CLASS "ca/jarcode/consoles/computer/interpreter/luanative/LuaNScriptValue"
 #define ENGINE_VALUE_INTERFACE "ca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue"
 
+// we call all of our userdata objects an 'interface', since they work as a way to lookup methods
+// from a java object.
+#define ENGINE_USERDATA_TYPE "interface"
+
 #define IS_ENGINE_FUNCTION(t) t == ENGINE_JAVA_LAMBDA_FUNCTION || t == ENGINE_JAVA_REFLECT_FUNCTION || t == ENGINE_LUA_FUNCTION
+#define IS_NUMBER(t) t == ENGINE_BOOLEAN || t == ENGINE_FLOATING || t == ENGINE_INTEGRAL
 
 // special lua table to store references to all passed functions
 // lua programs can interact with this, but it's harmless. In fact,
@@ -85,7 +90,7 @@
 
 // key and value for lua programs to find out if they are using a native or java implementation
 #define ENGINE_TYPE_KEY "__impl"
-#define ENGINE_TYPE "native"
+#define ENGINE_TYPE "LuaN"
 
 // check for java exception and jump to buffer if one has been thrown
 #define CHECKEX(e, b) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { longjmp(b, 1); } } while (0)
@@ -93,23 +98,8 @@
 // translate engine value to a java object (unwrap and call Lua.translate(...))
 // this is done on an array of engine values (v) and a java Class[] array (a)
 // used for translating arguments in function calls
-#define TOJAVA(e, v, a, i) (*e)->CallStaticObjectMethod(e, class_lua, id_translate, \
-                                                        (*e)->GetObjectArrayElement(e, a, i), \
-                                                        engine_wrap(env, v[i]))
-
-static inline jmethodID method_resolve
-(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
-	jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
-	CHECKEX(env, buf);
-	return ret;
-}
-
-static inline jmethodID static_method_resolve
-(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
-	jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
-	CHECKEX(env, buf);
-	return ret;
-}
+static jobject translate_java(JNIEnv* env, jobject type, jobject script_value, jmp_buf buf);
+#define TOJAVA(e, v, a, i, b) translate_java(e, (*e)->GetObjectArrayElement(e, a, i), engine_wrap(env, v[i]), b)
 		
 
 // class 'Class'
@@ -149,6 +139,27 @@ extern int engine_debug;
 // A lua function is an index in a lua table of functions that have been (or need to be)
 // exposed to a engine value. Functions are cached in this table when needed in C.
 typedef int engine_luafunc;
+
+static inline jobject translate_java
+(JNIEnv* env, jobject type, jobject script_value, jmp_buf buf) {
+    jobject obj = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, type, script_value);
+    CHECKEX(env, buf);
+    return obj;
+}
+
+static inline jmethodID method_resolve
+(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
+	jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
+	CHECKEX(env, buf);
+	return ret;
+}
+
+static inline jmethodID static_method_resolve
+(JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
+	jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
+	CHECKEX(env, buf);
+	return ret;
+}
 
 /*
  * struct for information about a lambda function (usally passed by value)
@@ -214,6 +225,9 @@ struct engine_inst_ {
 	
 	// hook function
 	lua_Hook hook;
+
+    // the last time an interrupt was fired (ms)
+    volatile unsigned long last_interrupt;
 };
 
 

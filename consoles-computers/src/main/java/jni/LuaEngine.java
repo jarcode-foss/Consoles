@@ -17,4 +17,5 @@ public class LuaEngine implements LuaNInterface {
 	public native void settable(long ptr, String table, String field, ScriptValue value);
 	public native void kill(long ptr);
 	public native void interruptreset(long ptr);
+	public native void blacklist(long ptr);
 }

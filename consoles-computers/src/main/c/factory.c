@@ -35,6 +35,13 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 	lua_pushvalue(state, -1);
 	// push registry on the stack
 	lua_getglobal(state, FUNCTION_REGISTRY);
+    // if the registry doesn't exist, create a new one
+    if (lua_isnil(state, -1)) {
+        lua_pop(state, 1);
+        lua_newtable(state);
+        lua_pushvalue(state, -1); // copy
+        lua_setglobal(state, FUNCTION_REGISTRY);
+    }
 	// swap registry and lua function, so that the function is on top
 	engine_swap(state, -1, -2);
 	// swap function (top) with value from function tablelua function as index
@@ -53,15 +60,10 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
 		// increment and push new function index
 		function_index++;
 		lua_pushinteger(state, function_index);
-		// (we now have (function, key) pair)
-		// push second copy of key for second association
-		lua_pushinteger(state, function_index);
-		// copy function to top of stack
-		lua_pushvalue(state, -3);
-		// push association (id, function)
-		lua_settable(state, -5);
+        // swap top (function) with key under it (-2)
+        engine_swap(state, -1, -2);
 		// push association (function, id)
-		lua_settable(state, -3);
+		lua_rawset(state, -3);
 		// pop registry
 		lua_pop(state, -1);
 		
@@ -89,7 +91,7 @@ void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject
 	// register floating reference
 	engine_addfloating(inst, userdata->obj);
 	// get our special metatable
-	luaL_getmetatable(state, "Engine.userdata");
+	luaL_getmetatable(state, ENGINE_USERDATA_TYPE);
 	// set metatable to our userdatum
 	// it pops itself off the stack and assigns itself to index -2
 	lua_setmetatable(state, -2);
@@ -140,7 +142,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 	else if (lua_isuserdata(state, -1)) {
 		v->type = ENGINE_JAVA_OBJECT;
 		// get userdata
-		engine_userdata* d = (engine_userdata*) luaL_checkudata(state, -1, "Engine.userdata");
+		engine_userdata* d = (engine_userdata*) luaL_checkudata(state, -1, ENGINE_USERDATA_TYPE);
 		v->data.obj = (*env)->NewGlobalRef(env, d->obj);
 		// pop userdata
 		lua_pop(state, 1);

@@ -47,7 +47,7 @@ static uint8_t setup = 0;
 
 static inline void handle_null_const(jmethodID v, const char* message) {
 	if (v == 0) {
-		fprintf(stderr, "\nfailed to find value constructor (%s)\n", message);
+		fprintf(stderr, "\nC: failed to find value constructor (%s)\n", message);
 		engine_abort();
 	}
 }
@@ -211,7 +211,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return value->data.obj;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to object");
+		throw(env, "C: tried to translate value to object");
 		return 0;
 	}
 }
@@ -239,7 +239,7 @@ JNIEXPORT jstring JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return (*env)->NewStringUTF(env, value->data.str);
 	}
 	else {
-		throw(env, "J->C: tried to translate value to string");
+		throw(env, "C: tried to translate value to string");
 		return 0;
 	}
 }
@@ -271,7 +271,7 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 		return (jlong) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to long");
+		throw(env, "C: tried to translate value to long");
 		return 0;
 	}
 }
@@ -303,7 +303,7 @@ JNIEXPORT jshort JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 		return (jshort) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to short");
+		throw(env, "C: tried to translate value to short");
 		return 0;
 	}
 }
@@ -335,7 +335,7 @@ JNIEXPORT jbyte JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 		return (jbyte) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to byte");
+		throw(env, "C: tried to translate value to byte");
 		return 0;
 	}
 }
@@ -367,7 +367,7 @@ JNIEXPORT jint JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 		return (jint) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to int");
+		throw(env, "C: tried to translate value to int");
 		return 0;
 	}
 }
@@ -399,7 +399,7 @@ JNIEXPORT jfloat JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 		return (jfloat) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to float");
+		throw(env, "C: tried to translate value to float");
 		return 0;
 	}
 }
@@ -431,7 +431,7 @@ JNIEXPORT jdouble JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 		return (jdouble) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to double");
+		throw(env, "C: tried to translate value to double");
 		return 0;
 	}
 }
@@ -456,14 +456,12 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 (JNIEnv* env, jobject this) {
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
-	if (value->type == ENGINE_FLOATING) {
-		return (jbyte) value->data.d;
-	}
-	else if (value->type == ENGINE_INTEGRAL) {
-		return (jbyte) value->data.i;
+    
+    if (value->type == ENGINE_BOOLEAN) {
+		return (jboolean) value->data.i;
 	}
 	else {
-		throw(env, "J->C: tried to translate value to byte");
+		throw(env, "C: tried to translate value to byte");
 		return 0;
 	}
 }
@@ -513,7 +511,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 	engine_value* value = findnative(env, this);
 	if (!value) return 0;
 	if (value->type != ENGINE_ARRAY) {
-		throw(env, "J->C: tried to translate value to array");
+		throw(env, "C: tried to translate value to array");
 		return 0;
 	}
 	// get array component type
@@ -678,9 +676,19 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 		if (value->inst) {
 			engine_inst* inst = value->inst;
 			lua_State* state = inst->state;
+            
 			lua_getglobal(state, FUNCTION_REGISTRY);
+            
+            if (lua_isnil(state, -1)) {
+                lua_pop(state, 1);
+                lua_newtable(state);
+                lua_pushvalue(state, -1); // copy
+                lua_setglobal(state, FUNCTION_REGISTRY);
+            }
+            
 			lua_pushinteger(state, value->data.func);
 			lua_gettable(state, -2);
+            
 			if (lua_isnil(state, -1)) {
 				lua_pop(state, 2);
 				throw(env, "J->C: internal error: failed to index function from registry");
@@ -709,13 +717,12 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 		}	
 	}
 	else {
-        const char* prefix = "J->C: tried to call value as function";
-        size_t len = strlen(prefix) + 8;
+        const char* prefix = "J->C: tried to call value as function: ";
+        size_t len = strlen(prefix) + 6;
         char message[len];
         memset(message, 0, len);
         strcat(message, prefix);
-        strcat(message, ": ");
-        sprintf(message + (strlen(prefix) + 2), "%d");
+        sprintf(message + strlen(prefix), "%d", value->type);
 		throw(env, message);
 		return 0;
 	}

@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <jni.h>
 #include <jni_md.h>
 

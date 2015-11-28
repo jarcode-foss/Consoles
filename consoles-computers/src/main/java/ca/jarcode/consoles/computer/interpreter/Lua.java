@@ -226,8 +226,12 @@ public class Lua {
 					globals);
 		}
 		else {
-			if (Computers.debug)
-				Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
+			if (Computers.debug) {
+				if (Computers.getInstance() != null)
+					Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
+				else
+					System.out.println("J: Wrapping java object: " + java.getClass());
+			}
 			return G.getValueFactory().translateObj(java, globals);
 		}
 	}
@@ -399,12 +403,12 @@ public class Lua {
 		if (Computers.debug) {
 			if (Computers.getInstance() != null) {
 				Computers.getInstance().getLogger().warning(
-						"Exception thrown in Java method during execution of Lua program:"
+						"[DEBUG] exception thrown in Java method during execution of Lua program:"
 				);
 				Computers.getInstance().getLogger().warning("\n" + ExceptionUtils.getFullStackTrace(ex));
 			}
 			else {
-				System.out.println("Exception thrown in Java method during execution of Lua program:");
+				System.out.println("J: exception thrown in Java method during execution of Lua program:");
 				System.out.println("\n" + ExceptionUtils.getFullStackTrace(ex));
 			}
 		}

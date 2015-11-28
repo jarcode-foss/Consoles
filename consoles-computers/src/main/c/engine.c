@@ -16,7 +16,10 @@
 #include <LuaEngine.h>
 #include <setjmp.h>
 
+#include <sys/time.h>
+
 #include "engine.h"
+#include "lua_utils.h"
 
 // definitions
 jclass class_type = 0;
@@ -49,10 +52,12 @@ static ffi_cif func_cif;
 // again, this is the single caller interface used for hook functions
 static ffi_cif hook_cif;
 
-static int maxtime = 7000;
+volatile static int maxtime = 7000;
 
 static ffi_type* f_args[1];
 static ffi_type* h_args[2];
+
+static void freewrapper(engine_inst* inst, JNIEnv* env, engine_jfuncwrapper* wrapper);
 
 /*
  * There are some resources that accumulate over the life of the Lua VM. The reason
@@ -76,23 +81,7 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 	// the entire engine is closed.
 	int t;
 	for (t = 0; t < inst->wrappers_amt; t++) {
-		// free closure
-		ffi_closure_free(inst->wrappers[t]->closure);
-		
-		// delete global reference to java function
-		if (inst->wrappers[t]->obj_inst) { // if it's null, it was for a reflected static function
-			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->obj_inst);
-		}
-		
-		// reflected methods have a Method instance to be deleted
-		if (inst->wrappers[t]->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data.reflect.method);
-		}
-        else if (inst->wrappers[t]->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-			(*env)->DeleteGlobalRef(env, inst->wrappers[t]->data.lambda.class_array);
-        }
-
-		free(inst->wrappers[t]);
+        freewrapper(inst, env, inst->wrappers[t]);
 	}
 	
 	// Free all floating java global references. These are mainly
@@ -127,11 +116,33 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
 	free(inst);
 }
 
+static void freewrapper(engine_inst* inst, JNIEnv* env, engine_jfuncwrapper* wrapper) {
+    
+    // free closure
+    ffi_closure_free(wrapper->closure);
+    
+    // delete global reference to java function
+    if (wrapper->obj_inst) { // if it's null, it was for a reflected static function
+        (*env)->DeleteGlobalRef(env, wrapper->obj_inst);
+    }
+	
+    // reflected methods have a Method instance to be deleted
+    if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+        (*env)->DeleteGlobalRef(env, wrapper->data.reflect.method);
+    }
+    else if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+        (*env)->DeleteGlobalRef(env, wrapper->data.lambda.class_array);
+    }
+    
+    free(wrapper);
+}
+
 // unused, probably should be used
 void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 	if (inst->wrappers_amt == 0) return;
 	if (inst->wrappers_amt == 1) {
 		free(inst->wrappers);
+        inst->wrappers_amt = 0;
 	}
 	else {
 		uint8_t valid = 0;
@@ -148,16 +159,16 @@ void engine_removewrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 			memmove(ptr, ptr + 1, (inst->wrappers_amt - (t + 1)) * sizeof(void*));
 		}
 		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt - 1) * sizeof(void*));
+        inst->wrappers_amt--;
 	}
-	inst->wrappers_amt--;
 }
 
 void engine_regwrapper(engine_inst* inst, engine_jfuncwrapper* wrapper) {
 	if (inst->wrappers_amt == 0) {
-		inst->wrappers = malloc(sizeof(engine_jfuncwrapper*));
+		inst->wrappers = malloc(sizeof(void*));
 	}
 	else {
-		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt + 1) * sizeof(engine_jfuncwrapper*));
+		inst->wrappers = realloc(inst->wrappers, (inst->wrappers_amt + 1) * sizeof(void*));
 	}
 	inst->wrappers[inst->wrappers_amt] = wrapper;
 	inst->wrappers_amt++;
@@ -176,12 +187,24 @@ static void hook(engine_inst* inst, lua_State* state, lua_Debug* debug) {
 	// solution, because we're dealing with our own ffi functions
 	// (unsafe to jmp out of), and luajit (jit compiled, lots of
 	// undefined stuff could happen), and other internal ffi usages.
-	
+    
+    if (!(inst->killed)) {
+        struct timeval last;
+        gettimeofday(&last, 0);
+        unsigned long ms = (unsigned long) (last.tv_usec / 1000U) + (last.tv_sec * 1000U);
+
+        if (!(inst->last_interrupt)) {
+            inst->last_interrupt = ms;
+        }
+        else if (ms - inst->last_interrupt > maxtime) {
+            inst->killed = 1;
+        }
+    }
 	if (inst->killed) {
 		// re-set hook to constantly execute
 		lua_sethook(state, inst->hook, LUA_MASKLINE, 0);
 		// error
-		luaL_error(state, "C: killed, exiting frame");
+		luaL_error(state, "C: killed");
 	}
 }
 
@@ -277,7 +300,7 @@ static void setup_classes(JNIEnv* env, jmp_buf handle) {
 // from an object early. This isn't required, but it's nice.
 static int engine_releaseobj(lua_State* state) {
 	// first arg should be userdata
-	engine_userdata* d = (engine_userdata*) luaL_checkudata(state, 1, "Engine.userdata");
+	engine_userdata* d = (engine_userdata*) luaL_checkudata(state, 1, ENGINE_USERDATA_TYPE);
 	if (d && !(d->released)) {
 		JNIEnv* env  = d->engine->runtime_env;
 		(*env)->DeleteGlobalRef(env, d->obj);
@@ -286,23 +309,31 @@ static int engine_releaseobj(lua_State* state) {
 	return 0;
 }
 
-// this is a function that handles calls on userdata
+// this is a function that handles indexing on userdata
 // this can be optimized, but to improve speed, all types passed to this layer
 // would have to be mapped out (and cleaned up), instead of doing it on the fly.
 int engine_handleobjcall(lua_State* state) {
 	// first arg should be userdata
-	engine_userdata* d = luaL_checkudata(state, 1, "Engine.userdata");
-	luaL_argcheck(state, d != 0, 1, "`object' expected");
+	engine_userdata* d = luaL_checkudata(state, 1, ENGINE_USERDATA_TYPE);
+	luaL_argcheck(state, d != 0, 1, "`interface' expected");
 	// second arg should be string, indexing a java object with anything else makes no sense
 	const char* str = lua_tostring(state, 2);
 	
 	jobject obj = d->obj;
 	JNIEnv* env = d->engine->runtime_env;
-	if (!env || !obj || !d || d->released) {
-		lua_pushnil(state);
-		return 1;
+	if (!env) {
+		luaL_error(state, "C: inernal error: bad JNI environment");
+		return 0;
 	}
-	if (strcmp(str, "release")) {
+	else if (!obj) {
+		luaL_error(state, "C: internal error: null object reference");
+		return 0;
+	}
+	else if (d->released) {
+		luaL_error(state, "C: object released");
+		return 0;
+	}
+	if (!strcmp(str, "release")) {
 		lua_pushcfunction(state, &engine_releaseobj);
 		return 1;
 	}
@@ -312,7 +343,8 @@ int engine_handleobjcall(lua_State* state) {
 		engine_pushreflect(env, d->engine, method, obj);
 	}
 	else {
-		lua_pushnil(state);
+		luaL_error(state, "C: could not resolve method");
+		return 0;
 	}
 	return 1;
 }
@@ -378,13 +410,19 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_sethook(state, (lua_Hook) hook_binding, LUA_MASKCOUNT, interval);
 	
 	// register generic userdata table (for java objects)
-	luaL_newmetatable(state, "Engine.userdata");
-	// we are setting the special __index key, which lua calls every time it tries to index an object
+	luaL_newmetatable(state, ENGINE_USERDATA_TYPE);
+	// we are setting the __index key, which lua calls every time it tries to index an object
 	lua_pushstring(state, "__index");
 	// attach our function to handle generic calls into an object
 	lua_pushcfunction(state, &engine_handleobjcall);
 	// set key and value
 	lua_settable(state, -3);
+    // push unique __target value, we use this to identify our userdata from others.
+    lua_pushstring(state, "__target");
+    // push some value
+    lua_pushboolean(state, 1);
+    // set key and value
+    lua_settable(state, -3);
 	// pop metatable off the stack
 	lua_pop(state, 1);
 	
@@ -392,11 +430,9 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
 	lua_pushstring(state, ENGINE_TYPE);
 	lua_setglobal(state, ENGINE_TYPE_KEY);
 	
-	// create and set function registry
-	lua_newtable(state);
-	lua_setglobal(state, FUNCTION_REGISTRY);
-	
 	instance->state = state;
+
+    util_setup(instance, state);
 	
 	return (jlong) (uintptr_t) instance;
 }
@@ -481,11 +517,20 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, ji
 }
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_interruptreset(JNIEnv* env, jobject this, jlong ptr) {
-	// stub
+    engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
+    
+    struct timeval last;
+    gettimeofday(&last, 0);
+    inst->last_interrupt = (unsigned long) (last.tv_usec / 1000U) + (last.tv_sec * 1000U);
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, jint maxtime) {
-	// stub
+JNIEXPORT void JNICALL Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, jint suggested_maxtime) {
+	maxtime = suggested_maxtime;
+}
+
+JNIEXPORT void JNICALL Java_jni_LuaEngine_blacklist(JNIEnv* env, jobject this, jlong ptr) {
+    engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
+    util_blacklist(inst->state);
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject this, jlong ptr) {
@@ -496,149 +541,7 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject th
 	return engine_wrap(env, v);
 }
 
-// this is a (wrapped) function that handles _all_ C->Lua function calls
-int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
-	JNIEnv* env = wrapper->engine->runtime_env;
-	engine_inst* inst = wrapper->engine;
-	
-	uint8_t vargs = 0;
-	switch (wrapper->type) {
-		case ENGINE_JAVA_LAMBDA_FUNCTION:
-			vargs = (*env)->GetArrayLength(env, wrapper->data.lambda.class_array);
-			break;
-		case ENGINE_JAVA_REFLECT_FUNCTION:
-			vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
-			break;
-	}
-    
-    // Lua doesn't know that it needs to match the function/method signature, so we can expect bad arguments
-    // this is technically valid Lua code and errors shouldn't be thrown, but we'll still complain if debug
-    // mode is enabled.
-    int passed = lua_gettop(state);
-    if (passed != vargs && engine_debug) {
-        printf("WARNING: calling java function with bad arguments (expected: %d, got: %d)\n", vargs, passed);
-    }
-    
-    if (passed < 0) {
-        printf("FATAL: corrupt Lua API stack\n");
-        exit(EXIT_FAILURE);
-    }
-	// something should be done to truncate extra arguments, because we're
-	// operating on the top of the stack
-	lua_settop(state, (int) vargs); // truncate
-	
-	engine_value* v_args[vargs];
-	
-	// backwards iterate so we get our arguments in order
-	int t;
-	for (t = vargs - 1; t >= 0; t--) {
-		v_args[t] = engine_popvalue(env, inst, state);
-		// if null pointer, create new nill value
-		if (!v_args[t]) {
-			v_args[t] = engine_newvalue(env, inst);
-		}
-	}
-	
-	// return value (in java)
-	jobject ret = 0;
-	
-	// You cannot magically pass varadic amounts between functions in C,
-	// so this is a bit ugly.
-	//
-	// On the bright side, this is actually really fast. The method ids
-	// were dynamically resolved on creation of the closure, so every
-	// time a 'lambda' function is called, it only ends up being a
-	// single JNI call.
-	//
-	// I also could do this with Lua.callAndRelease(...), but I avoid
-	// so much more overhead doing it this way.
-	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-		if (wrapper->data.lambda.ret) {
-            jobject paramtypes = wrapper->data.lambda.class_array;
-			switch (vargs) {
-				case 0:
-					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
-					break;
-				case 1:
-					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-                                                   TOJAVA(env, v_args, paramtypes, 0));
-					break;
-				case 2:
-					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-                                                   TOJAVA(env, v_args, paramtypes, 0),
-                                                   TOJAVA(env, v_args, paramtypes, 1));
-					break;
-				case 3:
-					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-                                                   TOJAVA(env, v_args, paramtypes, 0),
-                                                   TOJAVA(env, v_args, paramtypes, 1),
-                                                   TOJAVA(env, v_args, paramtypes, 2));
-					break;
-				case 4:
-					ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-                                                   TOJAVA(env, v_args, paramtypes, 0),
-                                                   TOJAVA(env, v_args, paramtypes, 1),
-                                                   TOJAVA(env, v_args, paramtypes, 2),
-                                                   TOJAVA(env, v_args, paramtypes, 3));
-					break;
-			}
-		}
-		else {
-			switch (vargs) {
-				case 0:
-					(*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
-					break;
-				case 1:
-					(*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]));
-					break;
-				case 2:
-					(*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]));
-					break;
-				case 3:
-					(*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]), engine_wrap(env, v_args[2]));
-					break;
-				case 4:
-					(*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
-						engine_wrap(env, v_args[0]), engine_wrap(env, v_args[1]), engine_wrap(env, v_args[2]),
-						engine_wrap(env, v_args[3]));
-					break;
-			}
-		}
-	}
-	
-	// this has a lot of overhead, but we really don't have any other choice for reflected
-	// functions.
-	else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-		// Class[]
-		jobject paramtypes = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodtypes);
-		// Object[]
-		jobjectArray arr = (*env)->NewObjectArray(env, vargs, class_object, 0);
-		for (t = 0; t < vargs; t++) {
-			// get element type (Class)
-			jobject element_type = (*env)->GetObjectArrayElement(env, paramtypes, t);
-			// get corresponding ScriptValue
-			jobject element = engine_wrap(env, v_args[t]);
-			// translate to Object
-			jobject translated = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, element_type, element);
-			// set index at Object[] array to element
-			(*env)->SetObjectArrayElement(env, arr, t, translated);
-		}
-		// call Method
-		ret = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodcall, wrapper->obj_inst, arr);
-	}
-	
-	// all the argument (engine) values were created just now,
-	// and won't be used for anything else.
-	//
-	// We could further improve this by allocating the engine
-	// values on the stack (and reworking some other functions),
-	// but that is for another day.
-	for (t = 0; t < vargs; t++) {
-		engine_releasevalue(env, v_args[t]);
-	}
+static void expass(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) {
 
     // if an exception occurred, we need to handle it and pass it to lua
     // we also call a Java helper method to further handle the exception.
@@ -677,6 +580,202 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
             luaL_error(state, "J: %s", stack_type_chars);
         }
     }
+}
+
+// this is a (wrapped) function that handles _all_ C->Lua function calls
+int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
+
+    // We check if the first argument is userdata, and
+    // then check if that userdata is an interface
+    // for a java object
+    //
+    // This is a fix for the ':' operator for function
+    // calls on interfaces. We discard the first
+    // argument if nessecary.
+    //
+    // technically, this means you can actually
+    // call interface functions with '.' because
+    // they are really just resolved closures
+    
+    if (lua_isuserdata(state, 1)) {
+        lua_getmetatable(state, 1);
+        lua_pushstring(state, "__target");
+        lua_gettable(state, -2);
+        if (lua_toboolean(state, -1)) {
+            lua_remove(state, 1);
+        }
+        lua_pop(state, 2);
+    }
+    
+	JNIEnv* env = wrapper->engine->runtime_env;
+	engine_inst* inst = wrapper->engine;
+	
+	uint8_t vargs = 0;
+	switch (wrapper->type) {
+		case ENGINE_JAVA_LAMBDA_FUNCTION:
+			vargs = (*env)->GetArrayLength(env, wrapper->data.lambda.class_array);
+			break;
+		case ENGINE_JAVA_REFLECT_FUNCTION:
+			vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
+			break;
+	}
+    
+    // Lua doesn't know that it needs to match the function/method signature, so we can expect bad arguments
+    // this is technically valid Lua code and errors shouldn't be thrown, but we'll still complain if debug
+    // mode is enabled.
+    int passed = lua_gettop(state);
+    if (passed > vargs && engine_debug) {
+        printf("C: calling java function with bad arguments (expected: %d, got: %d)\n", vargs, passed);
+    }
+    // however, if we don't have enough arguments to call the java function, then
+    // we'll need to error.
+    else if (passed < vargs) {
+        luaL_error(state, "C: not enough arguments (expected: %d, got: %d)", vargs, passed);
+        return 0;
+    }
+    // if the stack is corrupted, this is a good indicator
+    else if (passed < 0 || passed > 5000) {
+        printf("FATAL: corrupt Lua API stack\n");
+        exit(EXIT_FAILURE);
+    }
+	// something should be done to truncate extra arguments, because we're
+	// operating on the top of the stack
+	lua_settop(state, (int) vargs); // truncate
+	
+	engine_value* v_args[vargs];
+	
+	// backwards iterate so we get our arguments in order
+	int t;
+	for (t = vargs - 1; t >= 0; t--) {
+		v_args[t] = engine_popvalue(env, inst, state);
+		// if null pointer, create new nill value
+		if (!v_args[t]) {
+			v_args[t] = engine_newvalue(env, inst);
+		}
+	}
+	
+	// return value (in java)
+	jobject ret = 0;
+	
+	// You cannot magically pass varadic amounts between functions in C,
+	// so this is a bit ugly.
+	//
+	// On the bright side, this is actually really fast. The method ids
+	// were dynamically resolved on creation of the closure, so every
+	// time a 'lambda' function is called, it only ends up being a
+	// single JNI call.
+	//
+	// I also could do this with Lua.callAndRelease(...), but I avoid
+	// so much more overhead doing it this way.
+	if (wrapper->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
+        static jmp_buf buf;
+        
+        if (setjmp(buf)) {
+            goto cleanup;
+        }
+        
+        jobject paramtypes = wrapper->data.lambda.class_array;
+		if (wrapper->data.lambda.ret) {
+			switch (vargs) {
+            case 0:
+                ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
+                break;
+            case 1:
+                ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                               TOJAVA(env, v_args, paramtypes, 0, buf));
+                break;
+            case 2:
+                ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                               TOJAVA(env, v_args, paramtypes, 0, buf),
+                                               TOJAVA(env, v_args, paramtypes, 1, buf));
+                break;
+            case 3:
+                ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                               TOJAVA(env, v_args, paramtypes, 0, buf),
+                                               TOJAVA(env, v_args, paramtypes, 1, buf),
+                                               TOJAVA(env, v_args, paramtypes, 2, buf));
+                break;
+            case 4:
+                ret = (*env)->CallObjectMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                               TOJAVA(env, v_args, paramtypes, 0, buf),
+                                               TOJAVA(env, v_args, paramtypes, 1, buf),
+                                               TOJAVA(env, v_args, paramtypes, 2, buf),
+                                               TOJAVA(env, v_args, paramtypes, 3, buf));
+                break;
+			}
+		}
+		else {
+			switch (vargs) {
+            case 0:
+                (*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id);
+                break;
+            case 1:
+                (*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                       TOJAVA(env, v_args, paramtypes, 0, buf));
+                break;
+            case 2:
+                (*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                       TOJAVA(env, v_args, paramtypes, 0, buf),
+                                       TOJAVA(env, v_args, paramtypes, 1, buf));
+                break;
+            case 3:
+                (*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                       TOJAVA(env, v_args, paramtypes, 0, buf),
+                                       TOJAVA(env, v_args, paramtypes, 1, buf),
+                                       TOJAVA(env, v_args, paramtypes, 2, buf));
+                break;
+            case 4:
+                (*env)->CallVoidMethod(env, wrapper->obj_inst, wrapper->data.lambda.id,
+                                       TOJAVA(env, v_args, paramtypes, 0, buf),
+                                       TOJAVA(env, v_args, paramtypes, 1, buf),
+                                       TOJAVA(env, v_args, paramtypes, 2, buf),
+                                       TOJAVA(env, v_args, paramtypes, 3, buf));
+                break;
+			}
+		}
+	}
+	
+	// this has a lot of overhead, but we really don't have any other choice for reflected
+	// functions.
+	else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+		// Class[]
+		jobject paramtypes = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodtypes);
+		// Object[]
+		jobjectArray arr = (*env)->NewObjectArray(env, vargs, class_object, 0);
+        
+		for (t = 0; t < vargs; t++) {
+			// get element type (Class)
+			jobject element_type = (*env)->GetObjectArrayElement(env, paramtypes, t);
+			// get corresponding ScriptValue
+			jobject element = engine_wrap(env, v_args[t]);
+			// translate to Object
+			jobject translated = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, element_type, element);
+    
+            // pass exception to Lua, if any occurred during translation
+            if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
+                goto cleanup;
+            }
+            
+			// set index at Object[] array to element
+			(*env)->SetObjectArrayElement(env, arr, t, translated);
+		}
+        
+		// call Method
+		ret = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodcall, wrapper->obj_inst, arr);
+	}
+	
+	// all the argument (engine) values were created just now,
+	// and won't be used for anything else.
+	//
+	// We could further improve this by allocating the engine
+	// values on the stack (and reworking some other functions),
+	// but that is for another day.
+	cleanup: for (t = 0; t < vargs; t++) {
+		engine_releasevalue(env, v_args[t]);
+	}
+    
+    // pass exception to Lua, if any occurred
+    expass(env, state, wrapper);
 			
 	// directly returned null, or no return value, just push nil
 	if (!ret) {
@@ -853,7 +952,7 @@ void engine_addfloating(engine_inst* inst, jobject reference) {
 		inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt + 1) * sizeof(jobject*));
 	}
 	inst->floating_objects[inst->floating_objects_amt] = reference;
-	inst->wrappers_amt++;
+	inst->floating_objects_amt++;
 }
 
 void engine_removefloating(engine_inst* inst, jobject reference) {

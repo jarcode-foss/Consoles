@@ -8,7 +8,7 @@ import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.PartialFunctionBind;
 import ca.jarcode.consoles.computer.interpreter.interfaces.*;
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNError;
+
 import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
 
 import java.io.*;
@@ -37,6 +37,8 @@ public class NativeLayerTask {
 
 	private static final int LOG_TAB = 69;
 
+	private static final String SPLITTER = "+------------------------------------" +
+			"-----------------------------------------+";
 	private static final String DONE = "[DONE]";
 	private static final String FAIL = "[FAIL]";
 	private static final String STARTED = "[STARTED]";
@@ -59,11 +61,11 @@ public class NativeLayerTask {
 
 	// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
 	// happen. This is probably due to how exceptions are instantiated through the JNI.
-	public void init() throws Throwable {
+	public void init(boolean sandboxed) throws Throwable {
 
 		Computers.debug = true;
 
-		log("Loading tests and setting up engine");
+		logs("Setting up engine");
 
 		File library;
 
@@ -79,7 +81,7 @@ public class NativeLayerTask {
 
 			System.load(library.getAbsolutePath());
 
-			LuaNEngine.install(LuaNImpl.JIT);
+			LuaNEngine.install(sandboxed ? LuaNImpl.JIT : LuaNImpl.JIT_TEST);
 
 			// map a lambda vesion of our test function
 			Lua.map(this::lua$testFunction, "lambdaTestFunction");
@@ -93,7 +95,7 @@ public class NativeLayerTask {
 			throw wrapException(e, true);
 		}
 
-		logn(DONE);
+		logi(DONE);
 
 		if (DEBUG) {
 			// catch syscall exit exit_group
@@ -102,6 +104,7 @@ public class NativeLayerTask {
 		}
 
 		log("Building new environment");
+		logn(STARTED);
 
 		String loaded;
 
@@ -128,13 +131,12 @@ public class NativeLayerTask {
 
 			globals.load(pool);
 
-			globals.removeRestrictions(); // we need extra packages
+			if (!sandboxed)
+				globals.removeRestrictions(); // we need extra packages
 		}
 		catch (Throwable e) {
-			throw wrapException(e, true);
+			throw wrapException(e, false);
 		}
-
-		logn(DONE);
 
 		stdout.println("J: loaded: " + loaded);
 	}
@@ -162,7 +164,7 @@ public class NativeLayerTask {
 		return new RuntimeException(e);
 	}
 
-	public void loadAndCallChunk() throws Throwable {
+	public void loadAndCallChunk(String test) throws Throwable {
 
 		try {
 			// load our program into a string
@@ -170,7 +172,7 @@ public class NativeLayerTask {
 
 			File tests = new File(
 					System.getProperty("user.dir") +
-							"/src/test/lua/tests.lua".replace("/", File.separator)
+							"/src/test/lua/" + test + ".lua".replace("/", File.separator)
 			);
 
 			assert tests.exists();
@@ -186,8 +188,8 @@ public class NativeLayerTask {
 				program = new String(buf, StandardCharsets.UTF_8);
 			}
 
-			log("Loading program chunk");
-			logn(STARTED);
+			logs("Loading program chunk");
+			logi(STARTED);
 			chunk = globals.load(program);
 
 			log("Calling program chunk");
@@ -201,22 +203,27 @@ public class NativeLayerTask {
 		}
 	}
 
-	public void loadAndCallTests() {
+	public void loadAndCallTests(boolean passDirectory) {
 
 		try {
-			log("Indexing test() function");
+			logs("Indexing test() function");
 			logn(DONE);
 			stdout.print("\n");
 			ScriptValue testFunction = globals.get(globals.getValueFactory().translate("test", globals));
 			stdout.print("\n");
 
-			log("Calling test() function");
+			logs("Calling test() function");
 			logn(STARTED);
 			stdout.print("\n");
 
-			ScriptValue result = testFunction.getAsFunction().call(
-					globals.getValueFactory().translate(System.getProperty("user.dir"), globals)
-			);
+			ScriptValue result;
+			if (passDirectory)
+				result = testFunction.getAsFunction().call(
+						globals.getValueFactory().translate(System.getProperty("user.dir"), globals)
+				);
+			else
+				result = testFunction.call();
+
 			stdout.print("\n");
 
 			if (result.canTranslateInt()) {
@@ -256,9 +263,36 @@ public class NativeLayerTask {
 		}
 	}
 
+	public class Foo {
+		public int foo() {
+			stdout.println("J: Foo#foo() called!");
+			return 42;
+		}
+		public String bar(int x, int y) {
+			stdout.println("J: Foo#bar(int, int) called!");
+			return "0x" + Integer.toHexString(x + y).toUpperCase();
+		}
+	}
+
+	public int lua$testIntReturn() {
+		return 42;
+	}
+
+	public String lua$testStringReturn() {
+		return "foobar";
+	}
+
+	public Foo lua$newFooObject() {
+		return new Foo();
+	}
+
 	public String lua$testFunction(int arg0, String arg1) {
 		stdout.println("J: testFunction sucessfully called from Lua!");
 		return "ret: ('" + arg1 + "', " + arg0 + ")";
+	}
+
+	public void lua$setdebug(boolean debug) {
+		Computers.debug = debug;
 	}
 
 	public void lua$throwSomething() {
@@ -278,20 +312,30 @@ public class NativeLayerTask {
 		assert value.getAsFunction().call(four, four).translateInt() == 8;
 	}
 
+	public void logs(String message) {
+		stdout.println(SPLITTER);
+		log(message);
+	}
+
 	public void log(String message) {
-		stdout.print(message);
+		stdout.print("| " + message);
 		stdout.flush();
 		loglen += message.length();
 	}
 
 	public void logn(String message) {
+		logi(message);
+		stdout.println(SPLITTER);
+	}
+
+	public void logi(String message) {
 		StringBuilder builder = new StringBuilder();
 		builder.append(" ");
-		for (int t = 0; t < LOG_TAB - (loglen + 2); t++)
+		for (int t = 0; t < LOG_TAB - (loglen + 2) - (message.length() - 6); t++)
 			builder.append(".");
 		builder.append(" ");
 		stdout.print(builder.toString());
-		stdout.println(message);
+		stdout.println(message + " |");
 		stdout.flush();
 		loglen = 0;
 	}
@@ -323,7 +367,7 @@ public class NativeLayerTask {
 			Process process = new ProcessBuilder()
 					.command(command.split(","))
 					.start();
-			logn(DONE);
+			logi(DONE);
 			return process;
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to run debug hook command", e);

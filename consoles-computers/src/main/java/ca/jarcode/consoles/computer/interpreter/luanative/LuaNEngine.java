@@ -164,6 +164,10 @@ public class LuaNEngine implements ScriptEngine {
 			inst = register(ptr, globals, id);
 		}
 		else inst = register(ptr, globals, -1);
+
+		if (IMPL != LuaNImpl.JIT_TEST)
+			L.blacklist(ptr);
+
 		Thread current =  Thread.currentThread();
 		String name = current.getName();
 		inst.threadNameRestore = () -> current.setName(name);

@@ -32,4 +32,6 @@ public interface LuaNInterface {
 	void setmaxtime(int time);
 	// setup the native interface (called during install)
 	void setup();
+	// blacklist all functions that are never intended to be used
+	void blacklist(long ptr);
 }

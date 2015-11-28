@@ -107,7 +107,7 @@ public class LuaJEngine implements ScriptEngine {
 		// require should be used instead
 		globals.set("dofile", LuaValue.NIL);
 
-		globals.set("__impl", LuaValue.valueOf("luaj"));
+		globals.set("__impl", LuaValue.valueOf("LuaJ"));
 
 		// set stdout
 		if (out == null)

@@ -16,12 +16,12 @@ function test(workingDir)
     package.path = package.path .. ";" .. workingDir .. "/src/test/lua/tasks/?.lua"
 
     add_tasks({
-        "basic", "functions", "callback", "error_handle"
+        "basic", "functions", "callback", "error_handle", "objects"
     })
 
-    log("Running Lua tests")
+    log("running Lua tests")
     for i=1,#tasks do
-        log("Running test: '" .. tasks[i][1] .. "'")
+        log("running test: '" .. tasks[i][1] .. "'")
         tasks[i][2]();
     end
 
