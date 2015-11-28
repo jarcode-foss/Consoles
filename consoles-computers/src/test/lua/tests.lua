@@ -1,4 +1,8 @@
 
+-- These are tests that are ran only using the native layer (LuaN) to test
+-- various scripting functionality. These cannot use most Bukkit and Consoles
+-- functionality, rather instead they test basic Java <-> C <-> Lua mappings.
+
 -- flush output automatically
 io.output():setvbuf("no")
 
