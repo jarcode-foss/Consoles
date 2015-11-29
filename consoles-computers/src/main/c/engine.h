@@ -38,6 +38,16 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
+#define ENGINE_CDEBUG 1
+
+// used to test the alignment of structures in maps/buffers
+#if ENGINE_CDEBUG > 0
+#define ENGINE_DEBUG_SIGNATURE 800328094372526
+#define ENGINE_ASSERT_VALUE(v) ((engine_value*) v)->DEBUG_SIGNATURE == ENGINE_DEBUG_SIGNATURE
+#else
+#define ENGINE_ASSERT_VALUE(v) 1;
+#endif // ENGINE_CDEBUG
+
 // primitives
 #define ENGINE_NULL 0
 #define ENGINE_INTEGRAL 1
@@ -79,6 +89,10 @@
 // we call all of our userdata objects an 'interface', since they work as a way to lookup methods
 // from a java object.
 #define ENGINE_USERDATA_TYPE "interface"
+
+// We use special bidirectional maps to provide userdatums attached to java objects
+// this key is used to index collections with our userdatums
+#define ENGINE_SCRIPT_VALUE_ID 675080323
 
 #define IS_ENGINE_FUNCTION(t) t == ENGINE_JAVA_LAMBDA_FUNCTION || t == ENGINE_JAVA_REFLECT_FUNCTION || t == ENGINE_LUA_FUNCTION
 #define IS_NUMBER(t) t == ENGINE_BOOLEAN || t == ENGINE_FLOATING || t == ENGINE_INTEGRAL
@@ -285,6 +299,9 @@ typedef union engine_data_ {
  * LuaJIT has no copies of this value, this is _only_ associated with a java object in a pair map.
  */
 struct engine_value_ {
+#if ENGINE_CDEBUG > 0
+    uint64_t DEBUG_SIGNATURE;
+#endif // ENGINE_CDEBUG
 	engine_data data; // data
 	uint8_t type; // type of value
 	

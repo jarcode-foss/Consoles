@@ -90,7 +90,9 @@ public final class InterpretedProgram extends SandboxProgram {
 	public void lua$removeRestrictions() {
 		if (!restricted) return;
 
+		// script values are not thread safe
 		AtomicBoolean state = new AtomicBoolean(false);
+		AtomicBoolean ret = new AtomicBoolean(false);
 
 		ConsoleButton allow = new ConsoleButton(computer.getConsole(), "Verify");
 		allow.setBorder((byte) 114);
@@ -104,16 +106,12 @@ public final class InterpretedProgram extends SandboxProgram {
 			terminate();
 			state.set(true);
 		});
+
+
 		allow.addEventListener(event -> {
 			computer.getConsole().removeComponent(pos);
 			if (event.getPlayer().hasPermission("computer.admin")) {
-
-				restricted = false;
-				Lua.libraries.values().stream()
-						.filter((lib) -> lib.isRestricted)
-						.forEach(globals::load);
-
-				globals.removeRestrictions();
+				ret.set(true);
 			} else {
 				print("\nlua: " + lang.getString("lua-perm"));
 				terminate();
@@ -126,6 +124,14 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 		catch (InterruptedException e) {
 			throw new GenericScriptError(e);
+		}
+		if (ret.get()) {
+			restricted = false;
+			Lua.libraries.values().stream()
+					.filter((lib) -> lib.isRestricted)
+					.forEach(globals::load);
+
+			globals.removeRestrictions();
 		}
 	}
 	@FunctionManual("Reads input from the terminal that the current program is running in. This function " +

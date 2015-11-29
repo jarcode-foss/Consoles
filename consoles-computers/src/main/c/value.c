@@ -34,7 +34,6 @@
  * 
  */
 
-static pair_map m;
 static jclass value_type;
 static jmethodID value_constructor;
 
@@ -53,7 +52,7 @@ static inline void handle_null_const(jmethodID v, const char* message) {
 }
 
 static inline engine_value* findnative(JNIEnv* env, jobject ref) {
-	engine_value* value = m.native(env, &m, ref);
+	engine_value* value = pair_map_native(ENGINE_SCRIPT_VALUE_ID, ref, env);
 	if (value) {
 		return value;
 	}
@@ -75,7 +74,7 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
 		id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V");
 		CHECKEX(env, handle);
 		
-		pair_map_init(env, &m);
+		pair_map_init(ENGINE_SCRIPT_VALUE_ID);
 		setup = 1;
 	}
 }
@@ -86,12 +85,18 @@ engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst) {
 	v->inst = inst;
 	return v;
 }
+
 engine_value* engine_newsharedvalue(JNIEnv* env) {
 	engine_value* v = malloc(sizeof(engine_value));
+    
+#if ENGINE_CDEBUG > 0 // initialize debug signature, if needed
+    v->DEBUG_SIGNATURE = ENGINE_DEBUG_SIGNATURE;
+#endif // ENGINE_CDEBUG
 	v->inst = 0;
+    
 	jobject obj = (*env)->NewObject(env, value_type, value_constructor);
-	obj = (*env)->NewGlobalRef(env, obj);
-	pair_map_append(env, &m, obj, v);
+	pair_map_append(ENGINE_SCRIPT_VALUE_ID, obj, v, env);
+    (*env)->DeleteLocalRef(env, obj);
 	return v;
 }
 
@@ -122,20 +127,20 @@ static void valuefree(JNIEnv* env, engine_value* value) {
 }
 
 void engine_releasevalue(JNIEnv* env, engine_value* value) {
-	m.rm_native(env, &m, value);
+	pair_map_rm_native(ENGINE_SCRIPT_VALUE_ID, value, env);
 	valuefree(env, value);
 }
 
-static int valueparse(JNIEnv* env, void* ptr, void* userdata) {
+static int valueparse(void* ptr, void* userdata) {
 	if (((engine_value*) ptr)->inst && ((engine_value*) ptr)->inst == userdata) {
-		valuefree(env, (engine_value*) ptr);
+		valuefree(((engine_value*) ptr)->inst->runtime_env, (engine_value*) ptr);
 		return 1;
 	}
 	else return 0;
 }
 
 void engine_clearvalues(JNIEnv* env, engine_inst* inst) {
-	m.rm(env, &m, &valueparse, inst);
+	pair_map_rm_context(ENGINE_SCRIPT_VALUE_ID, &valueparse, inst);
 }
 
 inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
@@ -143,7 +148,7 @@ inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
 }
 
 inline jobject engine_wrap(JNIEnv* env, engine_value* value) {
-	return m.java(env, &m, value);
+	return pair_map_java(ENGINE_SCRIPT_VALUE_ID, value);
 }
 
 /*

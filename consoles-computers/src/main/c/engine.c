@@ -20,6 +20,7 @@
 
 #include "engine.h"
 #include "lua_utils.h"
+#include "pair.h"
 
 // definitions
 jclass class_type = 0;
@@ -506,7 +507,12 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this,
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_settable
 (JNIEnv* env, jobject this, jlong ptr, jstring jtable, jstring jkey, jobject jvalue) {
+    
 	engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
+    
+    JNIEnv* temp_env = inst->runtime_env;
+    inst->runtime_env = env;
+    
 	lua_State* state = inst->state;
 	const char* table = (*env)->GetStringUTFChars(env, jtable, 0);
 	const char* key = (*env)->GetStringUTFChars(env, jkey, 0);
@@ -537,10 +543,14 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_settable
 	
 	(*env)->ReleaseStringUTFChars(env, jtable, table);
 	(*env)->ReleaseStringUTFChars(env, jkey, key);
+
+    inst->runtime_env = temp_env;
 }
 
 JNIEXPORT jint JNICALL Java_jni_LuaEngine_destroyinst(JNIEnv* env, jobject this, jlong ptr) {
-	engine_close(env, (engine_inst*) (uintptr_t) ptr);
+    engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
+    inst->runtime_env = env;
+	engine_close(env, inst);
 	return 0;
 }
 
