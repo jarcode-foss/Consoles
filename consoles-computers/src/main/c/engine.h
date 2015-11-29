@@ -114,7 +114,7 @@
 // used for translating arguments in function calls
 static jobject translate_java(JNIEnv* env, jobject type, jobject script_value, jmp_buf buf);
 #define TOJAVA(e, v, a, i, b) translate_java(e, (*e)->GetObjectArrayElement(e, a, i), engine_wrap(env, v[i]), b)
-		
+        
 
 // class 'Class'
 extern jclass class_type;
@@ -163,24 +163,24 @@ static inline jobject translate_java
 
 static inline jmethodID method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
-	jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
-	CHECKEX(env, buf);
-	return ret;
+    jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
+    CHECKEX(env, buf);
+    return ret;
 }
 
 static inline jmethodID static_method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
-	jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
-	CHECKEX(env, buf);
-	return ret;
+    jmethodID ret = (*env)->GetStaticMethodID(env, type, method, signature);
+    CHECKEX(env, buf);
+    return ret;
 }
 
 /*
  * struct for information about a lambda function (usally passed by value)
  */
 typedef struct {
-	uint8_t args;
-	uint8_t ret;
+    uint8_t args;
+    uint8_t ret;
 } engine_lambda_info;
 
 // forward declaration
@@ -190,22 +190,22 @@ typedef struct engine_inst_ engine_inst;
  * This is a function wrapper, a type passed to a special function in engine.c that handles all function calls.
  */
 typedef struct {
-	jobject obj_inst; // lambda, or instance of object that a reflected method is accessing (can be null)
-	ffi_closure* closure; // closure
-	lua_CFunction func; // function
-	union { // type-unqiue data
-		struct {
-			jmethodID id; // id of lambda method
-			uint8_t ret; // >0 if there is a return value
-			jobject class_array; // Class[] global ref
-		} lambda;
-		struct {
-			jobject method; // Method instance
-			long reflect_id; // unqiue wrapper id
-		} reflect;
-	} data;
-	uint8_t type; // lambda or reflected
-	engine_inst* engine;
+    jobject obj_inst; // lambda, or instance of object that a reflected method is accessing (can be null)
+    ffi_closure* closure; // closure
+    lua_CFunction func; // function
+    union { // type-unqiue data
+        struct {
+            jmethodID id; // id of lambda method
+            uint8_t ret; // >0 if there is a return value
+            jobject class_array; // Class[] global ref
+        } lambda;
+        struct {
+            jobject method; // Method instance
+            long reflect_id; // unqiue wrapper id
+        } reflect;
+    } data;
+    uint8_t type; // lambda or reflected
+    engine_inst* engine;
 } engine_jfuncwrapper;
 
 /*
@@ -213,32 +213,32 @@ typedef struct {
  * be created for every separate lua chunk to be run.
  */
 struct engine_inst_ {
-	lua_State* state;
-	uint8_t closed;
-	uint8_t restricted;
-	
-	// all function wrappers for this instance (only cleaned up at the end of the VM's lifecycle)
-	// there is only one wrapper per unique function passed to lua
-	engine_jfuncwrapper** wrappers;
-	size_t wrappers_amt;
-	
-	// assigned (never used) before a chunk is executed in Lua
-	// this is used for function wrappers that need to find the environment they are running in
-	JNIEnv* runtime_env;
-	
-	// this is used, mainly by userdatums passed to lua, to keep track of objects
-	// that still need their global references deleted (these are copies of those references)
-	jobject* floating_objects;
-	size_t floating_objects_amt;
-	
-	// this is the ffi closure used for the hook function
-	ffi_closure* closure;
-	
-	// this is a flag used by hook function to determine if the VM has been killed
-	volatile uint8_t killed;
-	
-	// hook function
-	lua_Hook hook;
+    lua_State* state;
+    uint8_t closed;
+    uint8_t restricted;
+    
+    // all function wrappers for this instance (only cleaned up at the end of the VM's lifecycle)
+    // there is only one wrapper per unique function passed to lua
+    engine_jfuncwrapper** wrappers;
+    size_t wrappers_amt;
+    
+    // assigned (never used) before a chunk is executed in Lua
+    // this is used for function wrappers that need to find the environment they are running in
+    JNIEnv* runtime_env;
+    
+    // this is used, mainly by userdatums passed to lua, to keep track of objects
+    // that still need their global references deleted (these are copies of those references)
+    jobject* floating_objects;
+    size_t floating_objects_amt;
+    
+    // this is the ffi closure used for the hook function
+    ffi_closure* closure;
+    
+    // this is a flag used by hook function to determine if the VM has been killed
+    volatile uint8_t killed;
+    
+    // hook function
+    lua_Hook hook;
 
     // the last time an interrupt was fired (ms)
     volatile unsigned long last_interrupt;
@@ -251,25 +251,25 @@ struct engine_inst_ {
  * reflected java function
  */
 typedef struct {
-	jobject obj_inst; // NULL if static, global ref
-	jobject reflect_method; // Method instance, global ref
+    jobject obj_inst; // NULL if static, global ref
+    jobject reflect_method; // Method instance, global ref
 } engine_rfunc;
 
 /*
  * lambda java function
  */
 typedef struct {
-	jobject lambda; // lambda instance, global ref
-	jobject class_array; // java array of classes (Class[])
+    jobject lambda; // lambda instance, global ref
+    jobject class_array; // java array of classes (Class[])
 } engine_lfunc;
 
 /*
  * tiny userdata type passed to lua, managed completely by lua
  */
 typedef struct {
-	jobject obj; // jobject, global _floating_ reference
-	engine_inst* engine;
-	uint8_t released;
+    jobject obj; // jobject, global _floating_ reference
+    engine_inst* engine;
+    uint8_t released;
 } engine_userdata;
 
 // forward declaration
@@ -279,18 +279,18 @@ typedef struct engine_value_ engine_value;
  * engine data, used for easy sizeof's and a member of the engine_value struct
  */
 typedef union engine_data_ {
-	long i; // int, long, short, boolean, or byte
-	double d; // float or double
-	char* str; // null-terminated string
-	jobject obj; // object (userdata)
-	engine_lfunc lfunc; // java function (lambda)
-	engine_luafunc func; // lua function
-	engine_rfunc rfunc; // reflected java function
-	struct { // array
-		engine_value** values; // pointer to block of memory containing pointers to engine values
-		uint32_t length; // length of memory block
-	} array;
-	lua_State* state; // pointer to pointer of lua_State at runtime
+    long i; // int, long, short, boolean, or byte
+    double d; // float or double
+    char* str; // null-terminated string
+    jobject obj; // object (userdata)
+    engine_lfunc lfunc; // java function (lambda)
+    engine_luafunc func; // lua function
+    engine_rfunc rfunc; // reflected java function
+    struct { // array
+        engine_value** values; // pointer to block of memory containing pointers to engine values
+        uint32_t length; // length of memory block
+    } array;
+    lua_State* state; // pointer to pointer of lua_State at runtime
 } engine_data;
 
 /*
@@ -302,12 +302,12 @@ struct engine_value_ {
 #if ENGINE_CDEBUG > 0
     uint64_t DEBUG_SIGNATURE;
 #endif // ENGINE_CDEBUG
-	engine_data data; // data
-	uint8_t type; // type of value
-	
-	// engine instance, we need this to parse and clean the value stack
-	// if this value is null, we assume that this is a shared value (to be used across VMs)
-	engine_inst* inst;
+    engine_data data; // data
+    uint8_t type; // type of value
+    
+    // engine instance, we need this to parse and clean the value stack
+    // if this value is null, we assume that this is a shared value (to be used across VMs)
+    engine_inst* inst;
 };
 
 // sets up method ids and class references

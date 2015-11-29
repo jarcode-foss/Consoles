@@ -9,8 +9,6 @@
 
 #include <pthread.h>
 
-#include <assert.h>
-
 #include "pair.h"
 
 #define COMPARE_JAVA_OBJ 0
@@ -18,6 +16,7 @@
 #define COMPARE_PAIR_MAP 2
 
 #if PAIR_MAP_DEBUG > 0
+#include <assert.h>
 #include "engine.h"
 #define VALIDATE_BUFFER(m) debug_validate_buffer(m);
 #else
@@ -40,9 +39,9 @@ static int64_t lookup_idx(void* pair_set, // pointer to buffer to use
                           uint8_t type, // comparison type
                           JNIEnv* env) // JNI environment, if type == COMPARE_JAVA_OBJ
 {
-	uint8_t valid = 0;
-	int64_t t;
-	for (t = 0; t < size; t++) {
+    uint8_t valid = 0;
+    int64_t t;
+    for (t = 0; t < size; t++) {
         int8_t flag;
         switch (type) {
         case COMPARE_JAVA_OBJ: // java object comparison
@@ -55,13 +54,13 @@ static int64_t lookup_idx(void* pair_set, // pointer to buffer to use
             flag = (*(pair_map**) pair_set)[t] == *(pair_map*) ptr;
             break;
         }
-		if (flag) {
-			valid = 1;
-			break;
-		}
-	}
-	if (!valid) return -1;
-	else return t;
+        if (flag) {
+            valid = 1;
+            break;
+        }
+    }
+    if (!valid) return -1;
+    else return t;
 }
 
 /**
@@ -74,27 +73,27 @@ static void _set_remove(void** first_pair, // pointer to first buffer
                        size_t* size, // pointer to buffer size
                        int64_t t) // index of element to remove
 {
-	if (*size > 0) {
-		if (*size == 1) {
-			free(*first_pair);
+    if (*size > 0) {
+        if (*size == 1) {
+            free(*first_pair);
             free(*second_pair);
             *first_pair = 0;
             *second_pair = 0;
-		}
-		else {
-			size_t newlen = ((*size) - 1) * sizeof(void*);
-			if (t != *size - 1) {
-				void* first_ptr = (*first_pair) + t;
-				void* second_ptr = (*second_pair) + t;
-				size_t chunkamt = ((*size) - (t + 1)) * sizeof(void*);
-				memmove(first_ptr, first_ptr + 1, chunkamt);
-				memmove(second_ptr, second_ptr + 1, chunkamt);
-			}
-			*first_pair = realloc(*first_pair, newlen);
-			*second_pair = realloc(*second_pair, newlen);
-		}
+        }
+        else {
+            size_t newlen = ((*size) - 1) * sizeof(void*);
+            if (t != *size - 1) {
+                void* first_ptr = (*first_pair) + t;
+                void* second_ptr = (*second_pair) + t;
+                size_t chunkamt = ((*size) - (t + 1)) * sizeof(void*);
+                memmove(first_ptr, first_ptr + 1, chunkamt);
+                memmove(second_ptr, second_ptr + 1, chunkamt);
+            }
+            *first_pair = realloc(*first_pair, newlen);
+            *second_pair = realloc(*second_pair, newlen);
+        }
         (*size)--;
-	}
+    }
 }
 
 /**
@@ -105,16 +104,16 @@ static void _set_extend(void** first_pair, // pointer to first buffer
                        void** second_pair, // pointer to second buffer
                        size_t* size) // pointer to buffer size
 {
-	if (*size == 0) {
-		*first_pair = malloc(sizeof(void*));
-		*second_pair = malloc(sizeof(void*));
-	}
-	else {
-		int64_t newlen = ((*size) + 1) * sizeof(void*);
-		*first_pair = realloc(*first_pair, newlen);
-		*second_pair = realloc(*second_pair, newlen);
-	}
-	(*size)++;
+    if (*size == 0) {
+        *first_pair = malloc(sizeof(void*));
+        *second_pair = malloc(sizeof(void*));
+    }
+    else {
+        int64_t newlen = ((*size) + 1) * sizeof(void*);
+        *first_pair = realloc(*first_pair, newlen);
+        *second_pair = realloc(*second_pair, newlen);
+    }
+    (*size)++;
 }
 
 static inline void setup_abort(int code, const char* func) {
@@ -219,18 +218,18 @@ void pair_map_context_destroy(uint8_t op) {
 jobject pair_map_java(pair_map map, void* native) {
     pair_map_datum* m = get_datum(map);
     
-	int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
+    int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
     
-	if (t >= 0) return m->java_pair[t];
-	else return 0;
+    if (t >= 0) return m->java_pair[t];
+    else return 0;
 }
 void* pair_map_native(pair_map map, jobject java, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
-	int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
+    int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
     
-	if (t >= 0) return m->native_pair[t];
-	else return 0;
+    if (t >= 0) return m->native_pair[t];
+    else return 0;
 }
 void pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
@@ -244,9 +243,9 @@ void pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env) {
 void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
-	if (m->size == 0) return;
-	int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
-	if (t == -1) return;
+    if (m->size == 0) return;
+    int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
+    if (t == -1) return;
     set_remove(&(m->java_pair), &(m->native_pair), &(m->size), t);
     
     VALIDATE_BUFFER(map);
@@ -254,9 +253,9 @@ void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
 void pair_map_rm_native(pair_map map, void* native, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
-	if (m->size == 0) return;
-	int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
-	if (t == -1) return;
+    if (m->size == 0) return;
+    int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
+    if (t == -1) return;
     
     (*env)->DeleteGlobalRef(env, m->java_pair[t]);
     
@@ -283,19 +282,19 @@ void pair_map_close(pair_map map) {
 void pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userdata), void* userdata) {
     pair_map_datum* m = get_datum(map);
     
-	int64_t t;
+    int64_t t;
     uint64_t s = m->size; // make copy, since m->size will change
     if (!s) return;
     
     int64_t idxs[s];
     int64_t i = 0;
     // backwards iterate, because the right-most elements of t will shift left.
-	for (t = s - 1; t >= 0; t--) {
-		if (predicate(m->native_pair[t], userdata)) {
+    for (t = s - 1; t >= 0; t--) {
+        if (predicate(m->native_pair[t], userdata)) {
             idxs[i] = t;
             i++;
-		}
-	}
+        }
+    }
     // for now we just remove them normally, one by one. We could use
     // a deframenting approach to this instead.
     for (t = 0; t < i; t++) {

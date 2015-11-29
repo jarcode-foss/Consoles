@@ -39,10 +39,10 @@ typedef int pair_map; // this type is really just a key to lookup a datum
 // key-value pairs
 typedef struct pair_map_datum_ {
     
-	jobject* java_pair; // java objects
-	void** native_pair; // userdata
+    jobject* java_pair; // java objects
+    void** native_pair; // userdata
     
-	size_t size; // amount of pairs in this struct
+    size_t size; // amount of pairs in this struct
     
 } pair_map_datum;
 
