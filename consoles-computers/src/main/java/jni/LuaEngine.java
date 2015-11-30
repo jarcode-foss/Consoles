@@ -7,6 +7,7 @@ import ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptValue;
 public class LuaEngine implements LuaNInterface {
 	public native void setup();
 	public native void pthread_name(String name);
+	public native void thread_end();
 	public native long setupinst(int impl, long heap, int interruptcheck);
 	public native long unrestrict(long ptr);
 	public native int destroyinst(long ptr);
@@ -18,4 +19,6 @@ public class LuaEngine implements LuaNInterface {
 	public native void kill(long ptr);
 	public native void interruptreset(long ptr);
 	public native void blacklist(long ptr);
+	public native long contextsize();
+	public native ScriptValue getvalue(long idx);
 }

@@ -34,4 +34,10 @@ public interface LuaNInterface {
 	void setup();
 	// blacklist all functions that are never intended to be used
 	void blacklist(long ptr);
+	// gets the size of all script values mapped for the current thread context
+	long contextsize();
+	// gets the value at idx for the current thread context
+	ScriptValue getvalue(long idx);
+	// cleans up any data associated with the current thread context
+	void thread_end();
 }

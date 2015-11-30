@@ -11,5 +11,7 @@ public class LuaNTest {
 		task.loadAndCallChunk("tests");
 		task.loadAndCallTests(true);
 		task.cleanup();
+		task.dumpValues();
+
 	}
 }

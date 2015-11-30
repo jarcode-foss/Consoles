@@ -372,6 +372,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, 
     memset(instance, 0, sizeof(engine_inst));
     
     instance->restricted = 1;
+    instance->interval = interval;
     
     void* hook_binding = 0;
     instance->closure = ffi_closure_alloc(sizeof(ffi_closure), &hook_binding); // allocate hook closure
@@ -500,6 +501,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_unrestrict(JNIEnv* env, jobject this,
     engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
     if (inst->restricted) {
         luaL_openlibs(inst->state);
+        lua_sethook(inst->state, inst->hook, LUA_MASKCOUNT, inst->interval);
         inst->restricted = 0;
     }
     return ptr;
@@ -573,6 +575,18 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_blacklist(JNIEnv* env, jobject this, jlong ptr) {
     engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
     util_blacklist(inst->state);
+}
+
+JNIEXPORT jobject JNICALL Java_jni_LuaEngine_getvalue(JNIEnv* env, jobject this, jlong idx) {
+    return pair_map_index_java(ENGINE_SCRIPT_VALUE_ID, (size_t) idx);
+}
+
+JNIEXPORT jlong JNICALL Java_jni_LuaEngine_contextsize(JNIEnv* env, jobject this) {
+    return pair_map_context_size(ENGINE_SCRIPT_VALUE_ID);
+}
+
+JNIEXPORT void JNICALL Java_jni_LuaEngine_thread_end(JNIEnv* env, jobject this) {
+    pair_map_context_destroy(PCONTEXT_NOCHECK);
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject this, jlong ptr) {

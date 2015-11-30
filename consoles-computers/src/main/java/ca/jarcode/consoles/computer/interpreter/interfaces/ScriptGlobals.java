@@ -45,6 +45,10 @@ public class ScriptGlobals {
 		return valueFactory;
 	}
 
+	public ScriptEngine getEngine() {
+		return engine;
+	}
+
 	public ScriptValue get(ScriptValue key) {
 		return value.get(key);
 	}
@@ -79,5 +83,9 @@ public class ScriptGlobals {
 
 	public void close() {
 		engine.close(value);
+	}
+
+	public void cleanupThreadContext() {
+		engine.cleanupThreadContext();
 	}
 }

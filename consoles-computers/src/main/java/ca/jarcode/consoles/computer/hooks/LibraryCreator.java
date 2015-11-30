@@ -22,7 +22,7 @@ public class LibraryCreator {
 	 */
 	public static <T> void link(Class<T> type, Supplier<? super T> supplier, String name, boolean isRestricted) {
 		ComputerLibrary library = new ComputerLibrary(name, isRestricted, () -> methods(type, supplier.get()));
-		Lua.libraries.put(name, library);
+		Lua.LIBS.put(name, library);
 	}
 
 	/**
@@ -40,7 +40,7 @@ public class LibraryCreator {
 			Object obj = supplier.get();
 			return methods(obj.getClass(), obj);
 		});
-		Lua.libraries.put(name, library);
+		Lua.LIBS.put(name, library);
 	}
 
 	private static ComputerLibrary.NamedFunction[] methods(Class<?> type, Object inst) {

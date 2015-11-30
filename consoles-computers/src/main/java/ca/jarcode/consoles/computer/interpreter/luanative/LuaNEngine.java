@@ -207,4 +207,20 @@ public class LuaNEngine implements ScriptEngine {
 		unregister(globals);
 		L.destroyinst(ptr);
 	}
+
+	@Override
+	public void cleanupThreadContext() {
+		L.thread_end();
+	}
+
+	// LuaN's script values are only visible from the thread that created them
+	@Override
+	public boolean functionsAreReusable() {
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return 0;
+	}
 }

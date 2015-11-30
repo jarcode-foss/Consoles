@@ -1,8 +1,8 @@
 package ca.jarcode.consoles.computer;
 
 import ca.jarcode.consoles.Computers;
-import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.computer.filesystem.FSProvidedProgram;
+import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
 
 import java.io.IOException;
@@ -100,6 +100,8 @@ public class ProgramInstance implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			// if this isn't called, we get a big memory leak
+			Lua.cleanupThreadContext();
 		}
 	}
 	private void write(String text) {

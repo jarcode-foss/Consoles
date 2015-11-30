@@ -49,12 +49,4 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	public ScriptValue getAsValue() { return this; }
 	public ScriptFunction getAsFunction() { return this; }
 
-	// I have no words for how stupid this method is.
-	// this is _really_ just a safegaurd in case a script value
-	// becomes out-of-scope without being released.
-	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
-		release();
-	}
 }

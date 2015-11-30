@@ -127,7 +127,7 @@ public final class InterpretedProgram extends SandboxProgram {
 		}
 		if (ret.get()) {
 			restricted = false;
-			Lua.libraries.values().stream()
+			Lua.LIBS.values().stream()
 					.filter((lib) -> lib.isRestricted)
 					.forEach(globals::load);
 

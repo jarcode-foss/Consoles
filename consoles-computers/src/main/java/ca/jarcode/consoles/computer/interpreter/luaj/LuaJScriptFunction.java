@@ -31,6 +31,9 @@ public class LuaJScriptFunction implements ScriptFunction {
 		return new LuaJScriptValue(func);
 	}
 
+	@Override
+	public void release() {}
+
 	public static ScriptValue handle(LuaFunction func, ScriptValue[] args) {
 		switch (args.length) {
 			case 0: return new LuaJScriptValue(func.call());

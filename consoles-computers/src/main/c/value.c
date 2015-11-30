@@ -18,17 +18,8 @@
  * This unit is a native implementation of LuaNScriptValue. It serves as a buffer
  * for Java to interact with Lua values, by storing everything in a C struct.
  * 
- * Lua and Java values are mapped to C, making the data extremely easy to work with.
- * 
- * The downside of this approach is that this middle ground value is allocated and
- * never free'd until the lua interpreter dies. I try to improve this using Java's
- * PhantomReference<T>'s class to track when the Java object is unreachable,
- * however that depends on how JNI's global references behaves with objects that
- * have gone out-of-scope.
- * 
- * If the about is possible, a function exposed to Java called engine_freehandles
- * will be created to allow parsing of the entire value stack, while looking for
- * marked values that are ready to be collected.
+ * The internal data (engine_value*) is only visible from the thread context that
+ * the value was originally created in.
  * 
  * Written by Levi Webb (Jarcode)
  * 
@@ -57,7 +48,7 @@ static inline engine_value* findnative(JNIEnv* env, jobject ref) {
         return value;
     }
     else {
-        throw(env, "C: value has been released");
+        throw(env, "C: could not find internal value");
         return 0;
     }
 }
@@ -140,7 +131,7 @@ static int valueparse(void* ptr, void* userdata) {
 }
 
 void engine_clearvalues(JNIEnv* env, engine_inst* inst) {
-    pair_map_rm_context(ENGINE_SCRIPT_VALUE_ID, &valueparse, inst);
+    pair_map_rm_context(ENGINE_SCRIPT_VALUE_ID, &valueparse, inst, env);
 }
 
 inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {

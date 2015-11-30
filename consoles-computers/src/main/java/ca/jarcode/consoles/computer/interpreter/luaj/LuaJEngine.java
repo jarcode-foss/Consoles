@@ -166,4 +166,19 @@ public class LuaJEngine implements ScriptEngine {
 	public void close(ScriptValue globals) {
 		// do nothing! This is a pure-java implementation, so just leave it to GC.
 	}
+
+	@Override
+	public void cleanupThreadContext() {
+		// do nothing again
+	}
+
+	@Override
+	public boolean functionsAreReusable() {
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		return 1;
+	}
 }

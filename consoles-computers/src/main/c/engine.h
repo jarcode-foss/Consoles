@@ -242,6 +242,8 @@ struct engine_inst_ {
 
     // the last time an interrupt was fired (ms)
     volatile unsigned long last_interrupt;
+
+    int interval; // interval in which a hook is executed
 };
 
 

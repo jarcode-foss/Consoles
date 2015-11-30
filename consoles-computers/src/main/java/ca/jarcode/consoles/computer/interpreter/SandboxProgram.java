@@ -284,7 +284,7 @@ public abstract class SandboxProgram {
 
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
-			Lua.libraries.values().stream()
+			Lua.LIBS.values().stream()
 					.filter((lib) -> !lib.isRestricted || !restricted)
 					.forEach(globals::load);
 

@@ -18,7 +18,7 @@ public class FuncPool {
 	private final Supplier<ScriptGlobals> globals;
 
 	public void mapStaticFunctions() {
-		for (Map.Entry<String, Function<FuncPool, ScriptFunction>> entry : Lua.staticFunctions.entrySet()) {
+		for (Map.Entry<String, Function<FuncPool, ScriptFunction>> entry : Lua.STATIC_FUNCS.entrySet()) {
 			functions.put(entry.getKey(), entry.getValue().apply(this));
 		}
 	}
@@ -35,7 +35,7 @@ public class FuncPool {
 
 	public void register(Thread context) {
 		this.context = context;
-		Lua.pools.put(context, this);
+		Lua.POOLS.put(context, this);
 	}
 	public SandboxProgram getProgram() {
 		if (program == null)
@@ -46,7 +46,7 @@ public class FuncPool {
 		return globals.get();
 	}
 	public void cleanup() {
-		Lua.pools.remove(context);
+		Lua.POOLS.remove(context);
 	}
 	public Computer getComputer() {
 		if (program == null)

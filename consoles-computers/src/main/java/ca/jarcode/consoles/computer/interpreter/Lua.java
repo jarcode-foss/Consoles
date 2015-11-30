@@ -24,106 +24,134 @@ public class Lua {
 
 	public static boolean killAll = false;
 
-	public static Map<String, ComputerLibrary> libraries = new ConcurrentHashMap<>();
-	public static Map<String, Function<FuncPool, ScriptFunction>> staticFunctions = new ConcurrentHashMap<>();
-	public static Map<Thread, FuncPool> pools = new ConcurrentHashMap<>();
+	public static Map<String, ComputerLibrary> LIBS = new ConcurrentHashMap<>();
+	public static Map<String, Function<FuncPool, ScriptFunction>> STATIC_FUNCS = new ConcurrentHashMap<>();
+	public static Map<Thread, FuncPool> POOLS = new ConcurrentHashMap<>();
+
+	// these are mappings to functions for engines that can re-use ScriptFunctions
+	public static Map<ScriptEngine, Map<String, ScriptFunction>> FUNCS = new ConcurrentHashMap<>();
 
 	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
 	// unique piece of code that I have written.
 
+	// Create function that will be mapped to pools when FuncPool.mapStaticFunctions() is called
+
 	public static <R, T1, T2, T3, T4> void map(FourArgFunc<R, T1, T2, T3, T4> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, FourArgFunc.class, true), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, FourArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2, T3> void map(ThreeArgFunc<R, T1, T2, T3> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2> void map(TwoArgFunc<R, T1, T2> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
 	}
 	public static <R, T1> void map(OneArgFunc<R, T1> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, OneArgFunc.class, true), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, OneArgFunc.class, true), func, pool));
 	}
 
 	public static <T1, T2, T3, T4> void map(FourArgVoidFunc<T1, T2, T3, T4> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2, T3> void map(ThreeArgVoidFunc<T1, T2, T3> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2> void map(TwoArgVoidFunc<T1, T2> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1> void map(OneArgVoidFunc<T1> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
 	}
 	public static <R> void map(NoArgFunc<R> func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(new Class[0], func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, new Class[0], func, pool));
 	}
 	public static void map(NoArgVoidFunc func, String luaName) {
-		staticFunctions.put(luaName, pool -> link(new Class[0], func, pool));
+		STATIC_FUNCS.put(luaName, pool ->
+				findOrLink(luaName, new Class[0], func, pool));
 	}
 
+	// Create function and put it into a function pool
 
 	public static <R, T1, T2, T3, T4> void put(FourArgFunc<R, T1, T2, T3, T4> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgFunc.class, true), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, FourArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2, T3> void put(ThreeArgFunc<R, T1, T2, T3> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, ThreeArgFunc.class, true), func, pool));
 	}
 	public static <R, T1, T2> void put(TwoArgFunc<R, T1, T2> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, TwoArgFunc.class, true), func, pool));
 	}
 	public static <R, T1> void put(OneArgFunc<R, T1> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgFunc.class, true), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, OneArgFunc.class, true), func, pool));
 	}
 
 	public static <T1, T2, T3, T4> void put(FourArgVoidFunc<T1, T2, T3, T4> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2, T3> void put(ThreeArgVoidFunc<T1, T2, T3> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1, T2> void put(TwoArgVoidFunc<T1, T2> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool));
 	}
 	public static <T1> void put(OneArgVoidFunc<T1> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool));
 	}
 	public static <R> void put(NoArgFunc<R> func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(new Class[0], func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, new Class[0], func, pool));
 	}
 	public static void put(NoArgVoidFunc func, String luaName, FuncPool pool) {
-		pool.functions.put(luaName, link(new Class[0], func, pool));
+		pool.functions.put(luaName,
+				findOrLink(luaName, new Class[0], func, pool));
 	}
 
-	public static <R, T1, T2, T3, T4> ScriptFunction link(FourArgFunc<R, T1, T2, T3, T4> func, FuncPool pool) {
+	// Function values returned from these methods need to be released as some point, otherwise they will leak!
+
+	public static <R, T1, T2, T3, T4> ScriptFunction buildFunction(FourArgFunc<R, T1, T2, T3, T4> func, FuncPool pool) {
 		return link(resolveArgTypes(func, FourArgFunc.class, true), func, pool);
 	}
-	public static <R, T1, T2, T3> ScriptFunction link(ThreeArgFunc<R, T1, T2, T3> func, FuncPool pool) {
+	public static <R, T1, T2, T3> ScriptFunction buildFunction(ThreeArgFunc<R, T1, T2, T3> func, FuncPool pool) {
 		return link(resolveArgTypes(func, ThreeArgFunc.class, true), func, pool);
 	}
-	public static <R, T1, T2> ScriptFunction link(TwoArgFunc<R, T1, T2> func, FuncPool pool) {
+	public static <R, T1, T2> ScriptFunction buildFunction(TwoArgFunc<R, T1, T2> func, FuncPool pool) {
 		return link(resolveArgTypes(func, TwoArgFunc.class, true), func, pool);
 	}
-	public static <R, T1> ScriptFunction link(OneArgFunc<R, T1> func, FuncPool pool) {
+	public static <R, T1> ScriptFunction buildFunction(OneArgFunc<R, T1> func, FuncPool pool) {
 		return link(resolveArgTypes(func, OneArgFunc.class, true), func, pool);
 	}
-	public static <T1, T2, T3, T4> ScriptFunction link(FourArgVoidFunc<T1, T2, T3, T4> func, FuncPool pool) {
+	public static <T1, T2, T3, T4> ScriptFunction buildFunction(FourArgVoidFunc<T1, T2, T3, T4> func, FuncPool pool) {
 		return link(resolveArgTypes(func, FourArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1, T2, T3> ScriptFunction link(ThreeArgVoidFunc<T1, T2, T3> func, FuncPool pool) {
+	public static <T1, T2, T3> ScriptFunction buildFunction(ThreeArgVoidFunc<T1, T2, T3> func, FuncPool pool) {
 		return link(resolveArgTypes(func, ThreeArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1, T2> ScriptFunction link(TwoArgVoidFunc<T1, T2> func, FuncPool pool) {
+	public static <T1, T2> ScriptFunction buildFunction(TwoArgVoidFunc<T1, T2> func, FuncPool pool) {
 		return link(resolveArgTypes(func, TwoArgVoidFunc.class, false), func, pool);
 	}
-	public static <T1> ScriptFunction link(OneArgVoidFunc<T1> func, FuncPool pool) {
+	public static <T1> ScriptFunction buildFunction(OneArgVoidFunc<T1> func, FuncPool pool) {
 		return link(resolveArgTypes(func, OneArgVoidFunc.class, false), func, pool);
 	}
-	public static ScriptFunction link(NoArgVoidFunc func, FuncPool pool) {
+	public static ScriptFunction buildFunction(NoArgVoidFunc func, FuncPool pool) {
 		return link(new Class[0], func, pool);
 	}
-	public static <R> ScriptFunction link(NoArgFunc<R> func, FuncPool pool) {
+	public static <R> ScriptFunction buildFunction(NoArgFunc<R> func, FuncPool pool) {
 		return link(new Class[0], func, pool);
 	}
 	public static void find(Object inst, FuncPool pool) {
@@ -139,7 +167,7 @@ public class Lua {
 				.filter(m -> m.getName().startsWith("lua$"))
 				.peek(m -> m.setAccessible(true))
 				.map(m -> new AbstractMap.SimpleEntry<>(m.getName().substring(4),
-						pool.getGlobals().getFunctionFactory().createFunction(m, inst)))
+						findOrLink(m.getName(), m, inst, pool)))
 				.forEach(entry -> pool.functions.put(entry.getKey(), entry.getValue()));
 	}
 	public static Object[] toJavaAndRelease(Class[] types, Object... args) {
@@ -163,7 +191,7 @@ public class Lua {
 	}
 
 	private static FuncPool findPool() {
-		FuncPool pool = pools.get(Thread.currentThread());
+		FuncPool pool = POOLS.get(Thread.currentThread());
 		if (pool == null)
 			throw new IllegalAccessError("Tried to access lua bindings outside of program thread");
 		else return pool;
@@ -177,6 +205,38 @@ public class Lua {
 	}
 	public static ScriptFunction link(Class[] types, Object func, FuncPool pool) {
 		return pool.getGlobals().getFunctionFactory().createFunction(types, func);
+	}
+	private static void registerFunc(ScriptEngine engine, String name, ScriptFunction f) {
+		Map<String, ScriptFunction> map = FUNCS.get(engine);
+		if (map == null) {
+			map = new ConcurrentHashMap<>();
+			FUNCS.put(engine, map);
+		}
+		map.put(name, f);
+	}
+	private static ScriptFunction findFunc(ScriptEngine engine, String name) {
+		Map<String, ScriptFunction> map = FUNCS.get(engine);
+		return map == null ? null : map.get(name);
+	}
+	public static ScriptFunction findOrLink(String name, Method method, Object inst, FuncPool pool) {
+		if (!pool.getGlobals().getEngine().functionsAreReusable())
+			return pool.getGlobals().getFunctionFactory().createFunction(method, inst);
+		ScriptFunction f = findFunc(pool.getGlobals().getEngine(), name);
+		if (f == null) {
+			f = pool.getGlobals().getFunctionFactory().createFunction(method, inst);
+			registerFunc(pool.getGlobals().getEngine(), name, f);
+		}
+		return f;
+	}
+	public static ScriptFunction findOrLink(String name, Class[] types, Object func, FuncPool pool) {
+		if (!pool.getGlobals().getEngine().functionsAreReusable())
+			return pool.getGlobals().getFunctionFactory().createFunction(types, func);
+		ScriptFunction f = findFunc(pool.getGlobals().getEngine(), name);
+		if (f == null) {
+			f = pool.getGlobals().getFunctionFactory().createFunction(types, func);
+			registerFunc(pool.getGlobals().getEngine(), name, f);
+		}
+		return f;
 	}
 	public static ScriptValue translateToScriptValue(Object java) {
 		ScriptGlobals G = findPool().getGlobals();
@@ -412,5 +472,9 @@ public class Lua {
 				System.out.println("\n" + ExceptionUtils.getFullStackTrace(ex));
 			}
 		}
+	}
+
+	public static void cleanupThreadContext() {
+		ScriptEngine.getDefaultEngine().cleanupThreadContext();
 	}
 }

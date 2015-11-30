@@ -6,4 +6,5 @@ public interface ScriptFunction {
 	}
 	ScriptValue call(ScriptValue... args);
 	ScriptValue getAsValue();
+	void release();
 }

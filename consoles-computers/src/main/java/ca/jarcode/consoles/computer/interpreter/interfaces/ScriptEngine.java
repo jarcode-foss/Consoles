@@ -35,4 +35,6 @@ public interface ScriptEngine {
 	void resetInterrupt(ScriptValue globals);
 	void removeRestrictions(ScriptValue globals);
 	void close(ScriptValue globals);
+	void cleanupThreadContext();
+	boolean functionsAreReusable();
 }

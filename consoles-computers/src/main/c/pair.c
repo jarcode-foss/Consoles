@@ -18,9 +18,13 @@
 #if PAIR_MAP_DEBUG > 0
 #include <assert.h>
 #include "engine.h"
-#define VALIDATE_BUFFER(m) debug_validate_buffer(m);
+#define VALIDATE_BUFFER(m, e) debug_validate_buffer(m, e)
+#define VALIDATE_OBJECTS(m) debug_validate_objects(m)
+#define VASSERT(e) assert(e)
 #else
 #define VALIDATE_BUFFER(m)
+#define VALIDATE_OBJECTS(m)
+#define VASSERT(e)
 #endif // PAIR_MAP_DEBUG
 
 #define set_remove(a, b, c, d) _set_remove((void**) a, (void**) b, c, d)
@@ -69,9 +73,9 @@ static int64_t lookup_idx(void* pair_set, // pointer to buffer to use
  * the buffers will be free()'d.
  */
 static void _set_remove(void** first_pair, // pointer to first buffer
-                       void** second_pair, // pointer to second buffer
-                       size_t* size, // pointer to buffer size
-                       int64_t t) // index of element to remove
+                        void** second_pair, // pointer to second buffer
+                        size_t* size, // pointer to buffer size
+                        size_t t) // index of element to remove
 {
     if (*size > 0) {
         if (*size == 1) {
@@ -81,13 +85,18 @@ static void _set_remove(void** first_pair, // pointer to first buffer
             *second_pair = 0;
         }
         else {
+            VASSERT(t < *size && t >= 0);
             size_t newlen = ((*size) - 1) * sizeof(void*);
+            VASSERT((*size * sizeof(void*)) - newlen == sizeof(void*));
             if (t != *size - 1) {
-                void* first_ptr = (*first_pair) + t;
-                void* second_ptr = (*second_pair) + t;
+                // my (void**) casts are to ensure that pointers
+                // are correctly being incremented
+                void* first_ptr = (void**) *first_pair + t;
+                void* second_ptr = (void**) *second_pair + t;
                 size_t chunkamt = ((*size) - (t + 1)) * sizeof(void*);
-                memmove(first_ptr, first_ptr + 1, chunkamt);
-                memmove(second_ptr, second_ptr + 1, chunkamt);
+                VASSERT(chunkamt < (*size * sizeof(void*)) && chunkamt > 0);
+                memmove(first_ptr, (void**) first_ptr + 1, chunkamt);
+                memmove(second_ptr, (void**) second_ptr + 1, chunkamt);
             }
             *first_pair = realloc(*first_pair, newlen);
             *second_pair = realloc(*second_pair, newlen);
@@ -101,8 +110,8 @@ static void _set_remove(void** first_pair, // pointer to first buffer
  * then the buffers with be allocated with malloc().
  */
 static void _set_extend(void** first_pair, // pointer to first buffer
-                       void** second_pair, // pointer to second buffer
-                       size_t* size) // pointer to buffer size
+                        void** second_pair, // pointer to second buffer
+                        size_t* size) // pointer to buffer size
 {
     if (*size == 0) {
         *first_pair = malloc(sizeof(void*));
@@ -168,22 +177,48 @@ static inline void free_datum(pair_map_datum* m) {
     free(m);
 }
 
-static void debug_validate_buffer(pair_map map) {
+static void debug_validate_objects(pair_map map) {
+    pair_map_datum* m = get_datum(map);
+    
+    printf("C MAP: validating %d address pairs\n", (int) m->size);
+    int64_t t;
+    for (t = 0; t < m->size; t++) {
+        // we just check if the jobject is a bad pointer
+        assert(*(void**) (m->java_pair[t]));
+    }
+}
+
+static void debug_validate_buffer(pair_map map, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
     printf("C MAP: validating %d sets\n", (int) m->size);
     int64_t t;
     for (t = 0; t < m->size; t++) {
         
-        // This will segfault (corrupt memory address) if the
-        // buffer(s) were corrutped.
-        void* mem1 = *(void**) (m->java_pair[t]);
-        void* mem2 = *(void**) (m->native_pair[t]);
-        // assert that the jobject doesn't point to null
-        assert(mem1);
+        // assert that the jobject is valid, we do this
+        // by calling some JNI function with it
+        jclass c = (*env)->GetObjectClass(env, m->java_pair[t]);
+        // The JVM will SIGABRT or complain about the ref and return null
+        assert(c);
+        // if the assertion passed, cleanup the local reference
+        (*env)->DeleteLocalRef(env, c);
         // assert that the engine value pointed to is valid.
-        assert(ENGINE_ASSERT_VALUE(&mem2));
+        assert(ENGINE_ASSERT_VALUE(m->native_pair[t]));
     }
+}
+
+void* pair_map_index_native(pair_map map, size_t index) {
+    pair_map_datum* m = get_datum(map);
+    return m->native_pair[index];
+}
+
+jobject pair_map_index_java(pair_map map, size_t index) {
+    pair_map_datum* m = get_datum(map);
+    return m->java_pair[index];
+}
+
+size_t pair_map_context_size(pair_map map) {
+    return get_datum(map)->size;
 }
 
 void pair_map_init(pair_map map) {
@@ -238,7 +273,7 @@ void pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env) {
     m->java_pair[m->size - 1] = (*env)->NewGlobalRef(env, java);
     m->native_pair[m->size - 1] = native;
     
-    VALIDATE_BUFFER(map);
+    VALIDATE_BUFFER(map, env);
 }
 void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
@@ -248,7 +283,7 @@ void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
     if (t == -1) return;
     set_remove(&(m->java_pair), &(m->native_pair), &(m->size), t);
     
-    VALIDATE_BUFFER(map);
+    VALIDATE_BUFFER(map, env);
 }
 void pair_map_rm_native(pair_map map, void* native, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
@@ -261,7 +296,7 @@ void pair_map_rm_native(pair_map map, void* native, JNIEnv* env) {
     
     set_remove(&(m->java_pair), &(m->native_pair), &(m->size), t);
     
-    VALIDATE_BUFFER(map);
+    VALIDATE_BUFFER(map, env);
 }
 void pair_map_close(pair_map map) {
     
@@ -279,26 +314,35 @@ void pair_map_close(pair_map map) {
     // this context, then destroy the context.
     pair_map_context_destroy(PCONTEXT_IF_EMPTY);
 }
-void pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userdata), void* userdata) {
+// this function carries a lot of emotions with it, mostly over my
+// frustration for not thinking about implicit integer type promotion.
+void pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userdata), void* userdata, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
-    int64_t t;
-    uint64_t s = m->size; // make copy, since m->size will change
+    size_t t;
+    size_t s = m->size; // make copy, since m->size will change
     if (!s) return;
     
-    int64_t idxs[s];
-    int64_t i = 0;
+    size_t idxs[s];
+    size_t i = 0;
     // backwards iterate, because the right-most elements of t will shift left.
-    for (t = s - 1; t >= 0; t--) {
+    for (t = s - 1;; t--) {
         if (predicate(m->native_pair[t], userdata)) {
             idxs[i] = t;
             i++;
         }
+        if (t == 0) break;
     }
     // for now we just remove them normally, one by one. We could use
     // a deframenting approach to this instead.
     for (t = 0; t < i; t++) {
+        (*env)->DeleteGlobalRef(env, m->java_pair[idxs[t]]);
+        
         set_remove(&(m->java_pair), &(m->native_pair), &(m->size), idxs[t]);
-        VALIDATE_BUFFER(map);
+        // assert that all the jobjects point to valid addresses
+        VALIDATE_OBJECTS(map);
     }
+    // validate after removing all values, since the predicate may free pointers
+    // that are passed to it
+    VALIDATE_BUFFER(map, env);
 }

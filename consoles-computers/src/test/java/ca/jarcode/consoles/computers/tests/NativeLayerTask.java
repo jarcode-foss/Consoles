@@ -14,6 +14,7 @@ import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -239,6 +240,26 @@ public class NativeLayerTask {
 		catch (ScriptError e) {
 			throw wrapException(e, false);
 		}
+	}
+
+	public void dumpValues() {
+		long s = LuaNEngine.ENGINE_INTERFACE.contextsize();
+		ScriptValue[] arr = new ScriptValue[(int) s];
+
+		for (long t = 0; t < s && t < arr.length; t++) {
+			arr[(int) t] = LuaNEngine.ENGINE_INTERFACE.getvalue(t);
+		}
+
+		String dump = Arrays.asList(arr).stream()
+				.map(this::valueString)
+				.collect(Collectors.joining(", "));
+
+		stdout.println("Remaining values:");
+		stdout.println(dump);
+	}
+
+	public void cleanupThreadContext() {
+		globals.cleanupThreadContext();
 	}
 
 	public void sendToDebugger(String cmd) throws IOException {
