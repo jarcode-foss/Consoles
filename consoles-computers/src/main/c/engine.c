@@ -585,7 +585,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_contextsize(JNIEnv* env, jobject this
     return pair_map_context_size(ENGINE_SCRIPT_VALUE_ID);
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_thread_end(JNIEnv* env, jobject this) {
+JNIEXPORT void JNICALL Java_jni_LuaEngine_thread_1end(JNIEnv* env, jobject this) {
     pair_map_context_destroy(PCONTEXT_NOCHECK);
 }
 
