@@ -38,7 +38,7 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
-#define ENGINE_CDEBUG 1
+#define ENGINE_CDEBUG 0
 
 // used to test the alignment of structures in maps/buffers
 #if ENGINE_CDEBUG > 0

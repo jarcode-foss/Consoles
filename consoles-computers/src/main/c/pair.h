@@ -32,7 +32,7 @@ Allocations to buffers used for java objects and userdata are kept using pthread
 #define PCONTEXT_NOCHECK 1
 #define PCONTEXT_IF_EMPTY 0
 
-#define PAIR_MAP_DEBUG 1
+#define PAIR_MAP_DEBUG 0
 
 typedef int pair_map; // this type is really just a key to lookup a datum
 
