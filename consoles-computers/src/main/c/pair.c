@@ -22,7 +22,7 @@
 #define VALIDATE_OBJECTS(m) debug_validate_objects(m)
 #define VASSERT(e) assert(e)
 #else
-#define VALIDATE_BUFFER(m)
+#define VALIDATE_BUFFER(m, e)
 #define VALIDATE_OBJECTS(m)
 #define VASSERT(e)
 #endif // PAIR_MAP_DEBUG
@@ -177,6 +177,7 @@ static inline void free_datum(pair_map_datum* m) {
     free(m);
 }
 
+#if PAIR_MAP_DEBUG > 0
 static void debug_validate_objects(pair_map map) {
     pair_map_datum* m = get_datum(map);
     
@@ -206,6 +207,7 @@ static void debug_validate_buffer(pair_map map, JNIEnv* env) {
         assert(ENGINE_ASSERT_VALUE(m->native_pair[t]));
     }
 }
+#endif // PAIR_MAP_DEBUG
 
 void* pair_map_index_native(pair_map map, size_t index) {
     pair_map_datum* m = get_datum(map);
