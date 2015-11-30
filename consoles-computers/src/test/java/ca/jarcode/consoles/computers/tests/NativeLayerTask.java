@@ -62,30 +62,32 @@ public class NativeLayerTask {
 
 	// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
 	// happen. This is probably due to how exceptions are instantiated through the JNI.
-	public void init(boolean sandboxed) throws Throwable {
+	public void init(boolean sandboxed, boolean install) throws Throwable {
 
 		Computers.debug = true;
 
 		logs("Setting up engine");
 
-		File library;
+		File library = null;
 
 		try {
-			library = new File(
-					System.getProperty("user.dir") + File.separator +
-							"target/natives" + File.separator +
-							NativeLoader.libraryFormat(NativeLoader.getNativeTarget()).apply("computerimpl")
-			);
+			if (install) {
+				library = new File(
+						System.getProperty("user.dir") + File.separator +
+								"target/natives" + File.separator +
+								NativeLoader.libraryFormat(NativeLoader.getNativeTarget()).apply("computerimpl")
+				);
 
-			assert library.exists();
-			assert library.isFile();
+				assert library.exists();
+				assert library.isFile();
 
-			System.load(library.getAbsolutePath());
+				System.load(library.getAbsolutePath());
 
-			LuaNEngine.install(sandboxed ? LuaNImpl.JIT : LuaNImpl.JIT_TEST);
+				LuaNEngine.install(sandboxed ? LuaNImpl.JIT : LuaNImpl.JIT_TEST);
 
-			// map a lambda vesion of our test function
-			Lua.map(this::lua$testFunction, "lambdaTestFunction");
+				// map a lambda vesion of our test function
+				Lua.map(this::lua$testFunction, "lambdaTestFunction");
+			}
 
 			pool = new FuncPool(() -> globals);
 
@@ -98,7 +100,7 @@ public class NativeLayerTask {
 
 		logi(DONE);
 
-		if (DEBUG) {
+		if (DEBUG && install) {
 			// catch syscall exit exit_group
 			debuggerProcess = attachDebugger(library.getAbsolutePath());
 			Thread.sleep(2000);
