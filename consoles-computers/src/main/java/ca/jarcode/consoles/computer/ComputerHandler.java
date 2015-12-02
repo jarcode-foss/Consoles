@@ -4,7 +4,8 @@ import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.Consoles;
 import ca.jarcode.consoles.api.ConsoleCreateException;
 import ca.jarcode.consoles.api.nms.ConsolesNMS;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
+import ca.jarcode.consoles.computer.interpreter.ScriptContext;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
 import ca.jarcode.consoles.computer.manual.ManualManager;
@@ -27,7 +28,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -47,10 +47,10 @@ public class ComputerHandler implements Listener {
 
 	// register lua functions in this class
 	static {
-		Lua.map(ComputerHandler::lua_redstone, "redstone");
-		Lua.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
-		Lua.map(ComputerHandler::lua_redstoneInputLength, "redstoneInputLength");
-		Lua.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
+		Script.map(ComputerHandler::lua_redstone, "redstone");
+		Script.map(ComputerHandler::lua_redstoneLength, "redstoneLength");
+		Script.map(ComputerHandler::lua_redstoneInputLength, "redstoneInputLength");
+		Script.map(ComputerHandler::lua_redstoneInput, "redstoneInput");
 		ManualManager.load(ComputerHandler.class);
 	}
 
@@ -244,17 +244,17 @@ public class ComputerHandler implements Listener {
 			"computer.")
 	public static boolean lua_redstoneInput(
 			@Arg(name = "index", info = "the index of the input block to check") Integer index) {
-		Computer computer = Lua.context();
+		Computer computer = ScriptContext.getComputer();
 		boolean[] inputs;
-		inputs = schedule(() -> findInputs(computer), Lua::terminated);
+		inputs = schedule(() -> findInputs(computer), ScriptContext.terminatedSupplier());
 		return inputs.length > index && index >= 0 && inputs[index];
 	}
 
 	@FunctionManual("Returns the amount of blocks behind the computer that can receive redstone input")
 	public static int lua_redstoneInputLength() {
-		Computer computer = Lua.context();
+		Computer computer = ScriptContext.getComputer();
 		boolean[] inputs;
-		inputs = schedule(() -> findInputs(computer), Lua::terminated);
+		inputs = schedule(() -> findInputs(computer), ScriptContext.terminatedSupplier());
 		return inputs.length;
 	}
 
@@ -266,7 +266,7 @@ public class ComputerHandler implements Listener {
 	public static boolean lua_redstone(
 			@Arg(name = "index", info = "the index of the output to toggle") Integer index,
 			@Arg(name = "state", info = "the state of the output, true for on, false for off") Boolean on) {
-		Computer computer = Lua.context();
+		Computer computer = ScriptContext.getComputer();
 		// our supplier to be called in the main thread
 		BooleanSupplier func = () -> {
 			Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
@@ -313,7 +313,7 @@ public class ComputerHandler implements Listener {
 
 	@FunctionManual("Returns the amount of redstone outputs there are available for this computer")
 	public static int lua_redstoneLength() {
-		Computer computer = Lua.context();
+		Computer computer = ScriptContext.getComputer();
 		Location[] blocks = ComputerHandler.getInstance().trackedFor(computer);
 		return blocks == null ? 0 : blocks.length;
 	}

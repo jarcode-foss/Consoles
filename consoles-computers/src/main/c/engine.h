@@ -38,7 +38,7 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
-#define ENGINE_CDEBUG 0
+#define ENGINE_CDEBUG 1
 
 // used to test the alignment of structures in maps/buffers
 #if ENGINE_CDEBUG > 0
@@ -81,10 +81,10 @@
 // _without_ a macro, because it is assumed they will not change.
 
 // if you are refactoring the code and these paths change, please update them and recompile the JNI library.
-#define ENGINE_LUA_CLASS "ca/jarcode/consoles/computer/interpreter/Lua"
-#define ENGINE_ERR_CLASS "ca/jarcode/consoles/computer/interpreter/luanative/LuaNError"
-#define ENGINE_VALUE_CLASS "ca/jarcode/consoles/computer/interpreter/luanative/LuaNScriptValue"
-#define ENGINE_VALUE_INTERFACE "ca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue"
+#define ENGINE_LUA_CLASS "ca/jarcode/ascript/Script"
+#define ENGINE_ERR_CLASS "ca/jarcode/ascript/luanative/LuaNError"
+#define ENGINE_VALUE_CLASS "ca/jarcode/ascript/luanative/LuaNScriptValue"
+#define ENGINE_VALUE_INTERFACE "ca/jarcode/ascript/interfaces/ScriptValue"
 
 // we call all of our userdata objects an 'interface', since they work as a way to lookup methods
 // from a java object.
@@ -290,7 +290,7 @@ typedef union engine_data_ {
     engine_rfunc rfunc; // reflected java function
     struct { // array
         engine_value** values; // pointer to block of memory containing pointers to engine values
-        uint32_t length; // length of memory block
+        size_t length; // length of memory block
     } array;
     lua_State* state; // pointer to pointer of lua_State at runtime
 } engine_data;

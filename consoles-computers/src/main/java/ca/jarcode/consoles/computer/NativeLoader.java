@@ -33,6 +33,13 @@ public class NativeLoader {
 		return System.getProperty("os.arch").contains("86") && !System.getProperty("os.arch").contains("x64_86");
 	}
 
+	public static boolean canLoadTarget(boolean checkJavaTargets, CompileTarget... targets) {
+		for (CompileTarget target : targets)
+			if ((checkJavaTargets && target == CompileTarget.JAVA) || target == getNativeTarget())
+				return true;
+		return false;
+	}
+
 	public static CompileTarget getNativeTarget() {
 		String os = System.getProperty("os.name");
 		boolean arch32 = arch32();
@@ -43,7 +50,7 @@ public class NativeLoader {
 		else if (os.contains("Mac"))
 			return CompileTarget.OSX;
 		else throw new RuntimeException("Unknown platform");
-	};
+	}
 
 	private static String libraryExtension() {
 		CompileTarget target = getNativeTarget();

@@ -6,8 +6,9 @@ import ca.jarcode.consoles.api.nms.ConsolesNMS;
 import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.devices.CommandDevice;
 import ca.jarcode.consoles.computer.filesystem.*;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
+import ca.jarcode.consoles.computer.interpreter.ScriptContext;
 import ca.jarcode.consoles.computer.manual.Arg;
 import ca.jarcode.consoles.computer.manual.FunctionManual;
 import ca.jarcode.consoles.computer.manual.ManualManager;
@@ -43,9 +44,9 @@ public abstract class Computer implements Runnable {
 
 	// Lua<->Java mappings
 	static {
-		Lua.map(Computer::lua_switchSession, "switchSession");
-		Lua.map(Computer::lua_dialog, "dialog");
-		Lua.map(Computer::lua_messageOwner, "tellOwner");
+		Script.map(Computer::lua_switchSession, "switchSession");
+		Script.map(Computer::lua_dialog, "dialog");
+		Script.map(Computer::lua_messageOwner, "tellOwner");
 		ManualManager.load(Computer.class);
 	}
 
@@ -328,7 +329,7 @@ public abstract class Computer implements Runnable {
 			"after the program exits.")
 	private static void lua_switchSession(
 			@Arg(name = "id", info = "the id of the screen session to switch to") Integer id) {
-		Computer computer = Lua.context();
+		Computer computer = ScriptContext.getComputer();
 		computer.switchView(id);
 		try {
 			Thread.sleep(50);
@@ -430,15 +431,15 @@ public abstract class Computer implements Runnable {
 			"while the dialog overlays the screen.")
 	public static void lua_dialog(
 			@Arg(name = "text", info = "the text to display on the dialog") String text) {
-		Computer computer = Lua.context();
-		Lua.main(() -> computer.showDialog(text));
+		Computer computer = ScriptContext.getComputer();
+		Script.main(() -> computer.showDialog(text));
 	}
 
 	@FunctionManual("Sends a message to the owner of this computer, in chat.")
 	public static void lua_messageOwner(
 			@Arg(name = "text", info = "the message to send to the owner") String text) {
-		Computer computer = Lua.context();
-		Lua.main(() -> {
+		Computer computer = ScriptContext.getComputer();
+		Script.main(() -> {
 			UUID uuid = computer.getOwner();
 			Player player = Bukkit.getPlayer(uuid);
 			player.sendMessage(text);

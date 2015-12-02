@@ -137,6 +137,7 @@ static inline void setup() {
     }
 }
 
+// get collection (datum from thread context)
 static inline pair_map_collection* get_collection() {
     (void) pthread_once(&key_once, &setup);
     pair_map_collection* ptr = pthread_getspecific(key);
@@ -150,15 +151,14 @@ static inline pair_map_collection* get_collection() {
     return ptr;
 }
 
-static inline pair_map_datum* get_datum(pair_map m) {
+// get datum specific to the given pair map
+static inline pair_map_datum* get_datum(pair_map map) {
     pair_map_collection* col = get_collection();
-    int64_t idx = lookup_idx(&(col->maps), col->size, &m, COMPARE_PAIR_MAP, 0);
-    pair_map_datum* datum = col->datums[idx];
-    if (!datum) {
-        datum = malloc(sizeof(pair_map_datum));
-        memset(datum, 0, sizeof(pair_map_datum));
-    }
-    return datum;
+    int64_t idx = lookup_idx(&(col->maps), col->size, &map, COMPARE_PAIR_MAP, 0);
+    
+    if (idx == -1) {
+        return 0;
+    } else return col->datums[idx];
 }
 
 static inline void free_collection(pair_map_collection* col) {
@@ -180,6 +180,7 @@ static inline void free_datum(pair_map_datum* m) {
 #if PAIR_MAP_DEBUG > 0
 static void debug_validate_objects(pair_map map) {
     pair_map_datum* m = get_datum(map);
+    assert(m);
     
     printf("C MAP: validating %d address pairs\n", (int) m->size);
     int64_t t;
@@ -191,6 +192,7 @@ static void debug_validate_objects(pair_map map) {
 
 static void debug_validate_buffer(pair_map map, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
+    assert(m);
     
     printf("C MAP: validating %d sets\n", (int) m->size);
     int64_t t;
@@ -209,6 +211,22 @@ static void debug_validate_buffer(pair_map map, JNIEnv* env) {
 }
 #endif // PAIR_MAP_DEBUG
 
+int pair_map_context_init(pair_map map) {
+    pair_map_collection* col = get_collection();
+    int64_t idx = lookup_idx(&(col->maps), col->size, &map, COMPARE_PAIR_MAP, 0);
+
+    if (idx != -1) return 1;
+    
+    pair_map_datum* m = malloc(sizeof(pair_map_datum));
+    memset(m, 0, sizeof(pair_map_datum));
+        
+    set_extend(&(col->maps), &(col->datums), &(col->size));
+    col->maps[col->size - 1] = map;
+    col->datums[col->size - 1] = m;
+
+    return 0;
+}
+
 void* pair_map_index_native(pair_map map, size_t index) {
     pair_map_datum* m = get_datum(map);
     return m->native_pair[index];
@@ -221,17 +239,6 @@ jobject pair_map_index_java(pair_map map, size_t index) {
 
 size_t pair_map_context_size(pair_map map) {
     return get_datum(map)->size;
-}
-
-void pair_map_init(pair_map map) {
-    // create datum for this thread
-    pair_map_datum* m = malloc(sizeof(pair_map_datum));
-    memset(m, 0, sizeof(pair_map_datum));
-    
-    pair_map_collection* col = get_collection();
-    set_extend(&(col->maps), &(col->datums), &(col->size));
-    col->maps[col->size - 1] = map;
-    col->datums[col->size - 1] = m;
 }
 
 void pair_map_context_destroy(uint8_t op) {
@@ -254,57 +261,82 @@ void pair_map_context_destroy(uint8_t op) {
 
 jobject pair_map_java(pair_map map, void* native) {
     pair_map_datum* m = get_datum(map);
+    if (!m) {
+        return 0;
+    }
     
     int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
     
     if (t >= 0) return m->java_pair[t];
-    else return 0;
+    else return PAIR_MAP_OK;
 }
 void* pair_map_native(pair_map map, jobject java, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
+    if (!m) {
+        return 0;
+    }
     
     int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
     
     if (t >= 0) return m->native_pair[t];
-    else return 0;
+    else return PAIR_MAP_OK;
 }
-void pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env) {
+int pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
+    if (!m) {
+        return PAIR_MAP_MISSING_DATUM;
+    }
     
     set_extend(&(m->java_pair), &(m->native_pair), &(m->size));
     m->java_pair[m->size - 1] = (*env)->NewGlobalRef(env, java);
     m->native_pair[m->size - 1] = native;
     
     VALIDATE_BUFFER(map, env);
+
+    return PAIR_MAP_OK;
 }
-void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
+int pair_map_rm_java(pair_map map, jobject java, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
+    if (!m) {
+        return PAIR_MAP_MISSING_DATUM;
+    }
     
-    if (m->size == 0) return;
+    if (m->size == 0) return 2;
     int64_t t = lookup_idx(&(m->java_pair), m->size, &java, COMPARE_JAVA_OBJ, env);
-    if (t == -1) return;
+    if (t == -1) return 2;
     set_remove(&(m->java_pair), &(m->native_pair), &(m->size), t);
     
     VALIDATE_BUFFER(map, env);
+
+    return PAIR_MAP_OK;
 }
-void pair_map_rm_native(pair_map map, void* native, JNIEnv* env) {
+int pair_map_rm_native(pair_map map, void* native, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
+    if (!m) {
+        return PAIR_MAP_MISSING_DATUM;
+    }
     
-    if (m->size == 0) return;
+    if (m->size == 0) return 2;
     int64_t t = lookup_idx(&(m->native_pair), m->size, &native, COMPARE_USERDATA, 0);
-    if (t == -1) return;
+    if (t == -1) return 2;
     
     (*env)->DeleteGlobalRef(env, m->java_pair[t]);
     
     set_remove(&(m->java_pair), &(m->native_pair), &(m->size), t);
     
     VALIDATE_BUFFER(map, env);
+
+    return PAIR_MAP_OK;
 }
-void pair_map_close(pair_map map) {
+int pair_map_close(pair_map map) {
     
     pair_map_collection* col = get_collection();
     int64_t idx = lookup_idx(&(col->maps), col->size, &map, COMPARE_PAIR_MAP, 0);
     pair_map_datum* m = col->datums[idx];
+    
+    if (!m) {
+        return PAIR_MAP_MISSING_DATUM;
+    }
 
     // remove the datum from the mappings
     set_remove(&(col->maps), &(col->datums), &(col->size), idx);
@@ -315,20 +347,26 @@ void pair_map_close(pair_map map) {
     // if we are closing this map and no other map is being used in
     // this context, then destroy the context.
     pair_map_context_destroy(PCONTEXT_IF_EMPTY);
+
+    return PAIR_MAP_OK;
 }
 // this function carries a lot of emotions with it, mostly over my
 // frustration for not thinking about implicit integer type promotion.
-void pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userdata), void* userdata, JNIEnv* env) {
+int pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userdata), void* userdata, JNIEnv* env) {
     pair_map_datum* m = get_datum(map);
     
-    size_t t;
-    size_t s = m->size; // make copy, since m->size will change
-    if (!s) return;
+    if (!m) {
+        return PAIR_MAP_MISSING_DATUM;
+    }
     
-    size_t idxs[s];
+    size_t t = m->size;
+    if (!t) return PAIR_MAP_OK;
+    
+    size_t idxs[t];
     size_t i = 0;
     // backwards iterate, because the right-most elements of t will shift left.
-    for (t = s - 1;; t--) {
+    while (1) {
+        t--;
         if (predicate(m->native_pair[t], userdata)) {
             idxs[i] = t;
             i++;
@@ -347,4 +385,6 @@ void pair_map_rm_context(pair_map map, int (*predicate) (void* ptr, void* userda
     // validate after removing all values, since the predicate may free pointers
     // that are passed to it
     VALIDATE_BUFFER(map, env);
+
+    return PAIR_MAP_OK;
 }

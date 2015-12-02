@@ -113,19 +113,21 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
     else if (lua_isstring(state, -1)) {
         v->type = ENGINE_STRING;
         
-        const char* lstring = lua_tostring(state, -1);
         size_t len = lua_strlen(state, -1);
+        const char* lstring = lua_tostring(state, -1);
         char* s = malloc(sizeof(char) * (len + 1));
-        memcpy(s, lstring, len);
         s[len] = '\0';
-        
-        // this is a (bad) temporary fix if lua tries to pass null characters to C
-        // I can't think of a case where I would actually need to recieve null characters
-        // on the java size, though, so I'm leaving it like this.
-        size_t t;
-        for (t = 0; t < len; t++) {
-            if (s[t] == '\0')
-                s[t] = '?';
+
+        if (len > 0) {
+            memcpy(s, lstring, len);
+            // this is a (bad) temporary fix if lua tries to pass null characters to C
+            // I can't think of a case where I would actually need to recieve null characters
+            // on the java size, though, so I'm leaving it like this.
+            size_t t;
+            for (t = 0; t < len - 1; t++) {
+                if (s[t] == '\0')
+                    s[t] = '?';
+            }
         }
         
         v->data.str = s;
@@ -164,35 +166,37 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
     // standard behaviour from the script layer is to convert into an array
     else if (lua_istable(state, -1)) {
         
-        // if this happens, that means there was like 20 tables nested in each other.
+        // if this happens, that means there was like a dozen tables nested in each other.
         // return null if the user is being retarded
-        if (lua_gettop(state) == LUA_MINSTACK - 1) {
+        if (lua_gettop(state) == 14) {
             lua_pop(state, 1);
             return v;
         }
         
         v->type = ENGINE_ARRAY;
-        unsigned short t = 0;
+        unsigned short idx = 1;
         while (1) {
-            if (t == USHRT_MAX) break;
-            lua_pushinteger(state, t);
-            lua_gettable(state, -2);
+            if (idx == USHRT_MAX - 1) break;
+            lua_pushinteger(state, (int) idx);
+            lua_rawget(state, -2);
             if (lua_isnil(state, -1)) {
                 lua_pop(state, 1);
-                t++;
                 break;
             }
             lua_pop(state, 1);
-            t++;
+            idx++;
         }
-        v->data.array.length = t;
-        v->data.array.values = malloc(sizeof(engine_value**) * t);
+        v->data.array.length = idx - 1;
+        v->data.array.values = (idx - 1) ? malloc(sizeof(engine_value*) * (idx - 1)) : 0;
+        if (engine_debug) {
+            printf("C: passing lua table of size %lu", (unsigned long) v->data.array.length);
+        }
         unsigned short i;
-        for (i = 0; i < t; i++) {
+        for (i = 1; i < idx; i++) {
             // push key
             lua_pushinteger(state, i);
             // swap key with value (of some sort)
-            lua_gettable(state, -2);
+            lua_rawget(state, -2);
             // recurrrrrssssiiiiioooon (and popping the value)
             v->data.array.values[i] = engine_popvalue(env, inst, state);
         }
@@ -270,7 +274,7 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
  * Method:    createFunction
  * Signature: ([Ljava/lang/Class;Ljava/lang/Object;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptFunction;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNFunctionFactory_createFunction___3Ljava_lang_Class_2Ljava_lang_Object_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNFunctionFactory_createFunction___3Ljava_lang_Class_2Ljava_lang_Object_2
 (JNIEnv* env, jobject this, jobjectArray class_array, jobject lambda) {
     engine_value* value = engine_newsharedvalue(env);
     value->type = ENGINE_JAVA_LAMBDA_FUNCTION;
@@ -284,7 +288,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  * Method:    createFunction
  * Signature: (Ljava/lang/reflect/Method;Ljava/lang/Object;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptFunction;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNFunctionFactory_createFunction__Ljava_lang_reflect_Method_2Ljava_lang_Object_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNFunctionFactory_createFunction__Ljava_lang_reflect_Method_2Ljava_lang_Object_2
 (JNIEnv* env, jobject this, jobject reflect_method, jobject obj_inst) {
     engine_value* value = engine_newsharedvalue(env);
     value->type = ENGINE_JAVA_REFLECT_FUNCTION;
@@ -298,7 +302,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
  * Method:    translate
  * Signature: (ZLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__ZLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__ZLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jboolean boolean, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -313,11 +317,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (FLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__FLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__FLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jfloat f, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -332,11 +336,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (DLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__DLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__DLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jdouble d, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -351,11 +355,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (Ljava/lang/String;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__Ljava_lang_String_2Lca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__Ljava_lang_String_2Lca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jstring str, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -369,17 +373,18 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
     size_t len = strlen(characters);
     value->data.str = malloc(sizeof(char) * (len + 1));
     value->data.str[len] = '\0';
-    memmove(value->data.str, characters, len);
+    if (len > 0)
+        memmove(value->data.str, characters, len);
     (*env)->ReleaseStringUTFChars(env, str, characters);
     return engine_wrap(env, value);
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (ILca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__ILca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__ILca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jint i, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -394,11 +399,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (JLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__JLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__JLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jlong l, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -413,11 +418,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (SLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__SLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__SLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jshort s, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -432,11 +437,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translate
  * Signature: (BLca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translate__BLca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translate__BLca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jbyte b, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -451,11 +456,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    list
  * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_list
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_list
 (JNIEnv* env, jobject this, jobjectArray elements, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -466,8 +471,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
     engine_value* value = engine_newvalue(env, inst);
     value->type = ENGINE_ARRAY;
     jsize len = (*env)->GetArrayLength(env, elements);
-    value->data.array.values = malloc(sizeof(engine_inst*));
-    value->data.array.length = len;
+    value->data.array.values = len ? malloc(sizeof(engine_inst*) * len) : 0;
+    value->data.array.length = (size_t) len;
+    if (engine_debug) {
+        printf("C: creating engine array from Java array, size: %lu\n", (unsigned long) value->data.array.length);
+    }
     int t;
     for (t = 0; t < len; t++) {
         jobject element = (*env)->GetObjectArrayElement(env, elements, t);
@@ -481,11 +489,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    nullValue
  * Signature: (Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_nullValue
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_nullValue
 (JNIEnv* env, jobject this, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");
@@ -498,11 +506,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory
+ * Class:     ca_jarcode_ascript_luanative_LuaNValueFactory
  * Method:    translateObj
  * Signature: (Ljava/lang/Object;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNValueFactory_translateObj
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_translateObj
 (JNIEnv* env, jobject this, jobject obj, jobject jglobals) {
     if (!jglobals) {
         throw(env, "tried to translate with null globals");

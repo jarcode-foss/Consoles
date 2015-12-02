@@ -32,7 +32,11 @@ Allocations to buffers used for java objects and userdata are kept using pthread
 #define PCONTEXT_NOCHECK 1
 #define PCONTEXT_IF_EMPTY 0
 
-#define PAIR_MAP_DEBUG 0
+#define PAIR_MAP_OK 0
+#define PAIR_MAP_MISSING_DATUM 1
+#define PAIR_MAP_LOOKUP_FAILED 2
+
+#define PAIR_MAP_DEBUG 1
 
 typedef int pair_map; // this type is really just a key to lookup a datum
 
@@ -56,18 +60,17 @@ typedef struct pair_map_collection_ {
     
 } pair_map_collection;
 
-void pair_map_init(pair_map m);
-
+int pair_map_context_init(pair_map map);
 void* pair_map_native(pair_map map, jobject java, JNIEnv* env);
 jobject pair_map_java(pair_map map, void* native);
-void pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env);
-void pair_map_rm_java(pair_map map, jobject java, JNIEnv* env);
-void pair_map_rm_native(pair_map map, void* native, JNIEnv* env);
+int pair_map_append(pair_map map, jobject java, void* native, JNIEnv* env);
+int pair_map_rm_java(pair_map map, jobject java, JNIEnv* env);
+int pair_map_rm_native(pair_map map, void* native, JNIEnv* env);
 void* pair_map_index_native(pair_map map, size_t index);
 jobject pair_map_index_java(pair_map map, size_t index);
 size_t pair_map_context_size(pair_map map);
-void pair_map_close(pair_map map);
-void pair_map_rm_context(pair_map map, int (*predicate) (void* native, void* userdata), void* userdata, JNIEnv* env);
+int pair_map_close(pair_map map);
+int pair_map_rm_context(pair_map map, int (*predicate) (void* native, void* userdata), void* userdata, JNIEnv* env);
 void pair_map_context_destroy(uint8_t op);
 
 #endif // PAIR_H_

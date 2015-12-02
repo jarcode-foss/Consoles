@@ -1,16 +1,17 @@
 package ca.jarcode.consoles;
 
+import ca.jarcode.ascript.Joint;
 import ca.jarcode.consoles.api.Position2D;
 import ca.jarcode.consoles.computer.ComputerHandler;
 import ca.jarcode.consoles.computer.GeneralListener;
 import ca.jarcode.consoles.computer.MapDataStore;
 import ca.jarcode.consoles.computer.NativeLoader;
 import ca.jarcode.consoles.computer.command.CommandComputer;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.interpreter.LuaDefaults;
-import ca.jarcode.consoles.computer.interpreter.luaj.LuaJEngine;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
+import ca.jarcode.ascript.luaj.LuaJEngine;
+import ca.jarcode.ascript.luanative.LuaNEngine;
+import ca.jarcode.ascript.luanative.LuaNImpl;
 import ca.jarcode.consoles.internal.ConsoleHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -99,7 +100,7 @@ public class Computers extends JavaPlugin {
 
 		jarFile = getFile();
 
-		Lua.killAll = false; // if this plugin was reloaded
+		Script.killAll = false; // if this plugin was reloaded
 		saveDefaultConfig();
 
 		frameRenderingEnabled = getConfig().getBoolean("frame-rendering", frameRenderingEnabled);
@@ -120,6 +121,10 @@ public class Computers extends JavaPlugin {
 		debugHookCommand = getConfig().getString("debug-command", debugHookCommand);
 
 		boolean disableWatchdog = getConfig().getBoolean("disable-watchdog", false);
+
+		Joint.MAX_TIME_WITHOUT_INTERRUPT = maxTimeWithoutInterrupt;
+		Joint.DEBUG_MODE = debug;
+		Joint.INTERRUPT_CHECK_INTERVAL = interruptCheckInterval;
 
 		loadAttempt: if (!LOADED_NATIVES && !ATTEMPTED_NATIVES_LOAD) {
 			ATTEMPTED_NATIVES_LOAD = true;
@@ -221,7 +226,7 @@ public class Computers extends JavaPlugin {
 	}
 
 	public void onDisable() {
-		Lua.killAll = true;
+		Script.killAll = true;
 	}
 
 	private void register(Supplier... suppliers) {

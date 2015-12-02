@@ -65,7 +65,6 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
         id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V");
         CHECKEX(env, handle);
         
-        pair_map_init(ENGINE_SCRIPT_VALUE_ID);
         setup = 1;
     }
 }
@@ -93,12 +92,18 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
 
 static void valuefree(JNIEnv* env, engine_value* value) {
     if (value->type == ENGINE_ARRAY) {
-        free(value->data.array.values);
+        if (value->data.array.values) {
+            free(value->data.array.values);
+            value->data.array.values = 0;
+        }
     }
     else if (value->type == ENGINE_STRING) {
         // strings in our values are either copied from java or lua,
         // we need to free the string when we parse the stack
-        free(value->data.str);
+        if (value->data.str) {
+            free(value->data.str);
+            value->data.str = 0;
+        }
     }
     // clear global references to reflection method
     else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
@@ -143,22 +148,22 @@ inline jobject engine_wrap(JNIEnv* env, engine_value* value) {
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    release
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_release
+JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_release
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (value) engine_releasevalue(env, value);
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    copy
  * Signature: ()Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_copy
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_copy
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     engine_value* copy = engine_newvalue(env, value->inst);
@@ -196,11 +201,11 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateObj
  * Signature: ()Ljava/lang/Object;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateObj
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateObj
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (value->type == ENGINE_JAVA_OBJECT) {
@@ -212,22 +217,22 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
     }
 }
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateObj
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateObj
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateObj
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_JAVA_OBJECT) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateString
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateString
+JNIEXPORT jstring JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateString
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -241,22 +246,22 @@ JNIEXPORT jstring JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateString
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateString
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateString
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_STRING) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateLong
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateLong
+JNIEXPORT jlong JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateLong
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -273,22 +278,22 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateLong
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateLong
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateLong
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateShort
  * Signature: ()S
  */
-JNIEXPORT jshort JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateShort
+JNIEXPORT jshort JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateShort
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -305,22 +310,22 @@ JNIEXPORT jshort JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateShort
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateShort
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateShort
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateByte
  * Signature: ()B
  */
-JNIEXPORT jbyte JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateByte
+JNIEXPORT jbyte JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateByte
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -337,22 +342,22 @@ JNIEXPORT jbyte JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateByte
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateByte
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateByte
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateInt
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateInt
+JNIEXPORT jint JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateInt
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -369,22 +374,22 @@ JNIEXPORT jint JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateInt
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateInt
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateInt
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateFloat
  * Signature: ()F
  */
-JNIEXPORT jfloat JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateFloat
+JNIEXPORT jfloat JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateFloat
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -401,22 +406,22 @@ JNIEXPORT jfloat JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateFloat
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateFloat
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateFloat
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateDouble
  * Signature: ()D
  */
-JNIEXPORT jdouble JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateDouble
+JNIEXPORT jdouble JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateDouble
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -433,22 +438,22 @@ JNIEXPORT jdouble JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateDouble
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateDouble
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateDouble
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_FLOATING || value->type == ENGINE_INTEGRAL) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateBoolean
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateBoolean
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateBoolean
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     if (!value) return 0;
@@ -463,22 +468,22 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateBoolean
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateBoolean
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateBoolean
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_BOOLEAN) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    canTranslateArray
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_canTranslateArray
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_canTranslateArray
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_ARRAY) : 0;
@@ -488,11 +493,11 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanati
 // however, there is no faster way to do it.
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    translateArray
  * Signature: (Ljava/lang/Class;)Ljava/lang/Object;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_translateArray
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateArray
 (JNIEnv* env, jobject this, jclass array_type) {
     
     // this implementation of _translating_ (which is actually doing a recursive array copy) uses
@@ -515,7 +520,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
     // create array from type
     jobject array = (*env)->CallStaticObjectMethod(env, class_array, id_newarray, comptype,
         value->data.array.length);
-    uint32_t t;
+    size_t t;
     for (t = 0; t < value->data.array.length; t++) {
         // get engine_value element, and then get the java counterpart
         jobject wrapped_element = engine_wrap(env, value->data.array.values[t]);
@@ -529,22 +534,22 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanativ
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    isFunction
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_isFunction
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_isFunction
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? IS_ENGINE_FUNCTION(value->type) : 0;
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    set
  * Signature: (Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)V
  */
-JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_set
+JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_set
 (JNIEnv* env, jobject this, jobject jkey, jobject jvalue) {
     if (!jkey || !jvalue) return;
     engine_value* this_value = findnative(env, this);
@@ -582,11 +587,11 @@ JNIEXPORT void JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_L
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    get
  * Signature: (Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_get
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_get
 (JNIEnv* env, jobject this, jobject script_value) {
     
     engine_value* value = findnative(env, this);
@@ -725,29 +730,29 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
 }
 
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    call
  * Signature: ()Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call__
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_call__
 (JNIEnv* env, jobject this) {
     return handlecall(env, this, 0);
 }
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    call
  * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_call___3Lca_jarcode_consoles_computer_interpreter_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_call___3Lca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jobjectArray arr) {
     return handlecall(env, this, arr);
 }
 /*
- * Class:     ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    isNull
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_ca_jarcode_consoles_computer_interpreter_luanative_LuaNScriptValue_isNull
+JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_isNull
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
     return value ? (value->type == ENGINE_NULL) : 0;

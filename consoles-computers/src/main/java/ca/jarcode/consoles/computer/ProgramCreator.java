@@ -187,7 +187,7 @@ public class ProgramCreator implements ConsoleFeed.FeedCreator {
 			return "invalid path: must be a file or provided program";
 		}
 		try {
-			instance.start();
+			instance.startInThread();
 		}
 		catch (Throwable e) {
 			return ChatColor.RED + "unable to start thread: " + e.getClass().getSimpleName();

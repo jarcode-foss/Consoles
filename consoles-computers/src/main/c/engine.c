@@ -189,7 +189,7 @@ static void hook(engine_inst* inst, lua_State* state, lua_Debug* debug) {
     // (unsafe to jmp out of), and luajit (jit compiled, lots of
     // undefined stuff could happen), and other internal ffi usages.
     
-    if (!(inst->killed)) {
+    if (!(inst->killed) && maxtime > 0) {
         struct timeval last;
         gettimeofday(&last, 0);
         unsigned long ms = (unsigned long) (last.tv_usec / 1000U) + (last.tv_sec * 1000U);
@@ -367,6 +367,8 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
 }
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
+
+    pair_map_context_init(ENGINE_SCRIPT_VALUE_ID);
     
     engine_inst* instance = malloc(sizeof(engine_inst));
     memset(instance, 0, sizeof(engine_inst));
@@ -459,9 +461,6 @@ static const char* loadchunk(lua_State* state, void* data, size_t* size) {
         return 0;
     }
     else program->read = 1;
-    if (engine_debug) {
-        printf("C: loading chunk (charlen: %d)\n", (int) strlen(program->str)); 
-    }
     *size = strlen(program->str);
     return program->str;
 }
@@ -527,6 +526,10 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_settable
         lua_pop(state, 1);
         // push new table
         lua_newtable(state);
+        // make copy
+        lua_pushvalue(state, -1);
+        // set global table and pop copy
+        lua_setglobal(state, table);
     }
     // push key
     lua_pushstring(state, key);

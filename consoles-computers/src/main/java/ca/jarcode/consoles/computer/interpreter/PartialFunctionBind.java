@@ -1,6 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter;
 
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
+import ca.jarcode.ascript.interfaces.ScriptValue;
 
 /*
 

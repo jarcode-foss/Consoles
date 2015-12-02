@@ -1,6 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter;
 
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptError;
+import ca.jarcode.ascript.interfaces.ScriptError;
 
 public class GenericScriptError extends ScriptError {
 

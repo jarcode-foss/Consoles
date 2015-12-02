@@ -89,7 +89,7 @@
                         </goals>
                         <configuration>
                             <javahVerbose>true</javahVerbose>
-                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptValue</javahClass>
+                            <javahClass>ca.jarcode.ascript.luanative.LuaNScriptValue</javahClass>
                             <javahOutputFilePath>${project.build.directory}/include/LuaNScriptValue.h</javahOutputFilePath>
                         </configuration>
                     </execution>
@@ -101,7 +101,7 @@
                         </goals>
                         <configuration>
                             <javahVerbose>true</javahVerbose>
-                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptFunction</javahClass>
+                            <javahClass>ca.jarcode.ascript.luanative.LuaNScriptFunction</javahClass>
                             <javahOutputFilePath>${project.build.directory}/include/LuaNScriptFunction.h</javahOutputFilePath>
                         </configuration>
                     </execution>
@@ -113,7 +113,7 @@
                         </goals>
                         <configuration>
                             <javahVerbose>true</javahVerbose>
-                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNValueFactory</javahClass>
+                            <javahClass>ca.jarcode.ascript.luanative.LuaNValueFactory</javahClass>
                             <javahOutputFilePath>${project.build.directory}/include/LuaNValueFactory.h</javahOutputFilePath>
                         </configuration>
                     </execution>
@@ -125,7 +125,7 @@
                         </goals>
                         <configuration>
                             <javahVerbose>true</javahVerbose>
-                            <javahClass>ca.jarcode.consoles.computer.interpreter.luanative.LuaNFunctionFactory</javahClass>
+                            <javahClass>ca.jarcode.ascript.luanative.LuaNFunctionFactory</javahClass>
                             <javahOutputFilePath>${project.build.directory}/include/LuaNFunctionFactory.h</javahOutputFilePath>
                         </configuration>
                     </execution>
@@ -151,7 +151,7 @@
                         </goals>
                         <configuration>
                             <targetPlatforms>ELF32,ELF64</targetPlatforms>
-                            <arguments>-O2 -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
+                            <arguments><!-- -O2 --> -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -194,8 +194,8 @@
                     <!-- Run in alphabetical order -->
                     <runOrder>alphabetical</runOrder>
 
-                    <!-- Check JNI calls -->
-                    <argLine>-Xcheck:jni</argLine>
+                    <!-- Check JNI calls, and turn off JIT. I have JIT off to make debugging easier. -->
+                    <argLine>-Djava.compiler=NONE -Xcheck:jni -XX:UseSSE=0</argLine>
 
                     <!-- Do not timeout -->
                     <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>

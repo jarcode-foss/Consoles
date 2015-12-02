@@ -1,8 +1,8 @@
 package jni;
 
-import ca.jarcode.consoles.computer.interpreter.interfaces.ScriptValue;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNInterface;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNScriptValue;
+import ca.jarcode.ascript.interfaces.ScriptValue;
+import ca.jarcode.ascript.luanative.LuaNInterface;
+import ca.jarcode.ascript.luanative.LuaNScriptValue;
 
 public class LuaEngine implements LuaNInterface {
 	public native void setup();

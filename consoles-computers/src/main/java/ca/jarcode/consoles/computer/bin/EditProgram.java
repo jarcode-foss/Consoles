@@ -6,7 +6,7 @@ import ca.jarcode.consoles.computer.EditorComponent;
 import ca.jarcode.consoles.computer.Terminal;
 import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.filesystem.*;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFrame;
 import ca.jarcode.consoles.computer.manual.ProvidedManual;
@@ -174,8 +174,8 @@ public class EditProgram extends FSProvidedProgram {
 				throws IOException, InterruptedException {
 
 			SandboxProgram inst = SandboxProgram.FACTORY.get();
-			Lua.find(EditorInstance.class, this, inst.getPool());
-			SandboxProgram.pass(inst, readFully(config), computer.getTerminal(EditProgram.this), instance, "");
+			Script.find(EditorInstance.class, this, inst.getPool());
+			SandboxProgram.pass(inst, readFully(config), computer.getTerminal(EditProgram.this), instance, "", true);
 
 			schedule(() -> {
 				EditorComponent component = new EditorComponent(computer.getViewWidth(),
@@ -205,32 +205,32 @@ public class EditProgram extends FSProvidedProgram {
 			});
 		}
 
-		public void lua$symbolColor(String symbols, String color) {
+		public void $symbolColor(String symbols, String color) {
 			char c = translateColorChar(color);
 			if (c == 0) return;
 			keyCharList.add(symbols.toCharArray());
 			keyColorList.add(ChatColor.COLOR_CHAR + "" + c);
 		}
 
-		public void lua$commentColor(String color) {
+		public void $commentColor(String color) {
 			char c = translateColorChar(color);
 			if (c == 0) return;
 			commentColor = ChatColor.COLOR_CHAR + "" + c;
 		}
 
-		public void lua$stringColor(String color) {
+		public void $stringColor(String color) {
 			char c = translateColorChar(color);
 			if (c == 0) return;
 			stringColor = ChatColor.COLOR_CHAR + "" + c;
 		}
 
-		public void lua$keywordColor(String color) {
+		public void $keywordColor(String color) {
 			char c = translateColorChar(color);
 			if (c == 0) return;
 			keywordColor = ChatColor.COLOR_CHAR + "" + c;
 		}
 
-		public void lua$lineNumberColor(int color) {
+		public void $lineNumberColor(int color) {
 			numberColor = LuaFrame.convert(color);
 		}
 	}

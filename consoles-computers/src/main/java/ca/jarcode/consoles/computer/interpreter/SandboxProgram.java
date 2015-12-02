@@ -1,13 +1,15 @@
 package ca.jarcode.consoles.computer.interpreter;
 
+import ca.jarcode.ascript.interfaces.*;
+import ca.jarcode.ascript.ScriptInterruptException;
 import ca.jarcode.consoles.CColor;
 import ca.jarcode.consoles.Computers;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.*;
 import ca.jarcode.consoles.computer.bin.TouchProgram;
 import ca.jarcode.consoles.computer.filesystem.FSBlock;
 import ca.jarcode.consoles.computer.filesystem.FSFile;
-import ca.jarcode.consoles.computer.interpreter.func.TwoArgFunc;
-import ca.jarcode.consoles.computer.interpreter.interfaces.*;
+import ca.jarcode.ascript.func.TwoArgFunc;
 import ca.jarcode.consoles.computer.interpreter.libraries.Libraries;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFile;
 import ca.jarcode.consoles.computer.interpreter.types.LuaFrame;
@@ -49,6 +51,8 @@ public abstract class SandboxProgram {
 
 	/**
 	 * Executes a lua program from the plugin folder, on a specific computer.
+	 *
+	 * The program passed to this method will run in its own thread.
 	 *
 	 * @param path the path to the program, relative to the plugin folder
 	 * @param terminal the terminal to run the program on
@@ -92,6 +96,8 @@ public abstract class SandboxProgram {
 	 * The directory of the program will be the current directory of
 	 * the terminal
 	 *
+	 * The program passed to this method will run in its own thread.
+	 *
 	 * @param program the string that contains the Lua program
 	 * @param terminal the terminal to run the program on
 	 * @param args the arguments for the program
@@ -111,21 +117,21 @@ public abstract class SandboxProgram {
 		terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
 		terminal.startFeed();
 
-		instance.start();
+		instance.startInThread();
 
 		return true;
 	}
 
-	public static boolean exec(String program, Terminal terminal) {
+	public static boolean exec(String program, Terminal terminal, boolean threaded) {
 		return exec(program, terminal, "");
 	}
 
-	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance) {
-		return pass(program, terminal, instance, "");
+	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, boolean threaded) {
+		return pass(program, terminal, instance, "", threaded);
 	}
 
-	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args) {
-		return pass(FACTORY.get(), program, terminal, instance, args);
+	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
+		return pass(FACTORY.get(), program, terminal, instance, args, threaded);
 	}
 
 	/**
@@ -139,11 +145,11 @@ public abstract class SandboxProgram {
 	 * @return the sandbox instance
 	 */
 	public static SandboxProgram pass(SandboxProgram inst, String program,
-	                                  Terminal terminal, ProgramInstance instance, String args) {
+	                                  Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
 		inst.restricted = false;
 		inst.contextTerminal = terminal;
 		instance.interpreted = inst;
-		inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program);
+		inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program, threaded);
 		return inst;
 	}
 
@@ -154,14 +160,15 @@ public abstract class SandboxProgram {
 	protected InputStream in;
 	protected OutputStream out;
 	protected Computer computer;
-	protected FuncPool pool = new FuncPool(this);
 	protected String args;
 	protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	protected List<Integer> allocatedSessions = new ArrayList<>();
 	protected ScriptGlobals globals;
 
 	protected Runnable terminator;
-	protected BooleanSupplier terminated;
+	protected BooleanSupplier terminated = () -> false;
+
+	protected FuncPool<SandboxProgram> pool = new FuncPool<>(() -> globals, terminated, this);
 
 	protected List<String> registeredChannels = new ArrayList<>();
 
@@ -194,7 +201,7 @@ public abstract class SandboxProgram {
 
 	// used to run programs from a file in a computer
 	public void run(OutputStream out, InputStream in, String str, Computer computer,
-	                ProgramInstance instance) throws Exception {
+	                ProgramInstance instance, boolean threaded) throws Exception {
 
 		setup(out, in, str, computer, instance);
 
@@ -225,7 +232,7 @@ public abstract class SandboxProgram {
 		String raw = new String(buf.toByteArray(), CHARSET);
 
 		loadDefaultChunk();
-		compileAndExecute(raw);
+		compileAndExecute(raw, threaded);
 	}
 
 	protected abstract void map();
@@ -238,14 +245,14 @@ public abstract class SandboxProgram {
 	}
 
 	public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
-	                   ProgramInstance inst, String raw) {
+	                   ProgramInstance inst, String raw, boolean threaded) {
 		setup(out, in, str, computer, inst);
 		loadDefaultChunk();
-		compileAndExecute(raw);
+		compileAndExecute(raw, threaded);
 	}
 
 	// runs a program with the given raw text
-	public void compileAndExecute(String raw) {
+	public void compileAndExecute(String raw, boolean threaded) {
 
 		/*
 		 * It's important to remember how the script abstractions works, if
@@ -284,7 +291,7 @@ public abstract class SandboxProgram {
 
 			// Load any extra libraries, these can be registered by other plugins
 			// Note, we only register libraries that are not restricted.
-			Lua.LIBS.values().stream()
+			Script.LIBS.values().stream()
 					.filter((lib) -> !lib.isRestricted || !restricted)
 					.forEach(globals::load);
 
@@ -313,7 +320,7 @@ public abstract class SandboxProgram {
 					def.release();
 				}
 				// if the program was interrupted by our debug/interrupt lib
-				catch (ProgramInterruptException ex) {
+				catch (ScriptInterruptException ex) {
 
 					print("\n" + lang.getString("program-term"));
 
@@ -370,7 +377,7 @@ public abstract class SandboxProgram {
 				value.release();
 			}
 			// if the program was interrupted by our debug/interrupt lib
-			catch (ProgramInterruptException ex) {
+			catch (ScriptInterruptException ex) {
 				print("\n" + lang.getString("program-term"));
 			}
 			// if we encountered an error, we go through quite the process to handle it
@@ -390,7 +397,7 @@ public abstract class SandboxProgram {
 
 						}
 						// again, if the exit function was interrupted.
-						catch (ProgramInterruptException ex) {
+						catch (ScriptInterruptException ex) {
 							print("\n" + lang.getString("exit-func-term"));
 						}
 						// if there was an error, handle it the same way.
@@ -435,6 +442,9 @@ public abstract class SandboxProgram {
 			// close resources
 			if (globals != null)
 				globals.close();
+
+			if (threaded)
+				globals.cleanupThreadContext();
 		}
 	}
 

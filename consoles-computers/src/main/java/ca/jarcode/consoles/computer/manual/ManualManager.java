@@ -3,7 +3,7 @@ package ca.jarcode.consoles.computer.manual;
 import ca.jarcode.consoles.computer.boot.Kernel;
 import ca.jarcode.consoles.computer.filesystem.FSProvidedProgram;
 import ca.jarcode.consoles.computer.interpreter.FunctionBind;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import org.bukkit.ChatColor;
 import org.luaj.vm2.LuaValue;
 
@@ -42,11 +42,11 @@ public class ManualManager {
 		}
 		PROVIDED_MANUALS = Collections.unmodifiableMap(providedMap);
 
-		Lua.map(ManualManager::lua_manual_functionNames, "manual_functionNames");
+		Script.map(ManualManager::lua_manual_functionNames, "manual_functionNames");
 	}
 
 	public static void load(Class type) {
-		map(type, name -> name.startsWith("lua$") || name.startsWith("lua_") ?
+		map(type, name -> name.startsWith("$") || name.startsWith("lua_") ?
 				name.substring(4) : null);
 	}
 	public static void loadType(Class type) {

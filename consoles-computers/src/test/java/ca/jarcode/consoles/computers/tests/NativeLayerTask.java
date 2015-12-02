@@ -1,15 +1,16 @@
 package ca.jarcode.consoles.computers.tests;
 
+import ca.jarcode.ascript.Joint;
+import ca.jarcode.ascript.LibraryCreator;
+import ca.jarcode.ascript.interfaces.*;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.NativeLoader;
-import ca.jarcode.consoles.computer.interpreter.FuncPool;
 import ca.jarcode.consoles.computer.interpreter.FunctionBind;
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.interpreter.PartialFunctionBind;
-import ca.jarcode.consoles.computer.interpreter.interfaces.*;
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNEngine;
+import ca.jarcode.ascript.luanative.LuaNEngine;
 
-import ca.jarcode.consoles.computer.interpreter.luanative.LuaNImpl;
+import ca.jarcode.ascript.luanative.LuaNImpl;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -45,19 +46,20 @@ public class NativeLayerTask {
 	private static final String STARTED = "[STARTED]";
 
 	// getting original stdout, don't want to use JUnit's crap
-	OutputStream out = new FileOutputStream(FileDescriptor.out);
-	PrintStream stdout = new PrintStream(out);
+	public static final OutputStream out = new FileOutputStream(FileDescriptor.out);
+	public static final PrintStream stdout = new PrintStream(out);
 
 	Process debuggerProcess;
 
-	FuncPool pool;
+	FuncPool<?> pool;
 	ScriptGlobals globals;
 	ScriptValue chunk;
 
 	public int loglen = 0;
 
-	{
+	static {
 		System.setOut(stdout);
+		LibraryCreator.link(TestLibrary::new, "test_lib", false);
 	}
 
 	// Discovery: you need to catch errors thrown by the JNI and re-throw them, otherwise strange things
@@ -65,6 +67,7 @@ public class NativeLayerTask {
 	public void init(boolean sandboxed, boolean install) throws Throwable {
 
 		Computers.debug = true;
+		Joint.DEBUG_MODE = true;
 
 		logs("Setting up engine");
 
@@ -86,10 +89,10 @@ public class NativeLayerTask {
 				LuaNEngine.install(sandboxed ? LuaNImpl.JIT : LuaNImpl.JIT_TEST);
 
 				// map a lambda vesion of our test function
-				Lua.map(this::lua$testFunction, "lambdaTestFunction");
+				Script.map(this::$testFunction, "lambdaTestFunction");
 			}
 
-			pool = new FuncPool(() -> globals);
+			pool = new FuncPool<>(() -> globals, () -> false, null);
 
 			// register the current thread
 			pool.register(Thread.currentThread());
@@ -109,7 +112,7 @@ public class NativeLayerTask {
 		log("Building new environment");
 		logn(STARTED);
 
-		String loaded;
+		StringBuilder loaded = new StringBuilder();
 
 		try {
 			globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
@@ -126,13 +129,23 @@ public class NativeLayerTask {
 			pool.mapStaticFunctions();
 
 			// register any lua functions
-			Lua.find(this, pool);
+			Script.find(this, pool);
 
-			loaded = pool.functions.entrySet().stream()
+			loaded.append(pool.functions.entrySet().stream()
 					.map((entry) -> entry.getKey() + ": " + valueString(entry.getValue().getAsValue()))
-					.collect(Collectors.joining(", "));
+					.collect(Collectors.joining(", ")));
 
 			globals.load(pool);
+
+			Script.LIBS.values().stream()
+					.filter((lib) -> !lib.isRestricted || sandboxed)
+					.peek((lib) -> {
+						loaded.append(", ");
+						loaded.append(lib.libraryName);
+						loaded.append(" : ");
+						loaded.append("library");
+					})
+					.forEach(globals::load);
 
 			if (!sandboxed)
 				globals.removeRestrictions(); // we need extra packages
@@ -276,10 +289,12 @@ public class NativeLayerTask {
 		if (pool != null) {
 			pool.cleanup();
 		}
+		/*
 		if (debuggerProcess != null && debuggerProcess.isAlive()) {
 			debuggerProcess.destroyForcibly();
 			debuggerProcess.waitFor();
 		}
+		*/
 		// give time for the previous GDB instance to exit
 		if (DEBUG) {
 			Thread.sleep(1000);
@@ -297,40 +312,48 @@ public class NativeLayerTask {
 		}
 	}
 
-	public int lua$testIntReturn() {
+	public String[] $stringArray() {
+		return new String[] { "foo", "biz", "bar", "woof" };
+	}
+
+	public Foo[] $objectArray() {
+		return new Foo[] { new Foo(), new Foo() };
+	}
+
+	public int $testIntReturn() {
 		return 42;
 	}
 
-	public String lua$testStringReturn() {
+	public String $testStringReturn() {
 		return "foobar";
 	}
 
-	public Foo lua$newFooObject() {
+	public Foo $newFooObject() {
 		return new Foo();
 	}
 
-	public String lua$testFunction(int arg0, String arg1) {
+	public String $testFunction(int arg0, String arg1) {
 		stdout.println("J: testFunction sucessfully called from Lua!");
 		return "ret: ('" + arg1 + "', " + arg0 + ")";
 	}
 
-	public void lua$setdebug(boolean debug) {
+	public void $setdebug(boolean debug) {
 		Computers.debug = debug;
 	}
 
-	public void lua$throwSomething() {
+	public void $throwSomething() {
 		throw new IllegalStateException("foo");
 	}
 
-	public void lua$submitCallback(FunctionBind bind) {
+	public void $submitCallback(FunctionBind bind) {
 		assert (Double) bind.call(2, 6) == 8;
 	}
 
-	public void lua$submitPartialCallback(PartialFunctionBind bind) {
+	public void $submitPartialCallback(PartialFunctionBind bind) {
 		assert bind.call(5, 3).translateInt() == 8;
 	}
 
-	public void lua$submitValueCallback(ScriptValue value) {
+	public void $submitValueCallback(ScriptValue value) {
 		ScriptValue four = globals.getValueFactory().translate(4, globals);
 		assert value.getAsFunction().call(four, four).translateInt() == 8;
 	}

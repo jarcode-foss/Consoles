@@ -15,7 +15,9 @@ return function()
     end
     log(lambdaTestFunction(42, "foo"))
     log(testFunction(42, "foo"))
-
+    log(testFunction(42, "")) -- test empty string value
+    log(testFunction(42, "\0\0")) -- test null characters
+    log(test_lib.foo())
     assert("testIntReturn", 42)
     assert("testStringReturn", "foobar")
 end

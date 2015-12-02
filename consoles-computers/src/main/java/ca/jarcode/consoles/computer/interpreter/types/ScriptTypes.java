@@ -1,6 +1,6 @@
 package ca.jarcode.consoles.computer.interpreter.types;
 
-import ca.jarcode.consoles.computer.interpreter.Lua;
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.computer.manual.ManualEntry;
 import ca.jarcode.consoles.computer.manual.ManualManager;
 import ca.jarcode.consoles.computer.manual.TypeManual;
@@ -16,7 +16,7 @@ public class ScriptTypes {
 	private static List<String> typeNames = new ArrayList<>();
 
 	static {
-		Lua.map(ScriptTypes::lua_uniqueTypeNames, "uniqueTypeNames");
+		Script.map(ScriptTypes::lua_uniqueTypeNames, "uniqueTypeNames");
 		ManualManager.load(ScriptTypes.class);
 	}
 

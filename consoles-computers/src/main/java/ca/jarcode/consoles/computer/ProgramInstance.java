@@ -1,9 +1,10 @@
 package ca.jarcode.consoles.computer;
 
+import ca.jarcode.ascript.Script;
 import ca.jarcode.consoles.Computers;
 import ca.jarcode.consoles.computer.filesystem.FSProvidedProgram;
-import ca.jarcode.consoles.computer.interpreter.Lua;
 import ca.jarcode.consoles.computer.interpreter.SandboxProgram;
+import ca.jarcode.consoles.computer.interpreter.ScriptContext;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,7 @@ public class ProgramInstance implements Runnable {
 	FSProvidedProgram provided;
 	public SandboxProgram interpreted;
 
-	private final Thread thread = new Thread(this);
+	private volatile Thread thread;
 
 	private final String argument;
 
@@ -33,12 +34,7 @@ public class ProgramInstance implements Runnable {
 	private String data = null;
 
 	private volatile boolean terminated = false;
-
-	{
-		thread.setDaemon(true);
-		thread.setName("Program Thread");
-		thread.setPriority(Thread.MIN_PRIORITY);
-	}
+	private volatile boolean destroyContext = false;
 
 	public ProgramInstance(FSProvidedProgram provided, String argument, Computer computer) {
 		stdin = new LinkedStream();
@@ -64,7 +60,11 @@ public class ProgramInstance implements Runnable {
 		this(interpreted, argument, computer);
 		this.data = data;
 	}
-	public void start() {
+	public void startInThread() {
+		thread = new Thread(this);
+		thread.setDaemon(true);
+		thread.setName("Program Thread");
+		thread.setPriority(Thread.MIN_PRIORITY);
 		thread.start();
 	}
 	public void terminate() {
@@ -76,6 +76,13 @@ public class ProgramInstance implements Runnable {
 	public void waitFor() throws InterruptedException{
 		thread.join();
 	}
+	public Computer getComputer() {
+		return computer;
+	}
+	public void runAndDestroyContext() {
+		destroyContext = true;
+		run();
+	}
 	@Override
 	public void run() {
 		try {
@@ -83,9 +90,9 @@ public class ProgramInstance implements Runnable {
 				provided.init(stdout, stdin, argument, computer, this);
 			else if (interpreted != null) {
 				if (data == null)
-					interpreted.run(stdout, stdin, argument, computer, this);
+					interpreted.run(stdout, stdin, argument, computer, this, thread != null || destroyContext);
 				else
-					interpreted.runRaw(stdout, stdin, argument, computer, this, data);
+					interpreted.runRaw(stdout, stdin, argument, computer, this, data, thread != null || destroyContext);
 			}
 		}
 		catch (Throwable e) {
@@ -100,8 +107,6 @@ public class ProgramInstance implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			// if this isn't called, we get a big memory leak
-			Lua.cleanupThreadContext();
 		}
 	}
 	private void write(String text) {
