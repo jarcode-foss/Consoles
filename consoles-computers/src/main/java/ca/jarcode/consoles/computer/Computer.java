@@ -219,16 +219,9 @@ public abstract class Computer implements Runnable {
 		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
 		String[] text = lang.getString("computer-startup-messages").split("\r");
-		int i = 20;
-		for (String str : text) {
-			if (str != null) {
-				printAfter(str, i);
-			}
-			i += 4;
-		}
-		bootTask(i + 10);
+		bootTask();
 	}
-	private void bootTask(long time) {
+	private void bootTask() {
 		Bukkit.getScheduler().scheduleSyncDelayedTask(Computers.getInstance(), () -> {
 			if (!root.exists("boot/vmlinuz")) {
 				try {
@@ -283,7 +276,7 @@ public abstract class Computer implements Runnable {
 				startup.run(); // run our startup task
 			else
 				term.doAfter(startup); // schedule our startup task to run after the init program
-		}, time);
+		}, 10);
 	}
 	public void save() {
 		try {
