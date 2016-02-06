@@ -162,7 +162,8 @@
                             <goal>link</goal>
                         </goals>
                         <configuration>
-                            <targetPlatforms>ELF32,ELF64</targetPlatforms>
+                            <!-- Add ELF32 if you're on an ancient 32-bit system (w/ comma). -->
+                            <targetPlatforms>ELF64</targetPlatforms>
                             <arguments>-lluajit-5.1 -pthread -lffi -Wl,-z,defs</arguments>
                             <library>true</library>
                             <targetName>computerimpl</targetName>
