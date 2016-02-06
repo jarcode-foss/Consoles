@@ -325,7 +325,7 @@ public abstract class ConsoleRenderer implements Canvas {
 		synchronized (RENDERER_LOCK) {
 			screen.remove();
 		}
-		final Entity[] arr = frames.toArray(new Entity[frames.size()]);
+		Entity[] arr = frames.toArray(new Entity[frames.size()]);
 		frames.clear();
 		for (Entity entity : arr) {
 			entity.remove();

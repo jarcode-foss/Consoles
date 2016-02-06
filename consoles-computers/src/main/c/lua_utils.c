@@ -54,6 +54,10 @@ int util_blacklist(lua_State* state) {
     blacklist_table(state, "os", "remove");
     blacklist_table(state, "os", "tmpname");
     blacklist_table(state, "os", "setlocale");
+    
+    // this function can be exploited to expose bytecode,
+    // which may contain information normally not visible to Lua.
+    blacklist_table(state, "string", "dump");
 
     blacklist(state, "collectgarbage"); // bad programming practise and unsafe
     

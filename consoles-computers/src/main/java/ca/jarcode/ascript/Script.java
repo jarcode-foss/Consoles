@@ -10,9 +10,7 @@ import net.jodah.typetools.TypeResolver;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.Bukkit;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -467,10 +465,19 @@ public class Script {
 	// used in native code (don't touch the signature)
 	@SuppressWarnings("unused")
 	public static Method resolveMethod(Object object, String name) {
+		Type[] types = null;
 		Class<?> type = object.getClass();
+		if (type.getName().contains("_$")) { // concrete type
+			types = ((ParameterizedType) type.getGenericSuperclass()).getActualTypeArguments();
+			type = type.getSuperclass();
+		}
 		for (Method method : type.getMethods()) {
-			if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name))
+			if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name)) {
+				if (types != null) {
+
+				}
 				return method;
+			}
 		}
 		return null;
 	}

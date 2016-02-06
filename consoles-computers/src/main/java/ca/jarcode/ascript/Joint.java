@@ -302,32 +302,81 @@ public class Joint {
 			LOADED.add(chunk);
 		});
 	}
+	public <T> T loadValues(Class<T> type) {
+		try {
+			T instance = type.newInstance();
+			loadValues(type, instance);
+			return instance;
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new GenericScriptError(e);
+		}
+	}
+	public void loadValues(Object instance) {
+		loadValues(instance.getClass(), instance);
+	}
+	public void loadValues(Class<?> type, Object instance) {
+		runVoid(() -> {
+			Class<?> typeAt = type;
+			while (typeAt != Object.class) {
+				for (Field field : typeAt.getDeclaredFields()) {
+					int mod = field.getModifiers();
+					if (!Modifier.isStatic(mod) && !Modifier.isTransient(mod)) {
+						ScriptName annotation = field.getAnnotation(ScriptName.class);
+						String name = annotation == null ? field.getName() : annotation.name();
+						ScriptValue key = G.getValueFactory().translate(name, G);
+						ScriptValue value = null;
+						if (key != null) try {
+							try {
+								value = Script.translateToScriptValue(field.get(instance), G);
+								if (value == null)
+									value = G.getValueFactory().nullValue(G);
+								G.set(key, value);
+							} catch (IllegalAccessException e) {
+								throw new GenericScriptError(e);
+							}
+						} finally {
+							if (value != null)
+								value.release();
+							key.release();
+						}
+					}
+				}
+				typeAt = type.getSuperclass();
+			}
+		});
+	}
 	public void assignValues(Object instance) {
 		assignValues(instance.getClass(), instance);
 	}
 	public void assignValues(Class<?> type, Object instance) throws ScriptError {
 		runVoid(() -> {
-			for (Field field : type.getDeclaredFields()) {
-				int mod = field.getModifiers();
-				if (!Modifier.isStatic(mod) && !Modifier.isTransient(mod)) {
-					ScriptName annotation = field.getAnnotation(ScriptName.class);
-					String name = annotation == null ? field.getName() : annotation.name();
-					ScriptValue value = null;
-					try {
-						value = G.get(G.getValueFactory().translate(name, G));
-						if (value != null && !value.isNull()) {
-							field.setAccessible(true);
-							try {
-								field.set(instance, Script.translate(field.getType(), value));
-							} catch (IllegalAccessException e) {
-								throw new GenericScriptError(e);
+			Class<?> typeAt = type;
+			while (typeAt != Object.class) {
+				for (Field field : typeAt.getDeclaredFields()) {
+					int mod = field.getModifiers();
+					if (!Modifier.isStatic(mod) && !Modifier.isTransient(mod)) {
+						ScriptName annotation = field.getAnnotation(ScriptName.class);
+						String name = annotation == null ? field.getName() : annotation.name();
+						ScriptValue key = G.getValueFactory().translate(name, G);
+						ScriptValue value = null;
+						if (key != null) try {
+							value = G.get(key);
+							if (value != null && !value.isNull()) {
+								field.setAccessible(true);
+								try {
+									field.set(instance, Script.translateAndRelease(field.getType(), value));
+								} catch (IllegalAccessException e) {
+									throw new GenericScriptError(e);
+								}
 							}
+						} finally {
+							if (value != null)
+								value.release();
+							key.release();
 						}
-					} finally {
-						if (value != null)
-							value.release();
 					}
 				}
+				typeAt = type.getSuperclass();
 			}
 		});
 	}

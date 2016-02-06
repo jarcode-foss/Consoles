@@ -12,7 +12,7 @@
     <artifactId>consoles-computers</artifactId>
     <version>${global.version}${global.version.suffix}</version>
     <description>Extension to consoles-core, adds programmable computers to a serve as a craftbukkit plugin.</description>
-
+    
     <build>
         <resources>
             <!-- plugin YML files and default configs -->
@@ -150,12 +150,13 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                            <targetPlatforms>ELF32,ELF64</targetPlatforms>
+                            <!-- Add ELF32 if you're on an ancient 32-bit system (w/ comma). -->
+                            <targetPlatforms>ELF64</targetPlatforms>
                             <arguments><!-- -O2 --> -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>link-library-linux</id>
+                      <id>link-library-linux</id>
                         <phase>compile</phase>
                         <goals>
                             <goal>link</goal>
