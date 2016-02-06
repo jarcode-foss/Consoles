@@ -17,12 +17,20 @@
 If you are on Linux, there are two dependencies, which are libffi and LuaJIT (5.1). These are available on a number of repositories, on Debian/Ubuntu you should be able to run (assuming you are on a 64-bit system):
 
     sudo apt-get install build-essential libffi6 libluajit-5.1-2 libluajit-5.1-2-dev libluajit-5.1-2:i386 libluajit-5.1-2-dev:i386 libffi6:i386 lib32z1
+    
+On Arch, there's no multilib version of luajit (so you have to get the i386 version like in Ubuntu if you want 32-bit), and libffi does not install headers into /usr/include (you need to fix this yourself). Otherwise, do:
+
+   sudo pacman -Sy libffi luajit base-devel gdb
+
+for the 64-bit requirements.
 
 ### Compiling
 
 The maven configuration should do everything for you; running `mvn install` will generate artifacts in the modules' respective target directories. Consoles will have an usable plugin jar in the `consoles-core/target/final` folder, which has all the dependencies it needs to function.
 
 You can use the builds for bungee straight from the `consoles-bungee/target` folder (it does not require any packaged dependencies), but if you try to use the jars in the `target` folder for other modules (instead of the jars in the `final` folder`), you will be missing a lot of dependencies that don't come with craftbukkit/spigot!
+
+If you want 32-bit support, you need to add it in the `consoles-computer`'s `pom.xml` (`ELF32`). Make sure you have the required 32-bit libraries installed.
 
 ### Not compiling for/on Linux
 
