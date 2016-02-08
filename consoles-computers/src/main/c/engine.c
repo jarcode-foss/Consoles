@@ -252,10 +252,6 @@ static void setup_closures() {
 
 static void setup_classes(JNIEnv* env, jmp_buf handle) {
     
-    if (engine_debug) {
-        printf("C: registering global references to classes\n");
-    }
-    
     // class registering
     classreg(env, "java/lang/Object", &class_object, handle);
     classreg(env, ENGINE_CLASS, &class_type, handle);
@@ -295,6 +291,8 @@ static void setup_classes(JNIEnv* env, jmp_buf handle) {
     strcat(buf, ENGINE_VALUE_INTERFACE);
     strcat(buf, ";)Ljava/lang/Object;");
     id_translate = static_method_resolve(env, class_lua, "translate", buf, handle);
+
+    ASSERTEX(env);
 }
 
 // This function allows users to release the global reference
@@ -338,16 +336,22 @@ int engine_handleobjcall(lua_State* state) {
         lua_pushcfunction(state, &engine_releaseobj);
         return 1;
     }
+    int ret = 1;
     jstring jstr = (*env)->NewStringUTF(env, str);
+    
+    ASSERTEX(env);
+    
     jobject method = (*env)->CallStaticObjectMethod(env, class_lua, id_methodresolve, obj, jstr);
     if (method) {
         engine_pushreflect(env, d->engine, method, obj);
     }
     else {
         luaL_error(state, "C: could not resolve method");
-        return 0;
+        ret = 0;
     }
-    return 1;
+    (*env)->DeleteLocalRef(env, method);
+    (*env)->DeleteLocalRef(env, jstr);
+    return ret;
 }
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
@@ -361,12 +365,15 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
         setup_closures();
         setup_classes(env, reg_handle);
         setup_value(env, reg_handle);
+
+        ASSERTEX(env);
         
         setup = 1;
     }
 }
 
-JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
+JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
+(JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
 
     pair_map_context_init(ENGINE_SCRIPT_VALUE_ID);
     
@@ -561,6 +568,7 @@ JNIEXPORT jint JNICALL Java_jni_LuaEngine_destroyinst(JNIEnv* env, jobject this,
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, jint mode) {
     engine_debug = mode;
+    setvbuf(stdout, NULL, _IONBF, 0); /* Output buffering is annoying when it screws up message order */
 }
 
 JNIEXPORT void JNICALL Java_jni_LuaEngine_interruptreset(JNIEnv* env, jobject this, jlong ptr) {
@@ -600,7 +608,8 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject th
     return engine_wrap(env, v);
 }
 
-static void expass(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) {
+// Converts a java exception into a Lua error, and pops a reference frame.
+static void expass_pop(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) {
 
     // if an exception occurred, we need to handle it and pass it to lua
     // we also call a Java helper method to further handle the exception.
@@ -608,10 +617,14 @@ static void expass(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) 
         
         jobject ex = (*env)->ExceptionOccurred(env);
         (*env)->ExceptionClear(env);
+
+        ASSERTEX(env);
         
         jobject jmsg = (*env)->CallObjectMethod(env, ex, id_getmessage);
         jclass type_ex = (*env)->GetObjectClass(env, ex);
         jobject jtype = (*env)->CallObjectMethod(env, type_ex, id_classname);
+
+        ASSERTEX(env);
         
         const char* characters = jmsg ? (*env)->GetStringUTFChars(env, jmsg, 0) : 0;
         const char* type_chars = (*env)->GetStringUTFChars(env, jtype, 0);
@@ -632,6 +645,8 @@ static void expass(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) 
 
         (*env)->CallStaticVoidMethod(env, class_lua, id_exhandle, ex);
         
+        (*env)->PopLocalFrame(env, NULL);
+        
         if (jmsg) {
             luaL_error(state, "J: %s -> %s", stack_type_chars, stack_characters);
         }
@@ -641,8 +656,12 @@ static void expass(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapper) 
     }
 }
 
-// this is a (wrapped) function that handles _all_ C->Lua function calls
-int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
+// this is a (wrapped) function that handles _all_ Lua -> Java function calls
+// it's also wrapped into its own stack frame, so all local references will be
+// cleaned up after returning
+static int engine_handlecall_frame(engine_jfuncwrapper* wrapper, lua_State* state) {
+
+    ASSERTEX(wrapper->engine->runtime_env);
 
     // We check if the first argument is userdata, and
     // then check if that userdata is an interface
@@ -659,7 +678,7 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
     if (lua_isuserdata(state, 1)) {
         lua_getmetatable(state, 1);
         lua_pushstring(state, "__target");
-        lua_gettable(state, -2);
+        lua_rawget(state, -2);
         if (lua_toboolean(state, -1)) {
             lua_remove(state, 1);
         }
@@ -669,15 +688,17 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
     JNIEnv* env = wrapper->engine->runtime_env;
     engine_inst* inst = wrapper->engine;
     
-    uint8_t vargs = 0;
+    int vargs = 0;
     switch (wrapper->type) {
-        case ENGINE_JAVA_LAMBDA_FUNCTION:
-            vargs = (*env)->GetArrayLength(env, wrapper->data.lambda.class_array);
-            break;
-        case ENGINE_JAVA_REFLECT_FUNCTION:
-            vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
-            break;
+    case ENGINE_JAVA_LAMBDA_FUNCTION:
+        vargs = (*env)->GetArrayLength(env, wrapper->data.lambda.class_array);
+        break;
+    case ENGINE_JAVA_REFLECT_FUNCTION:
+        vargs = (*env)->CallIntMethod(env, wrapper->data.reflect.method, id_methodcount);
+        break;
     }
+    
+    ASSERTEX(wrapper->engine->runtime_env);
     
     // Lua doesn't know that it needs to match the function/method signature, so we can expect bad arguments
     // this is technically valid Lua code and errors shouldn't be thrown, but we'll still complain if debug
@@ -692,11 +713,15 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
         luaL_error(state, "C: not enough arguments (expected: %d, got: %d)", vargs, passed);
         return 0;
     }
+    
     // if the stack is corrupted, this is a good indicator
-    else if (passed < 0 || passed > 5000) {
+#if ENGINE_CDEBUG > 0
+    if (passed < 0 || passed > 5000) {
         printf("FATAL: corrupt Lua API stack\n");
         exit(EXIT_FAILURE);
     }
+#endif
+    
     // something should be done to truncate extra arguments, because we're
     // operating on the top of the stack
     lua_settop(state, (int) vargs); // truncate
@@ -715,6 +740,10 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
     
     // return value (in java)
     jobject ret = 0;
+    // argument array for reflection
+    jobjectArray arr = 0;
+
+    ASSERTEX(env);
     
     // You cannot magically pass varadic amounts between functions in C,
     // so this is a bit ugly.
@@ -797,18 +826,28 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
     // this has a lot of overhead, but we really don't have any other choice for reflected
     // functions.
     else if (wrapper->type == ENGINE_JAVA_REFLECT_FUNCTION) {
+        
         // Class[]
         jobject paramtypes = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodtypes);
+        
+        ASSERTEX(env);
+        
         // Object[]
-        jobjectArray arr = (*env)->NewObjectArray(env, vargs, class_object, 0);
+        arr = (*env)->NewObjectArray(env, vargs, class_object, 0);
+
+        ASSERTEX(env);
         
         for (t = 0; t < vargs; t++) {
             // get element type (Class)
             jobject element_type = (*env)->GetObjectArrayElement(env, paramtypes, t);
             // get corresponding ScriptValue
             jobject element = engine_wrap(env, v_args[t]);
+
+            ASSERTEX(env); /* it's a fatal error if we can't obtain the target argument types */
+            
             // translate to Object
-            jobject translated = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, element_type, element);
+            jobject translated = (*env)->CallStaticObjectMethod
+                (env, class_lua, id_translate, element_type, element);
     
             // pass exception to Lua, if any occurred during translation
             if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
@@ -817,7 +856,14 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
             
             // set index at Object[] array to element
             (*env)->SetObjectArrayElement(env, arr, t, translated);
+            
+            ASSERTEX(env);
+
+            (*env)->DeleteLocalRef(env, element_type);
+            (*env)->DeleteLocalRef(env, translated);
         }
+            
+        ASSERTEX(env);
         
         // call Method
         ret = (*env)->CallObjectMethod(env, wrapper->data.reflect.method, id_methodcall, wrapper->obj_inst, arr);
@@ -833,8 +879,9 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
         engine_releasevalue(env, v_args[t]);
     }
     
-    // pass exception to Lua, if any occurred
-    expass(env, state, wrapper);
+    // pass exception to Lua, if any occurred (this can jmp out)
+    // this also pops a reference frame, if an exception occurred
+    expass_pop(env, state, wrapper);
             
     // directly returned null, or no return value, just push nil
     if (!ret) {
@@ -868,6 +915,15 @@ int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
     return 1;
 }
 
+int engine_handlecall(engine_jfuncwrapper* wrapper, lua_State* state) {
+    // another binding, this is for pushing a JNI frame.
+    JNIEnv* env = wrapper->engine->runtime_env;
+    (*env)->PushLocalFrame(env, 128);
+    int ret = engine_handlecall_frame(wrapper, state);
+    (*env)->PopLocalFrame(env, NULL);
+    return ret;
+}
+
 // binding function for ffi
 void engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user_data) {
     *(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
@@ -885,6 +941,8 @@ engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass j
 // and then pushes it onto the lua stack.
 void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array) {
     
+    ASSERTEX(env);
+    
     // get class
     jclass jfunctype = (*env)->GetObjectClass(env, jfunc);
     
@@ -892,6 +950,9 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
     uint8_t ret, args;
     {
         engine_lambda_info info = engine_getlambdainfo(env, inst, jfunctype, class_array);
+        
+        ASSERTEX(env);
+        
         ret = info.ret;
         args = info.args;
     }
@@ -918,7 +979,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
     }
     
     jmethodID mid = method_resolve(env, jfunctype, "call", buf, handle);
-    void *func_binding = 0; // our function pointer
+    void* func_binding = 0; // our function pointer
     ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &func_binding); // ffi closure
     
     // this shouldn't happen
@@ -952,6 +1013,8 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
     wrapper->engine = inst;
     
     lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
+
+    (*env)->DeleteLocalRef(env, jfunctype);
 }
 
 // same idea as above, but with reflection types instead (Method). We also do a lookup in
@@ -959,8 +1022,12 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 // the lifetime of a lua VM/interpreter.
 void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
     
+    ASSERTEX(env);
+    
     // compute method id
     long id = (*env)->CallStaticLongMethod(env, class_lua, id_methodid, reflect_method);
+    
+    ASSERTEX(env);
     // search for reflect wrapper with equal id
     size_t t;
     for(t = 0; t < inst->wrappers_amt; t++) {
@@ -1040,6 +1107,9 @@ void engine_removefloating(engine_inst* inst, jobject reference) {
 
 // this is how we handle function calls from Java
 engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs) {
+            
+    ASSERTEX(env);
+            
     inst->runtime_env = env;
 
     if (!lua_isfunction(state, -nargs - 1) && !lua_iscfunction(state, -nargs - 1)) {
@@ -1048,6 +1118,10 @@ engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int 
         return 0;
     }
     
+    // A lot of things can happen in lua code, every time we jump from Java -> Lua,
+    // we need another reference frame for local references to be stored.
+    (*env)->PushLocalFrame(env, 128);
+    
     int err = 0;
     if (!(inst->killed))
         err = lua_pcall(state, nargs, 1, 0);
@@ -1055,6 +1129,11 @@ engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int 
         // clear values off stack, don't want to corrupt it even if the instance was killed
         lua_pop(state, nargs + 1);
     }
+
+    // pop the reference frame
+    (*env)->PopLocalFrame(env, NULL);
+
+    ASSERTEX(env);
     
     uint8_t abort = 1;
     switch (err) {

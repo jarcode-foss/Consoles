@@ -207,6 +207,8 @@ static void debug_validate_buffer(pair_map map, JNIEnv* env) {
         (*env)->DeleteLocalRef(env, c);
         // assert that the engine value pointed to is valid.
         assert(ENGINE_ASSERT_VALUE(m->native_pair[t]));
+
+        ASSERTEX(env);
     }
 }
 #endif // PAIR_MAP_DEBUG

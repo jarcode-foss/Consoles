@@ -465,32 +465,34 @@ public class Script {
 	// used in native code (don't touch the signature)
 	@SuppressWarnings("unused")
 	public static Method resolveMethod(Object object, String name) {
-		Type[] types = null;
 		Class<?> type = object.getClass();
-		if (type.getName().contains("_$")) { // concrete type
-			types = ((ParameterizedType) type.getGenericSuperclass()).getActualTypeArguments();
-			type = type.getSuperclass();
-		}
-		for (Method method : type.getMethods()) {
-			if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name)) {
-				if (types != null) {
-
+		while (type != Object.class) {
+			for (Method method : type.getMethods()) {
+				if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name)) {
+					return method;
 				}
-				return method;
 			}
+			type = type.getSuperclass();
 		}
 		return null;
 	}
 	// used in native code (don't touch the signature)
 	@SuppressWarnings("unused")
 	public static long methodId(Method method) {
-		int hash = method.hashCode();
-		Class<?>[] args = method.getParameterTypes();
-		int argmask = 0;
-		for (Class<?> arg : args) {
-			argmask = 37 * argmask + arg.hashCode();
+		//TODO: remove exception gaurd
+		try {
+			int hash = method.hashCode();
+			Class<?>[] args = method.getParameterTypes();
+			int argmask = 0;
+			for (Class<?> arg : args) {
+				argmask = 37 * argmask + arg.hashCode();
+			}
+			return (long) hash << 32 | argmask & 0xFFFFFFFFL;
 		}
-		return (long) hash << 32 | argmask & 0xFFFFFFFFL;
+		catch (NullPointerException e) {
+			System.out.println(method.getName() + ", " + method.getDeclaringClass());
+			throw e;
+		}
 	}
 
 	// This is called by engines to further handle exceptions after

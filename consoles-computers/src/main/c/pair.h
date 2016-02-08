@@ -36,7 +36,7 @@ Allocations to buffers used for java objects and userdata are kept using pthread
 #define PAIR_MAP_MISSING_DATUM 1
 #define PAIR_MAP_LOOKUP_FAILED 2
 
-#define PAIR_MAP_DEBUG 1
+#define PAIR_MAP_DEBUG 0
 
 typedef int pair_map; // this type is really just a key to lookup a datum
 

@@ -62,12 +62,20 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_pthread_1name(JNIEnv* env, jobject thi
     (*env)->ReleaseStringUTFChars(env, jname, characters);
 }
 
+/* Only called if debugging is enabled and a JNI exception is raised where it is not expected */
+void engine_fatal_exception(JNIEnv* env) {
+    
+    jthrowable ex = (*env)->ExceptionOccurred(env); // get exception
+    (*env)->ExceptionClear(env); // clear for continued use of JNI
 
-
-
-
-
-
-
-
-
+    // If the exception handler for joint has been setup, use it.
+    if (id_exhandle && class_lua) {
+        (*env)->CallStaticVoidMethod(env, class_lua, id_exhandle, ex);
+    }
+    else {
+        printf("C: SEVERE: encountered an unexpected java exception, not able call handler\n");
+    }
+    printf("C: SEVERE: unexpected java exception, exiting...\n");
+    
+    exit(EXIT_FAILURE); // exit immidiately, preventing anything else from happening so we can debug.
+}

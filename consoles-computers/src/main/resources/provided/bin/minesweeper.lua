@@ -108,6 +108,19 @@ local function start()
             local frame = screenFrame();
             -- background
             frame:fill(68)
+            -- define lambdas for this frame (optimization)
+            local covered = function(x, y)
+                frame:set(x, y, 91)
+            end
+            local coveredOutline = function(x, y)
+                frame:set(x, y, 87)
+            end
+            local revealed = function(x, y)
+                frame:set(x, y, 90)
+            end
+            local revealedOutline = function(x, y)
+                frame:set(x, y, 88)
+            end
             -- render cycle
             for i = 1,GAME_WIDTH do
                 for k = 1,GAME_HEIGHT do
@@ -116,19 +129,11 @@ local function start()
                     local ay = (BLOCK_HEIGHT * k) + V_MARGIN;
                     local s = blk:getState()
                     if (s == BLOCK.state("COVERED")) then
-                        iterate(ax, ay, function(x, y)
-                            frame:set(x, y, 91)
-                        end)
-                        outline(ax, ay, function(x, y)
-                            frame:set(x, y, 87)
-                        end)
+                        iterate(ax, ay, covered)
+                        outline(ax, ay, coveredOutline)
                     elseif (s == BLOCK.state("REVEALED")) then
-                        iterate(ax, ay, function(x, y)
-                            frame:set(x, y, 90)
-                        end)
-                        outline(ax, ay, function(x, y)
-                            frame:set(x, y, 88)
-                        end)
+                        iterate(ax, ay, revealed)
+                        outline(ax, ay, revealedOutline)
                         local count = blk:countAdj();
                         if (count > 0) then
                             local adj = "&1" .. count

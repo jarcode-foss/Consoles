@@ -57,13 +57,12 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
     if (!setup) {
         classreg(env, ENGINE_VALUE_CLASS, &value_type, handle);
         classreg(env, "java/lang/reflect/Array", &class_array, handle); // for generic array setting
-        value_constructor = (*env)->GetMethodID(env, value_type, "<init>", "()V");
-        CHECKEX(env, handle);
+        value_constructor = method_resolve(env, value_type, "<init>", "()V", handle);
         handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
-        id_newarray = (*env)->GetStaticMethodID(env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;");
-        CHECKEX(env, handle);
-        id_arrayset = (*env)->GetStaticMethodID(env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V");
-        CHECKEX(env, handle);
+        id_newarray = static_method_resolve
+            (env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;", handle);
+        id_arrayset = static_method_resolve
+            (env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V", handle);
         
         setup = 1;
     }
@@ -166,6 +165,9 @@ JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_release
 JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_copy
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
+    if (!value) {
+        return 0;
+    }
     engine_value* copy = engine_newvalue(env, value->inst);
     copy->type = value->type;
     switch (value->type) {
@@ -208,7 +210,10 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_copy
 JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_translateObj
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
-    if (value->type == ENGINE_JAVA_OBJECT) {
+    if (!value) {
+        return 0;
+    }
+    else if (value->type == ENGINE_JAVA_OBJECT) {
         return value->data.obj;
     }
     else {
@@ -517,18 +522,31 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tran
     }
     // get array component type
     jclass comptype = (*env)->CallObjectMethod(env, array_type, id_comptype);
+    
+    ASSERTEX(env);
+    
     // create array from type
     jobject array = (*env)->CallStaticObjectMethod(env, class_array, id_newarray, comptype,
         value->data.array.length);
+    
+    ASSERTEX(env);
+    
     size_t t;
     for (t = 0; t < value->data.array.length; t++) {
         // get engine_value element, and then get the java counterpart
         jobject wrapped_element = engine_wrap(env, value->data.array.values[t]);
         // call Lua.translate(type, value) to recursively translate and resolve values
-        jobject java_element = (*env)->CallStaticObjectMethod(env, class_lua, id_translate, comptype,
-            wrapped_element);
+        jobject java_element = (*env)->CallStaticObjectMethod(env, class_lua, id_translate,
+                                                              comptype, wrapped_element);
+        ASSERTEX(env);
+    
         // call Array.set(array, i, value) to set the value
         (*env)->CallStaticVoidMethod(env, class_array, id_arrayset, array, t, java_element);
+        
+        ASSERTEX(env);
+        
+        // cleanup element, important for large arrays otherwise we will overflow.
+        (*env)->DeleteLocalRef(env, java_element);
     }
     return array;
 }
@@ -574,6 +592,9 @@ JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_set
         }
         lua_State* state = this_value->data.state;
         engine_pushvalue(env, this_value->inst, state, value);
+
+        ASSERTEX(env);
+        
         // pops a value from the stack
         lua_setglobal(state, key->data.str);
         
@@ -652,8 +673,12 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_get
         // this function builds a new value (memory!)
         engine_value* retvalue = engine_popvalue(env, value->inst, state);
         if (engine_debug) {
-            printf("J->C: Indexed globals with value '%s', resulting type: %d\n", key->data.str, (int) retvalue->type);
+            printf("J->C: Indexed globals with value '%s', resulting type: %d\n",
+                   key->data.str, (int) retvalue->type);
         }
+
+        ASSERTEX(env);
+        
         return engine_wrap(env, retvalue);
     }
     else {
@@ -677,18 +702,21 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
         if (value->inst) {
             engine_inst* inst = value->inst;
             lua_State* state = inst->state;
-            
+
+            // get function registry
             lua_getglobal(state, FUNCTION_REGISTRY);
-            
+
+            // if it doesn't exist, make a new one
             if (lua_isnil(state, -1)) {
                 lua_pop(state, 1);
                 lua_newtable(state);
                 lua_pushvalue(state, -1); // copy
                 lua_setglobal(state, FUNCTION_REGISTRY);
             }
-            
+
+            // index and get lua function
             lua_pushinteger(state, value->data.func);
-            lua_gettable(state, -2);
+            lua_rawget(state, -2);
             
             if (lua_isnil(state, -1)) {
                 lua_pop(state, 2);
@@ -707,9 +735,12 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
                     engine_value* element = engine_unwrap(env, jvalue);
                     if (!element) continue;
                     engine_pushvalue(env, inst, state, element);
+                    
+                    ASSERTEX(env);
                 }
             }
             engine_value* ret = engine_call(env, inst, state, len);
+            
             return ret ? engine_wrap(env, ret) : 0;
         }
         else {
@@ -736,16 +767,25 @@ static inline jobject handlecall(JNIEnv* env, jobject this, jobjectArray arr) {
  */
 JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_call__
 (JNIEnv* env, jobject this) {
-    return handlecall(env, this, 0);
+    // we need lots of space for local references during calls
+    (*env)->PushLocalFrame(env, 128);
+    jobject ret = handlecall(env, this, 0);
+    (*env)->PopLocalFrame(env, ret);
+    return ret;
 }
 /*
  * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
  * Method:    call
  * Signature: ([Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;)Lca/jarcode/consoles/computer/interpreter/interfaces/ScriptValue;
  */
-JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_call___3Lca_jarcode_ascript_interfaces_ScriptValue_2
+JNIEXPORT jobject JNICALL
+Java_ca_jarcode_ascript_luanative_LuaNScriptValue_call___3Lca_jarcode_ascript_interfaces_ScriptValue_2
 (JNIEnv* env, jobject this, jobjectArray arr) {
-    return handlecall(env, this, arr);
+    // we need lots of space for local references during calls
+    (*env)->PushLocalFrame(env, 128);
+    jobject ret = handlecall(env, this, arr);
+    (*env)->PopLocalFrame(env, ret);
+    return ret;
 }
 /*
  * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue

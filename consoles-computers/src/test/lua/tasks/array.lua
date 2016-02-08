@@ -5,6 +5,6 @@ function dumptable(prefix, tbl)
 end
 
 return function()
-    dumptable(stringArray())
-    dumptable(objectArray())
+    dumptable("stringArray()", stringArray())
+    dumptable("objectArray()", objectArray())
 end

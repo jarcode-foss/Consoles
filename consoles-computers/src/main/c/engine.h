@@ -40,12 +40,16 @@
 
 #define ENGINE_CDEBUG 1
 
-// used to test the alignment of structures in maps/buffers
+// debugging macros
 #if ENGINE_CDEBUG > 0
+// used to test the alignment of structures in maps/buffers
 #define ENGINE_DEBUG_SIGNATURE 800328094372526
 #define ENGINE_ASSERT_VALUE(v) ((engine_value*) v)->DEBUG_SIGNATURE == ENGINE_DEBUG_SIGNATURE
+// will abort if an exception is unhandled
+#define ASSERTEX(e) do { if ((*e)->ExceptionCheck(e) == JNI_TRUE) { engine_fatal_exception(e); } } while (0)
 #else
 #define ENGINE_ASSERT_VALUE(v) 1;
+#define ASSERTEX(e) do {} while (0)
 #endif // ENGINE_CDEBUG
 
 // primitives
@@ -114,7 +118,6 @@
 // used for translating arguments in function calls
 static jobject translate_java(JNIEnv* env, jobject type, jobject script_value, jmp_buf buf);
 #define TOJAVA(e, v, a, i, b) translate_java(e, (*e)->GetObjectArrayElement(e, a, i), engine_wrap(env, v[i]), b)
-        
 
 // class 'Class'
 extern jclass class_type;
@@ -349,6 +352,8 @@ extern engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* stat
 extern jint throw(JNIEnv* env, const char* message);
 
 extern void engine_abort(void);
+
+extern void engine_fatal_exception(JNIEnv* env);
 
 // utils
 

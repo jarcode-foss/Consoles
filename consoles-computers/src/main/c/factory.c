@@ -99,6 +99,9 @@ void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject
 
 // boring mapping
 engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) {
+    
+    ASSERTEX(env);
+    
     engine_value* v = engine_newvalue(env, inst);
     if (lua_isnumber(state, -1)) {
         v->type = ENGINE_FLOATING;
@@ -168,12 +171,16 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
         
         // if this happens, that means there was like a dozen tables nested in each other.
         // return null if the user is being retarded
-        if (lua_gettop(state) == 14) {
+        if (lua_gettop(state) >= 32) {
+            if (engine_debug) {
+                printf("C: lua API stack too large! (%d)", lua_gettop(state));
+            }
             lua_pop(state, 1);
             return v;
         }
         
         v->type = ENGINE_ARRAY;
+        // we're effectively calculating the table length like the # operator does
         unsigned short idx = 1;
         while (1) {
             if (idx == USHRT_MAX - 1) break;
@@ -186,19 +193,20 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
             lua_pop(state, 1);
             idx++;
         }
-        v->data.array.length = idx - 1;
-        v->data.array.values = (idx - 1) ? malloc(sizeof(engine_value*) * (idx - 1)) : 0;
+        --idx; /* subtract once, since the last value had to be nil to break */
+        v->data.array.length = idx;
+        v->data.array.values = idx ? malloc(sizeof(engine_value*) * idx) : 0;
         if (engine_debug) {
             printf("C: passing lua table of size %lu", (unsigned long) v->data.array.length);
         }
         unsigned short i;
-        for (i = 1; i < idx; i++) {
+        for (i = 1; i <= idx; i++) {
             // push key
             lua_pushinteger(state, i);
             // swap key with value (of some sort)
             lua_rawget(state, -2);
             // recurrrrrssssiiiiioooon (and popping the value)
-            v->data.array.values[i] = engine_popvalue(env, inst, state);
+            v->data.array.values[i - 1] = engine_popvalue(env, inst, state);
         }
         lua_pop(state, 1);
     }
@@ -206,6 +214,9 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
 }
 
 void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value) {
+    
+    ASSERTEX(env);
+    
     if (value->type == ENGINE_BOOLEAN) {
         lua_pushboolean(state, (int) value->data.i);
     }
@@ -221,7 +232,10 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
     else if (value->type == ENGINE_ARRAY) {
         
         // overflow (well, not really, but it shouldn't be getting this big)
-        if (lua_gettop(state) == LUA_MINSTACK - 1) {
+        if (lua_gettop(state) >= 32) {
+            if (engine_debug) {
+                printf("C: lua API stack too large! (%d)", lua_gettop(state));
+            }
             lua_pushnil(state);
             return;
         }
@@ -229,9 +243,9 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
         // create and push new table
         lua_newtable(state);
         unsigned short i;
-        for (i = 0; i < value->data.array.length; i++) {
+        for (i = 0; i < value->data.array.length; ++i) {
             // push key
-            lua_pushinteger(state, i);
+            lua_pushinteger(state, i + 1);
             // push value
             if (value->data.array.values[i]) {
                 engine_pushvalue(env, inst, state, value->data.array.values[i]);
@@ -240,20 +254,18 @@ void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_v
                 lua_pushnil(state);
             }
             // set table entry
-            lua_settable(state, -3);
-            // pop key and value
-            lua_pop(state, 2);
+            lua_rawset(state, -3);
         }
     }
     else if (value->type == ENGINE_JAVA_OBJECT) {
         engine_pushobject(env, inst, state, value->data.obj);
     }
     else if (value->type == ENGINE_LUA_GLOBALS) {
-        // stub
+        // stub, just use _G instead.
         lua_pushnil(state);
     }
     else if (value->type == ENGINE_LUA_FUNCTION) {
-        // stub
+        // stub, could lookup into the registry but it makes no sense to send a function back to lua
         lua_pushnil(state);
     }
     else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
