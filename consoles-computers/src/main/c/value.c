@@ -11,7 +11,6 @@
 #include <LuaNScriptValue.h>
 
 #include "engine.h"
-#include "pair.h"
 
 /*
  * 
@@ -32,6 +31,8 @@ static jmethodID value_constructor;
 static jclass class_array;
 static jmethodID id_newarray;
 static jmethodID id_arrayset;
+static jmethodID id_release;
+static jfieldID id_address;
 
 static uint8_t setup = 0;
 
@@ -43,9 +44,9 @@ static inline void handle_null_const(jmethodID v, const char* message) {
 }
 
 static inline engine_value* findnative(JNIEnv* env, jobject ref) {
-    engine_value* value = pair_map_native(ENGINE_SCRIPT_VALUE_ID, ref, env);
+    jlong value = (*env)->GetLongField(env, ref, id_address);
     if (value) {
-        return value;
+        return (engine_value*) (intptr_t) value;
     }
     else {
         throw(env, "C: could not find internal value");
@@ -63,6 +64,8 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
             (env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;", handle);
         id_arrayset = static_method_resolve
             (env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V", handle);
+        id_release = method_resolve(env, value_type, "release", "()V", handle);
+        id_address = field_resolve(env, value_type, "__address", "J", handle);
         
         setup = 1;
     }
@@ -84,7 +87,11 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
     v->inst = 0;
     
     jobject obj = (*env)->NewObject(env, value_type, value_constructor);
-    pair_map_append(ENGINE_SCRIPT_VALUE_ID, obj, v, env);
+    
+    ASSERTEX(env);
+    
+    v->ref = (*env)->NewGlobalRef(env, obj);
+    (*env)->SetLongField(env, obj, id_address, (jlong) (intptr_t) v);
     (*env)->DeleteLocalRef(env, obj);
     return v;
 }
@@ -118,24 +125,12 @@ static void valuefree(JNIEnv* env, engine_value* value) {
     else if (value->type == ENGINE_JAVA_OBJECT) {
         (*env)->DeleteGlobalRef(env, value->data.obj);
     }
+    (*env)->DeleteGlobalRef(env, value->ref);
     free(value);
 }
 
 void engine_releasevalue(JNIEnv* env, engine_value* value) {
-    pair_map_rm_native(ENGINE_SCRIPT_VALUE_ID, value, env);
-    valuefree(env, value);
-}
-
-static int valueparse(void* ptr, void* userdata) {
-    if (((engine_value*) ptr)->inst && ((engine_value*) ptr)->inst == userdata) {
-        valuefree(((engine_value*) ptr)->inst->runtime_env, (engine_value*) ptr);
-        return 1;
-    }
-    else return 0;
-}
-
-void engine_clearvalues(JNIEnv* env, engine_inst* inst) {
-    pair_map_rm_context(ENGINE_SCRIPT_VALUE_ID, &valueparse, inst, env);
+    (*env)->CallVoidMethod(env, value->ref, id_release, (jlong) (intptr_t) value);
 }
 
 inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
@@ -143,18 +138,32 @@ inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
 }
 
 inline jobject engine_wrap(JNIEnv* env, engine_value* value) {
-    return pair_map_java(ENGINE_SCRIPT_VALUE_ID, value);
+    return value->ref;
 }
 
 /*
  * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
- * Method:    release
- * Signature: ()V
+ * Method:    instAddress
+ * Signature: ()J
  */
-JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_release
+JNIEXPORT jlong JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_instAddress
 (JNIEnv* env, jobject this) {
     engine_value* value = findnative(env, this);
-    if (value) engine_releasevalue(env, value);
+    if (value) return (jlong) (intptr_t) value->inst;
+    else return 0;
+}
+
+/*
+ * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
+ * Method:    release0
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_release0
+(JNIEnv* env, jobject this) {
+    jlong value = (*env)->GetLongField(env, this, id_address);
+    if (value) {
+        valuefree(env, (engine_value*) (intptr_t) value);
+    }
 }
 
 /*

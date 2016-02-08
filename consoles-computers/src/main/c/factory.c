@@ -13,7 +13,6 @@
 #include <LuaNScriptValue.h>
 
 #include "engine.h"
-#include "pair.h"
 
 // this one is really complicated
 // instead of using the standard registry, we use our own table (so we can index things with numbers)
@@ -52,7 +51,7 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
     //  -2: __function table
     //  -3: copy of original function
     if (lua_isnil(state, -1)) { // no function mapped
-        // pop the nil value
+        // pop the nil valuexs
         lua_pop(state, 1);
         // (we are now back to then func registry (-1) and then the original function (-2) on top)
         // let's swap that

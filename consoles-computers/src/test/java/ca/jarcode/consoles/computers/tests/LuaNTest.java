@@ -14,7 +14,6 @@ public class LuaNTest {
 		task.loadAndCallChunk("tests");
 		task.loadAndCallTests(true);
 		task.cleanup();
-		task.dumpValues();
 
 		task = new NativeLayerTask();
 		task.init(true, false);
@@ -39,7 +38,6 @@ public class LuaNTest {
 				threadTask.loadAndCallChunk("tests");
 				threadTask.loadAndCallTests(true);
 				threadTask.cleanup();
-				threadTask.dumpValues();
 				threadTask.cleanupThreadContext();
 			}
 			catch (Throwable e) {

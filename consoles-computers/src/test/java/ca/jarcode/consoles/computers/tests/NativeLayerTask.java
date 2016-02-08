@@ -257,22 +257,6 @@ public class NativeLayerTask {
 		}
 	}
 
-	public void dumpValues() {
-		long s = LuaNEngine.ENGINE_INTERFACE.contextsize();
-		ScriptValue[] arr = new ScriptValue[(int) s];
-
-		for (long t = 0; t < s && t < arr.length; t++) {
-			arr[(int) t] = LuaNEngine.ENGINE_INTERFACE.getvalue(t);
-		}
-
-		String dump = Arrays.asList(arr).stream()
-				.map(this::valueString)
-				.collect(Collectors.joining(", "));
-
-		stdout.println("Remaining values:");
-		stdout.println(dump);
-	}
-
 	public void cleanupThreadContext() {
 		globals.cleanupThreadContext();
 	}

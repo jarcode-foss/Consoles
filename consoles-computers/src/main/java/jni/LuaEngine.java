@@ -19,6 +19,4 @@ public class LuaEngine implements LuaNInterface {
 	public native void kill(long ptr);
 	public native void interruptreset(long ptr);
 	public native void blacklist(long ptr);
-	public native long contextsize();
-	public native ScriptValue getvalue(long idx);
 }

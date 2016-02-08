@@ -155,8 +155,14 @@ public class LuaNEngine implements ScriptEngine {
 	@Override
 	public ScriptValue newInstance(FuncPool pool, BooleanSupplier terminated, InputStream stdin,
 	                               OutputStream stdout, long heap) {
+		
+		if (LuaNScriptValue.TRACK_INSTANCES && LuaNScriptValue.TRACKED.get() == null) {
+			LuaNScriptValue.TRACKED.set(new HashMap<>());
+		}
+		
 		long ptr; // this is actually a pointer (sue me)
 		ptr = L.setupinst(IMPL.val, heap, Joint.INTERRUPT_CHECK_INTERVAL);
+		
 		ScriptValue globals = L.wrapglobals(ptr);
 		if (globals == null || globals.isNull()) {
 			throw new LuaNError("recieved null globals");
@@ -184,7 +190,7 @@ public class LuaNEngine implements ScriptEngine {
 		inst.threadNameRestore = () -> current.setName(name);
 		current.setName("LuaN Thread");
 		L.pthread_name("LuaN");
-
+		
 		return globals;
 	}
 
@@ -212,6 +218,14 @@ public class LuaNEngine implements ScriptEngine {
 	public void close(ScriptValue globals) {
 		if (globals == null) throw new IllegalArgumentException();
 		LuaNInstance inst = inst(globals);
+		
+		if (LuaNScriptValue.TRACK_INSTANCES) {
+			int count = LuaNScriptValue.releaseRemainingContextValues(inst.ptr);
+			if (count > 0) {
+				System.out.printf("Collected %d hanging script values - possible memory leak!\n", count);
+			}
+		}
+		
 		if (inst.threadNameRestore != null)
 			inst.threadNameRestore.run();
 		L.pthread_name("java");
@@ -220,15 +234,19 @@ public class LuaNEngine implements ScriptEngine {
 		L.destroyinst(ptr);
 	}
 
-	// This is a safegaurd for Java calling thread_end in LuaN so it doesn't call it twice
-	// in the same context. If it is called twice, LuaN will read into garbage memory.
+	// Cleanup thread-specific data, called when a thread ends that has been used for LuaN
+	
 	@Override
 	public synchronized void cleanupThreadContext() {
 		Thread current = Thread.currentThread();
 		if (contextDestroyedThreads.contains(current))
 			throw new IllegalStateException("context already destroyed for this thread");
 		else {
-			L.thread_end();
+			L.thread_end(); /* native hook */
+			
+			if (LuaNScriptValue.TRACK_INSTANCES) {
+				LuaNScriptValue.TRACKED.destroyContext();
+			}
 			contextDestroyedThreads.add(current);
 			Iterator<Thread> it = contextDestroyedThreads.iterator();
 			while (it.hasNext()) {

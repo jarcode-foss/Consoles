@@ -41,7 +41,7 @@
 #define ENGINE_CDEBUG 1
 
 // debugging macros
-#if ENGINE_CDEBUG > 0
+#if ENGINE_CDEBUG >= 1
 // used to test the alignment of structures in maps/buffers
 #define ENGINE_DEBUG_SIGNATURE 800328094372526
 #define ENGINE_ASSERT_VALUE(v) ((engine_value*) v)->DEBUG_SIGNATURE == ENGINE_DEBUG_SIGNATURE
@@ -89,14 +89,11 @@
 #define ENGINE_ERR_CLASS "ca/jarcode/ascript/luanative/LuaNError"
 #define ENGINE_VALUE_CLASS "ca/jarcode/ascript/luanative/LuaNScriptValue"
 #define ENGINE_VALUE_INTERFACE "ca/jarcode/ascript/interfaces/ScriptValue"
+#define ENGINE_THREAD_DATUM_CLASS "ca/jarcode/ascript/luanative/LuaNThreadDatum"
 
 // we call all of our userdata objects an 'interface', since they work as a way to lookup methods
 // from a java object.
 #define ENGINE_USERDATA_TYPE "interface"
-
-// We use special bidirectional maps to provide userdatums attached to java objects
-// this key is used to index collections with our userdatums
-#define ENGINE_SCRIPT_VALUE_ID 675080323
 
 #define IS_ENGINE_FUNCTION(t) t == ENGINE_JAVA_LAMBDA_FUNCTION || t == ENGINE_JAVA_REFLECT_FUNCTION || t == ENGINE_LUA_FUNCTION
 #define IS_NUMBER(t) t == ENGINE_BOOLEAN || t == ENGINE_FLOATING || t == ENGINE_INTEGRAL
@@ -167,6 +164,13 @@ static inline jobject translate_java
 static inline jmethodID method_resolve
 (JNIEnv* env, jclass type, const char* method, const char* signature, jmp_buf buf) {
     jmethodID ret = (*env)->GetMethodID(env, type, method, signature);
+    CHECKEX(env, buf);
+    return ret;
+}
+
+static inline jfieldID field_resolve
+(JNIEnv* env, jclass type, const char* field, const char* signature, jmp_buf buf) {
+    jfieldID ret = (*env)->GetFieldID(env, type, field, signature);
     CHECKEX(env, buf);
     return ret;
 }
@@ -284,18 +288,18 @@ typedef struct engine_value_ engine_value;
  * engine data, used for easy sizeof's and a member of the engine_value struct
  */
 typedef union engine_data_ {
-    long i; // int, long, short, boolean, or byte
-    double d; // float or double
-    char* str; // null-terminated string
-    jobject obj; // object (userdata)
-    engine_lfunc lfunc; // java function (lambda)
-    engine_luafunc func; // lua function
-    engine_rfunc rfunc; // reflected java function
-    struct { // array
-        engine_value** values; // pointer to block of memory containing pointers to engine values
-        size_t length; // length of memory block
+    long i;               // int, long, short, boolean, or byte
+    double d;             // float or double
+    char* str;            // null-terminated string
+    jobject obj;          // object (userdata)
+    engine_lfunc lfunc;   // java function (lambda)
+    engine_luafunc func;  // lua function
+    engine_rfunc rfunc;   // reflected java function
+    struct {              // array
+        engine_value** values;   // pointer to block of memory containing pointers to engine values
+        size_t length;           // length of memory block
     } array;
-    lua_State* state; // pointer to pointer of lua_State at runtime
+    lua_State* state;     // pointer to pointer of lua_State at runtime
 } engine_data;
 
 /*
@@ -307,8 +311,9 @@ struct engine_value_ {
 #if ENGINE_CDEBUG > 0
     uint64_t DEBUG_SIGNATURE;
 #endif // ENGINE_CDEBUG
-    engine_data data; // data
-    uint8_t type; // type of value
+    engine_data data;    // data
+    uint8_t type;        // type of value
+    jobject ref;         // global reference to the script value
     
     // engine instance, we need this to parse and clean the value stack
     // if this value is null, we assume that this is a shared value (to be used across VMs)
@@ -317,14 +322,13 @@ struct engine_value_ {
 
 // sets up method ids and class references
 extern void setup_value(JNIEnv* env, jmp_buf handle);
+extern void thread_datum_init(JNIEnv* env, jmp_buf handle);
 
 // create engine value
 extern engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
 extern engine_value* engine_newsharedvalue(JNIEnv* env);
 
 extern void engine_releasevalue(JNIEnv* env, engine_value* value);
-
-extern void engine_clearvalues(JNIEnv* env, engine_inst* inst);
 // unwraps the java script value to C engine_value
 // NOTHING IS ALLOCATED, it just looks up a pair and finds an existing allocation to the value
 extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);

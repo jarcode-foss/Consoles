@@ -20,7 +20,6 @@
 
 #include "engine.h"
 #include "lua_utils.h"
-#include "pair.h"
 
 // definitions
 jclass class_type = 0;
@@ -91,10 +90,6 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
     for (t = 0; t < inst->floating_objects_amt; t++) {
         (*env)->DeleteGlobalRef(env, inst->floating_objects[t]);
     }
-    
-    // this purges the value mappings for any values (attached to this instance) that
-    // have not already been released
-    engine_clearvalues(env, inst);
     
     // free wrapper stack
     if (inst->wrappers) {
@@ -365,6 +360,7 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
         setup_closures();
         setup_classes(env, reg_handle);
         setup_value(env, reg_handle);
+        thread_datum_init(env, reg_handle);
 
         ASSERTEX(env);
         
@@ -374,8 +370,6 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
 
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
 (JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
-
-    pair_map_context_init(ENGINE_SCRIPT_VALUE_ID);
     
     engine_inst* instance = malloc(sizeof(engine_inst));
     memset(instance, 0, sizeof(engine_inst));
@@ -566,12 +560,14 @@ JNIEXPORT jint JNICALL Java_jni_LuaEngine_destroyinst(JNIEnv* env, jobject this,
     return 0;
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, jint mode) {
+JNIEXPORT void JNICALL
+Java_jni_LuaEngine_setdebug(JNIEnv* env, jobject this, jint mode) {
     engine_debug = mode;
     setvbuf(stdout, NULL, _IONBF, 0); /* Output buffering is annoying when it screws up message order */
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_interruptreset(JNIEnv* env, jobject this, jlong ptr) {
+JNIEXPORT void JNICALL
+Java_jni_LuaEngine_interruptreset(JNIEnv* env, jobject this, jlong ptr) {
     engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
     
     struct timeval last;
@@ -579,25 +575,20 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_interruptreset(JNIEnv* env, jobject th
     inst->last_interrupt = (unsigned long) (last.tv_usec / 1000U) + (last.tv_sec * 1000U);
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, jint suggested_maxtime) {
+JNIEXPORT void JNICALL
+Java_jni_LuaEngine_setmaxtime(JNIEnv* env, jobject this, jint suggested_maxtime) {
     maxtime = suggested_maxtime;
 }
 
-JNIEXPORT void JNICALL Java_jni_LuaEngine_blacklist(JNIEnv* env, jobject this, jlong ptr) {
+JNIEXPORT void JNICALL
+Java_jni_LuaEngine_blacklist(JNIEnv* env, jobject this, jlong ptr) {
     engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
     util_blacklist(inst->state);
 }
 
-JNIEXPORT jobject JNICALL Java_jni_LuaEngine_getvalue(JNIEnv* env, jobject this, jlong idx) {
-    return pair_map_index_java(ENGINE_SCRIPT_VALUE_ID, (size_t) idx);
-}
-
-JNIEXPORT jlong JNICALL Java_jni_LuaEngine_contextsize(JNIEnv* env, jobject this) {
-    return pair_map_context_size(ENGINE_SCRIPT_VALUE_ID);
-}
-
-JNIEXPORT void JNICALL Java_jni_LuaEngine_thread_1end(JNIEnv* env, jobject this) {
-    pair_map_context_destroy(PCONTEXT_NOCHECK);
+JNIEXPORT void JNICALL
+Java_jni_LuaEngine_thread_1end(JNIEnv* env, jobject this) {
+    // This doesn't do anything anymore, keeping it for other cleanup operations.
 }
 
 JNIEXPORT jobject JNICALL Java_jni_LuaEngine_wrapglobals(JNIEnv* env, jobject this, jlong ptr) {
