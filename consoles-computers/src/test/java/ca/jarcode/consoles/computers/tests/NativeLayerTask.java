@@ -170,8 +170,14 @@ public class NativeLayerTask {
 			return "str: '" + value + "'";
 		else if (value.canTranslateDouble())
 			return Double.toString(value.translateDouble());
+		else if (value.canTranslateLong())
+			return Long.toString(value.translateLong());
 		else if (value.canTranslateArray())
 			return "table";
+		else if (value.canTranslateBoolean())
+			return "boolean: " + value.translateBoolean();
+		else if (value.canTranslateObj())
+			return "object: " + value.translateObj();
 		else return "?";
 	}
 

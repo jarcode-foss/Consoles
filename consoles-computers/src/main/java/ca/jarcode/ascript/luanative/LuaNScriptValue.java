@@ -4,6 +4,7 @@ import ca.jarcode.ascript.interfaces.ScriptFunction;
 import ca.jarcode.ascript.interfaces.ScriptValue;
 
 import java.util.*;
+import java.util.stream.*;
 
 public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 
@@ -60,13 +61,15 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	  can obtain tracked engine values that have not been released. A null
 	  address (0) will return all values that are not associated with an
 	  engine.
+	  
+	  This only returns values for the current thread.
 	*/
 	public static LuaNScriptValue[] remainingContextValues(long address) {
 		if (TRACK_INSTANCES) {
 			HashMap<Long, LuaNScriptValue> map = TRACKED.get();
-			return map.values()
+			return map.values().stream()
 				.filter((value) -> value.instAddress() == address)
-				.toArray(new LuaNScriptValue[map.size()]);
+				.toArray(LuaNScriptValue[]::new);
 		}
 		return null;
 	}

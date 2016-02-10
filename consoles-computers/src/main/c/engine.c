@@ -84,26 +84,12 @@ void engine_close(JNIEnv* env, engine_inst* inst) {
         freewrapper(inst, env, inst->wrappers[t]);
     }
     
-    // Free all floating java global references. These are mainly
-    // used by lua userdatums that 'float' around in the lua VM
-    // and have an undefined lifecycle
-    for (t = 0; t < inst->floating_objects_amt; t++) {
-        (*env)->DeleteGlobalRef(env, inst->floating_objects[t]);
-    }
-    
     // free wrapper stack
     if (inst->wrappers) {
         free(inst->wrappers);
         inst->wrappers = 0;
     }
     inst->wrappers_amt = 0;
-    
-    // free floating object stack
-    if (inst->floating_objects) {
-        free(inst->floating_objects);
-        inst->floating_objects = 0;
-    }
-    inst->floating_objects_amt = 0;
     
     // free closure used for hook function
     ffi_closure_free(inst->closure);
@@ -316,7 +302,7 @@ int engine_handleobjcall(lua_State* state) {
     jobject obj = d->obj;
     JNIEnv* env = d->engine->runtime_env;
     if (!env) {
-        luaL_error(state, "C: inernal error: bad JNI environment");
+        luaL_error(state, "C: internal error: bad JNI environment");
         return 0;
     }
     else if (!obj) {
@@ -337,15 +323,18 @@ int engine_handleobjcall(lua_State* state) {
     ASSERTEX(env);
     
     jobject method = (*env)->CallStaticObjectMethod(env, class_lua, id_methodresolve, obj, jstr);
+    (*env)->DeleteLocalRef(env, jstr);
+    
+    ASSERTEX(env);
+    
     if (method) {
         engine_pushreflect(env, d->engine, method, obj);
+        (*env)->DeleteLocalRef(env, method);
     }
     else {
         luaL_error(state, "C: could not resolve method");
         ret = 0;
     }
-    (*env)->DeleteLocalRef(env, method);
-    (*env)->DeleteLocalRef(env, jstr);
     return ret;
 }
 
@@ -421,13 +410,19 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
     // attach our function to handle generic calls into an object
     lua_pushcfunction(state, &engine_handleobjcall);
     // set key and value
-    lua_settable(state, -3);
+    lua_rawset(state, -3);
     // push unique __target value, we use this to identify our userdata from others.
     lua_pushstring(state, "__target");
     // push some value
     lua_pushboolean(state, 1);
     // set key and value
-    lua_settable(state, -3);
+    lua_rawset(state, -3);
+    // __gc method for java object references
+    lua_pushstring(state, "__gc");
+    // release function, this is also exposed to lua
+    lua_pushcfunction(state, &engine_releaseobj);
+    // set
+    lua_rawset(state, -3);
     // pop metatable off the stack
     lua_pop(state, 1);
     
@@ -883,6 +878,9 @@ static int engine_handlecall_frame(engine_jfuncwrapper* wrapper, lua_State* stat
     // call back into java to map the java value to our factory, and then spit out
     // the ScriptValue [ Lua.translateToScriptValue(Object) ]
     jobject wrapped = (*env)->CallStaticObjectMethod(env, class_lua, id_translatevalue, ret);
+        
+    // release local reference to the engine_value* from the java side.
+    (*env)->DeleteLocalRef(env, ret);
     
     // unwrap and push
     
@@ -892,6 +890,7 @@ static int engine_handlecall_frame(engine_jfuncwrapper* wrapper, lua_State* stat
     }
     else {
         engine_value* v = engine_unwrap(env, wrapped);
+        
         // if there is no mapped value, something went wrong (premature release?), just push nil
         if (!v) {
             lua_pushnil(state);
@@ -920,12 +919,13 @@ void engine_handlecall_binding(ffi_cif* cif, void* ret, void* args[], void* user
     *(ffi_arg*) ret = engine_handlecall((engine_jfuncwrapper*) user_data, *(lua_State**) args[0]);
 }
 
-engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype, jobject class_array) {
+void engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype,
+                          jobject class_array, engine_lambda_info* info) {
+    
     jfieldID fid_return = (*env)->GetStaticFieldID(env, jfunctype, "C_RETURN", "I");
     jint ret = (*env)->GetStaticIntField(env, jfunctype, fid_return);
     jint args = (*env)->GetArrayLength( env, class_array);
-    engine_lambda_info info = {.ret = ret, .args = args};
-    return info;
+    *info = (engine_lambda_info) {.ret = ret, .args = args};
 }
 
 // magic to turn Java lambda function wrapper (NoArgFunc, TwoArgVoidFunc, etc) into a C function
@@ -940,7 +940,8 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
     // obtain func (lambda) info
     uint8_t ret, args;
     {
-        engine_lambda_info info = engine_getlambdainfo(env, inst, jfunctype, class_array);
+        engine_lambda_info info;
+        engine_getlambdainfo(env, inst, jfunctype, class_array, &info);
         
         ASSERTEX(env);
         
@@ -1055,45 +1056,9 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
     
     lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
     
-    
     if (engine_debug) {
         printf("C: wrapped java reflect function (id: %ld, ptr: %p)\n", id, func_binding);
     }
-}
-
-void engine_addfloating(engine_inst* inst, jobject reference) {
-    if (inst->floating_objects_amt == 0) {
-        inst->floating_objects = malloc(sizeof(jobject*));
-    }
-    else {
-        inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt + 1) * sizeof(jobject*));
-    }
-    inst->floating_objects[inst->floating_objects_amt] = reference;
-    inst->floating_objects_amt++;
-}
-
-void engine_removefloating(engine_inst* inst, jobject reference) {
-    if (inst->floating_objects_amt == 0) return;
-    if (inst->floating_objects_amt == 1) {
-        free(inst->floating_objects);
-    }
-    else {
-        uint8_t valid = 0;
-        size_t t;
-        for (t = 0; t < inst->floating_objects_amt; t++) {
-            if (reference == inst->floating_objects[t]) {
-                valid = 1;
-                break;
-            }
-        }
-        if (!valid) return;
-        if (t != inst->floating_objects_amt - 1) {
-            jobject* ptr = &(inst->floating_objects[t]); // pointer to element t
-            memmove(ptr, ptr + 1, (inst->floating_objects_amt - (t + 1)) * sizeof(void*));
-        }
-        inst->floating_objects = realloc(inst->floating_objects, (inst->floating_objects_amt - 1) * sizeof(void*));
-    }
-    inst->floating_objects_amt--;
 }
 
 // this is how we handle function calls from Java

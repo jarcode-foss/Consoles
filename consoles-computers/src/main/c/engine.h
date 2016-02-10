@@ -38,7 +38,7 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
-#define ENGINE_CDEBUG 1
+#define ENGINE_CDEBUG 0
 
 // debugging macros
 #if ENGINE_CDEBUG >= 1
@@ -233,11 +233,6 @@ struct engine_inst_ {
     // this is used for function wrappers that need to find the environment they are running in
     JNIEnv* runtime_env;
     
-    // this is used, mainly by userdatums passed to lua, to keep track of objects
-    // that still need their global references deleted (these are copies of those references)
-    jobject* floating_objects;
-    size_t floating_objects_amt;
-    
     // this is the ffi closure used for the hook function
     ffi_closure* closure;
     
@@ -335,7 +330,8 @@ extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);
 // same thing, just in reverse
 extern jobject engine_wrap(JNIEnv* env, engine_value* value);
 // get info from lambda function class
-extern engine_lambda_info engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype, jobject class_array);
+extern void engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype,
+                                 jobject class_array, engine_lambda_info* buf);
 
 // wrap lua value to script value
 // this operates on the value on the top of the lua stack, popping it after
@@ -344,9 +340,6 @@ extern void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, e
 // pushes a lambda onto the stack as a wrapped C function
 extern void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
 extern void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
-
-extern void engine_addfloating(engine_inst* inst, jobject reference);
-extern void engine_removefloating(engine_inst* inst, jobject reference);
 
 extern void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
 extern void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj);

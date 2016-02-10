@@ -9,7 +9,7 @@ return function()
     log("foo:foo() = " .. foo:foo())
     log("foo:bar(2, 10) = " .. foo:bar(2, 10))
     log("releasing object")
-    if foo.release == nill then
+    if foo.release == nil then
         error("release function not available")
     end
     foo:release()

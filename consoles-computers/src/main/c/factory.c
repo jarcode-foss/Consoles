@@ -87,8 +87,6 @@ void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject
     userdata->obj = (*env)->NewGlobalRef(env, obj);
     userdata->engine = inst;
     userdata->released = 0;
-    // register floating reference
-    engine_addfloating(inst, userdata->obj);
     // get our special metatable
     luaL_getmetatable(state, ENGINE_USERDATA_TYPE);
     // set metatable to our userdatum

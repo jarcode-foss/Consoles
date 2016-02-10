@@ -466,7 +466,7 @@ public class Script {
 	@SuppressWarnings("unused")
 	public static Method resolveMethod(Object object, String name) {
 		Class<?> type = object.getClass();
-		while (type != Object.class) {
+		while (type != null && type != Object.class) {
 			for (Method method : type.getMethods()) {
 				if (!Modifier.isStatic(method.getModifiers()) && method.getName().equals(name)) {
 					return method;
