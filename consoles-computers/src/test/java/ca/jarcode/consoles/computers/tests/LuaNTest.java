@@ -4,6 +4,10 @@ import ca.jarcode.ascript.luanative.LuaNEngine;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.*;
+import java.util.*;
+
+import ca.jarcode.ascript.luanative.*;
 
 public class LuaNTest {
 	@Test
@@ -13,6 +17,16 @@ public class LuaNTest {
 		task.init(false, true);
 		task.loadAndCallChunk("tests");
 		task.loadAndCallTests(true);
+		if (LuaNScriptValue.TRACK_INSTANCES) {
+			String list = Arrays.asList(LuaNScriptValue.remainingContextValues(0)).stream()
+				.map((value) -> NativeLayerTask.valueString(value))
+				.collect(Collectors.joining(", "));
+			System.out.println("unmanaged values:\n " + list);
+			list = Arrays.asList(LuaNScriptValue.remainingContextValues(task.getEngineAddress())).stream()
+				.map((value) -> NativeLayerTask.valueString(value))
+				.collect(Collectors.joining(", "));
+			System.out.printf("instance values (%x):\n " + list + "\n", task.getEngineAddress());
+		}
 		task.cleanup();
 
 		task = new NativeLayerTask();

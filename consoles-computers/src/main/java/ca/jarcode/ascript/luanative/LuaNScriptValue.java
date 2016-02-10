@@ -36,6 +36,8 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	  
 	  If this method returns a value greater than zero, it indicates a memory leak
 	  which would grow if this collection was disabled.
+	  
+	  Idealy, this feature should be disabled, and no leaks should ever occur.
 	 */
 	public static int releaseRemainingContextValues(long address) {
 		if (TRACK_INSTANCES) {
@@ -52,10 +54,33 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 		}
 		return -1;
 	}
-	
-	public long __address;
 
-	{
+	/*
+	  This is for debugging, mostly. For any given engine_inst* address, you
+	  can obtain tracked engine values that have not been released. A null
+	  address (0) will return all values that are not associated with an
+	  engine.
+	*/
+	public static LuaNScriptValue[] remainingContextValues(long address) {
+		if (TRACK_INSTANCES) {
+			HashMap<Long, LuaNScriptValue> map = TRACKED.get();
+			return map.values()
+				.filter((value) -> value.instAddress() == address)
+				.toArray(new LuaNScriptValue[map.size()]);
+		}
+		return null;
+	}
+
+	/*
+	  this is a 32 or 64 bit address that points to the implementaion of this class
+	*/
+	private long __address;
+
+	/*
+	  this constructor is private, but it's called from native code.
+	*/
+	private LuaNScriptValue(long address) {
+		this.__address = address;
 		if (TRACK_INSTANCES) {
 			TRACKED.get().put(__address, this);
 		}
@@ -92,13 +117,22 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	// this can be a value or a function, so just return the same object
 	public ScriptValue getAsValue() { return this; }
 	public ScriptFunction getAsFunction() { return this; }
-	
+
+	/*
+	  LuaN's engine_value type will always hold a global reference to its
+	  associated Java object, preventing garbage collection from ever
+	  happening. When we release the value, that reference (along with
+	  other internal global refs) is deleted, and the associated java
+	  object can then be marked by the VM for collection.
+	*/
 	public void release() {
-		if (TRACK_INSTANCES && __address != 0) {
-			TRACKED.get().remove(__address);
+		if (__address != 0) {
+			if (TRACK_INSTANCES) {
+				TRACKED.get().remove(__address);
+			}
+			release0();
+			__address = 0;
 		}
-		__address = 0;
-		release0();
 	}
 	
 	// internal release

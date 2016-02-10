@@ -58,7 +58,7 @@ void setup_value(JNIEnv* env, jmp_buf handle) {
     if (!setup) {
         classreg(env, ENGINE_VALUE_CLASS, &value_type, handle);
         classreg(env, "java/lang/reflect/Array", &class_array, handle); // for generic array setting
-        value_constructor = method_resolve(env, value_type, "<init>", "()V", handle);
+        value_constructor = method_resolve(env, value_type, "<init>", "(J)V", handle);
         handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
         id_newarray = static_method_resolve
             (env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;", handle);
@@ -84,9 +84,9 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
 #if ENGINE_CDEBUG > 0 // initialize debug signature, if needed
     v->DEBUG_SIGNATURE = ENGINE_DEBUG_SIGNATURE;
 #endif // ENGINE_CDEBUG
-    v->inst = 0;
+    v->inst = NULL;
     
-    jobject obj = (*env)->NewObject(env, value_type, value_constructor);
+    jobject obj = (*env)->NewObject(env, value_type, value_constructor, (jlong) (intptr_t) v);
     
     ASSERTEX(env);
     
@@ -130,6 +130,7 @@ static void valuefree(JNIEnv* env, engine_value* value) {
 }
 
 void engine_releasevalue(JNIEnv* env, engine_value* value) {
+    // call back into Java, since there might be additional code for tracking engine_value instances
     (*env)->CallVoidMethod(env, value->ref, id_release, (jlong) (intptr_t) value);
 }
 

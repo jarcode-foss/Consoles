@@ -157,7 +157,11 @@ public class NativeLayerTask {
 		stdout.println("J: loaded: " + loaded);
 	}
 
-	public String valueString(ScriptValue value) {
+	public long getEngineAddress() {
+		return ((LuaNEngine) globals.getEngine()).ptr(globals.value());
+	}
+
+	public static String valueString(ScriptValue value) {
 		if (value.isNull())
 			return "null";
 		else if (value.isFunction())

@@ -207,9 +207,8 @@
 
                     <!-- Run in alphabetical order -->
                     <runOrder>alphabetical</runOrder>
-
-                    <!-- Check JNI calls, and turn off JIT. I have JIT off to make debugging easier. -->
-                    <argLine>-Djava.compiler=NONE -Xcheck:jni -XX:UseSSE=0</argLine>
+                    
+                    <argLine></argLine>
 
                     <!-- Do not timeout -->
                     <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>

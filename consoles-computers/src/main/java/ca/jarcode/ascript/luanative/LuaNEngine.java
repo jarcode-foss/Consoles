@@ -124,7 +124,7 @@ public class LuaNEngine implements ScriptEngine {
 		}
 	}
 
-	private long ptr(ScriptValue val) {
+	public long ptr(ScriptValue val) {
 		return inst(val).ptr;
 	}
 
@@ -245,7 +245,8 @@ public class LuaNEngine implements ScriptEngine {
 			L.thread_end(); /* native hook */
 			
 			if (LuaNScriptValue.TRACK_INSTANCES) {
-				LuaNScriptValue.TRACKED.destroyContext();
+				LuaNScriptValue.releaseRemainingContextValues(0); /* release shared values */
+				LuaNScriptValue.TRACKED.destroyContext(); /* destroy thread context for thread datum */
 			}
 			contextDestroyedThreads.add(current);
 			Iterator<Thread> it = contextDestroyedThreads.iterator();

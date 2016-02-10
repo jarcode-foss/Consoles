@@ -194,7 +194,7 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
         }
         --idx; /* subtract once, since the last value had to be nil to break */
         v->data.array.length = idx;
-        v->data.array.values = idx ? malloc(sizeof(engine_value*) * idx) : 0;
+        v->data.array.values = idx ? malloc(sizeof(engine_value*) * idx) : NULL;
         if (engine_debug) {
             printf("C: passing lua table of size %lu", (unsigned long) v->data.array.length);
         }
