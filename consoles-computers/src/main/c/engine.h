@@ -197,21 +197,22 @@ typedef struct engine_inst_ engine_inst;
  * This is a function wrapper, a type passed to a special function in engine.c that handles all function calls.
  */
 typedef struct {
-    jobject obj_inst; // lambda, or instance of object that a reflected method is accessing (can be null)
-    ffi_closure* closure; // closure
-    lua_CFunction func; // function
-    union { // type-unqiue data
+    jobject obj_inst;            // lambda, or instance of object that a reflected method is accessing
+    ffi_closure* closure;        // closure
+    lua_CFunction func;          // function
+    union {                      // type-unqiue data
         struct {
-            jmethodID id; // id of lambda method
-            uint8_t ret; // >0 if there is a return value
+            jmethodID id;        // id of lambda method
+            uint8_t ret;         // >0 if there is a return value
             jobject class_array; // Class[] global ref
         } lambda;
         struct {
-            jobject method; // Method instance
-            long reflect_id; // unqiue wrapper id
+            jobject method;      // Method instance
+            long reflect_id;     // unqiue wrapper id
         } reflect;
     } data;
-    uint8_t type; // lambda or reflected
+    uint8_t type;                // lambda or reflected
+    uint8_t skip_first;          // skip first argument
     engine_inst* engine;
 } engine_jfuncwrapper;
 
@@ -255,23 +256,23 @@ struct engine_inst_ {
  * reflected java function
  */
 typedef struct {
-    jobject obj_inst; // NULL if static, global ref
-    jobject reflect_method; // Method instance, global ref
+    jobject obj_inst;           // NULL if static, global ref
+    jobject reflect_method;     // Method instance, global ref
 } engine_rfunc;
 
 /*
  * lambda java function
  */
 typedef struct {
-    jobject lambda; // lambda instance, global ref
-    jobject class_array; // java array of classes (Class[])
+    jobject lambda;       // lambda instance, global ref
+    jobject class_array;  // java array of classes (Class[])
 } engine_lfunc;
 
 /*
  * tiny userdata type passed to lua, managed completely by lua
  */
 typedef struct {
-    jobject obj; // jobject, global _floating_ reference
+    jobject obj;          // jobject, global _floating_ reference
     engine_inst* engine;
     uint8_t released;
 } engine_userdata;
@@ -315,48 +316,59 @@ struct engine_value_ {
     engine_inst* inst;
 };
 
-// sets up method ids and class references
+/* Set up method ids and class references */
 extern void setup_value(JNIEnv* env, jmp_buf handle);
 extern void thread_datum_init(JNIEnv* env, jmp_buf handle);
 
-// create engine value
+/* Create engine value */
 extern engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst);
 extern engine_value* engine_newsharedvalue(JNIEnv* env);
 
+/* Same as calling release() from Java */
 extern void engine_releasevalue(JNIEnv* env, engine_value* value);
-// unwraps the java script value to C engine_value
-// NOTHING IS ALLOCATED, it just looks up a pair and finds an existing allocation to the value
+
+/* Returns the Java object for a value */
 extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);
-// same thing, just in reverse
+
+/* Returns the C structure for a value */
 extern jobject engine_wrap(JNIEnv* env, engine_value* value);
-// get info from lambda function class
+
+/* Get information about a Java lambda (ascript.func.* types) */
 extern void engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype,
                                  jobject class_array, engine_lambda_info* buf);
 
-// wrap lua value to script value
-// this operates on the value on the top of the lua stack, popping it after
+/* Pop a value from the Lua C stack */
 extern engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state);
-extern void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value);
-// pushes a lambda onto the stack as a wrapped C function
+
+/* Handles the registry for an engine value that points to a Lua function */
+extern void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
+
+/* Push values to the Lua C stack */
+extern void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj);
 extern void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject class_array);
 extern void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst);
+extern void engine_pushvalue(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* value);
 
-extern void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, engine_value* v);
-extern void engine_pushobject(JNIEnv* env, engine_inst* inst, lua_State* state, jobject obj);
+/* Copy engine value, creating a new associated java object and copies all containing references */
+/* Performs a deep copy for arrays */
+extern engine_value* value_copy(JNIEnv* env, engine_value* value);
 
-extern engine_value* engine_call(JNIEnv* env, engine_inst* inst, lua_State* state, int nargs);
+/* Call function on the Lua C stack */
+extern engine_value* engine_call(JNIEnv* env,engine_inst* inst, lua_State* state, int nargs);
 
+/* Throw LuaNError to Java, with the given message */
 extern jint throw(JNIEnv* env, const char* message);
 
+/* Abruptly abort */
 extern void engine_abort(void);
 
+/* Abruptly abort, used when Java throws an exception when not expected to (ASSERTEX macro). */
 extern void engine_fatal_exception(JNIEnv* env);
 
-// utils
-
-// register global ref to class at memory
+/* Register global reference to Java class, if something fails, jmp_buf is jumped to. */
 extern void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf buf);
 
+/* Swaps two values on the Lua C stack, at index 'a' and 'b'. */
 extern void engine_swap(lua_State* state, int a, int b);
 
 #endif // ENGINE_H_

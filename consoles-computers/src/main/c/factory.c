@@ -490,7 +490,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_lis
         jobject element = (*env)->GetObjectArrayElement(env, elements, t);
         engine_value* element_value = engine_unwrap(env, element);
         if (element_value) {
-            value->data.array.values[t] = element_value;
+            value->data.array.values[t] = value_copy(env, element_value);
         }
         else value->data.array.values[t] = 0;
     }

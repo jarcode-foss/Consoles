@@ -218,6 +218,8 @@ public class LuaNEngine implements ScriptEngine {
 	public void close(ScriptValue globals) {
 		if (globals == null) throw new IllegalArgumentException();
 		LuaNInstance inst = inst(globals);
+
+		globals.release();
 		
 		if (LuaNScriptValue.TRACK_INSTANCES) {
 			int count = LuaNScriptValue.releaseRemainingContextValues(inst.ptr);
@@ -248,6 +250,7 @@ public class LuaNEngine implements ScriptEngine {
 				LuaNScriptValue.releaseRemainingContextValues(0); /* release shared values */
 				LuaNScriptValue.TRACKED.destroyContext(); /* destroy thread context for thread datum */
 			}
+			
 			contextDestroyedThreads.add(current);
 			Iterator<Thread> it = contextDestroyedThreads.iterator();
 			while (it.hasNext()) {

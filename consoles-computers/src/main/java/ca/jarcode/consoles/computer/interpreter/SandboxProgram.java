@@ -39,342 +39,345 @@ This class handles the creation and sandbox of the LuaVM
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
 public abstract class SandboxProgram {
 
-	public static final Supplier<SandboxProgram> FACTORY = InterpretedProgram::new;
-	public static final TwoArgFunc<SandboxProgram, FSFile, String> FILE_FACTORY = InterpretedProgram::new;
+    public static final Supplier<SandboxProgram> FACTORY = InterpretedProgram::new;
+    public static final TwoArgFunc<SandboxProgram, FSFile, String> FILE_FACTORY = InterpretedProgram::new;
 
-	private static final Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = Charset.forName("UTF-8");
 
-	static {
-		Libraries.init();
-		ScriptTypes.init();
-	}
+    static {
+        Libraries.init();
+        ScriptTypes.init();
+    }
 
-	/**
-	 * Executes a lua program from the plugin folder, on a specific computer.
-	 *
-	 * The program passed to this method will run in its own thread.
-	 *
-	 * @param path the path to the program, relative to the plugin folder
-	 * @param terminal the terminal to run the program on
-	 * @param args the arguments for the program
-	 * @return true if the program was executed, false if the terminal was busy,
-	 * or if something went wrong when loading the file.
-	 */
-	public static boolean execFile(String path, Terminal terminal, String args) {
-		File file = new File(Computers.getInstance().getDataFolder().getAbsolutePath()
-				+ File.separatorChar + path);
-		if (Computers.debug)
-			Computers.getInstance().getLogger().info("Executing file: " + path);
-		if (!file.exists() || file.isDirectory()) {
-			return false;
-		}
-		try {
-			String program = FileUtils.readFileToString(file, CHARSET);
-			return exec(program, terminal, args);
-		}
-		catch (IOException e) {
-			Computers.getInstance().getLogger().warning(String.format(lang.getString("program-load-fail"), path));
-			e.printStackTrace();
-			return false;
-		}
-	}
+    /**
+     * Executes a lua program from the plugin folder, on a specific computer.
+     *
+     * The program passed to this method will run in its own thread.
+     *
+     * @param path the path to the program, relative to the plugin folder
+     * @param terminal the terminal to run the program on
+     * @param args the arguments for the program
+     * @return true if the program was executed, false if the terminal was busy,
+     * or if something went wrong when loading the file.
+     */
+    public static boolean execFile(String path, Terminal terminal, String args) {
+        File file = new File(Computers.getInstance().getDataFolder().getAbsolutePath()
+                + File.separatorChar + path);
+        if (Computers.debug)
+            Computers.getInstance().getLogger().info("Executing file: " + path);
+        if (!file.exists() || file.isDirectory()) {
+            return false;
+        }
+        try {
+            String program = FileUtils.readFileToString(file, CHARSET);
+            return exec(program, terminal, args);
+        }
+        catch (IOException e) {
+            Computers.getInstance().getLogger().warning(String.format(lang.getString("program-load-fail"), path));
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-	public static boolean execFile(String path, Terminal terminal) {
-		return execFile(path, terminal, "");
-	}
+    public static boolean execFile(String path, Terminal terminal) {
+        return execFile(path, terminal, "");
+    }
 
-	/**
-	 * Compiles and runs the given Lua program. The program is ran
-	 * with elevated permissions.
-	 *
-	 * This is not suitable for constant execution of Lua code, as it
-	 * has to compile and sandbox the code each time.
-	 *
-	 * The program that is ran will occupy the current terminal instance
-	 * for the computer.
-	 *
-	 * The directory of the program will be the current directory of
-	 * the terminal
-	 *
-	 * The program passed to this method will run in its own thread.
-	 *
-	 * @param program the string that contains the Lua program
-	 * @param terminal the terminal to run the program on
-	 * @param args the arguments for the program
-	 * @return true if the program was executed, false if the terminal was busy
-	 */
-	public static boolean exec(String program, Terminal terminal, String args) {
-		if (terminal.isBusy())
-			return false;
-		Computer computer = terminal.getComputer();
-		SandboxProgram sandboxProgram = FACTORY.get();
-		sandboxProgram.restricted = false;
-		sandboxProgram.contextTerminal = terminal;
-		ProgramInstance instance = new ProgramInstance(sandboxProgram, "", computer, program);
+    /**
+     * Compiles and runs the given Lua program. The program is ran
+     * with elevated permissions.
+     *
+     * This is not suitable for constant execution of Lua code, as it
+     * has to compile and sandbox the code each time.
+     *
+     * The program that is ran will occupy the current terminal instance
+     * for the computer.
+     *
+     * The directory of the program will be the current directory of
+     * the terminal
+     *
+     * The program passed to this method will run in its own thread.
+     *
+     * @param program the string that contains the Lua program
+     * @param terminal the terminal to run the program on
+     * @param args the arguments for the program
+     * @return true if the program was executed, false if the terminal was busy
+     */
+    public static boolean exec(String program, Terminal terminal, String args) {
+        if (terminal.isBusy())
+            return false;
+        Computer computer = terminal.getComputer();
+        SandboxProgram sandboxProgram = FACTORY.get();
+        sandboxProgram.restricted = false;
+        sandboxProgram.contextTerminal = terminal;
+        ProgramInstance instance = new ProgramInstance(sandboxProgram, "", computer, program);
 
-		terminal.setProgramInstance(instance);
+        terminal.setProgramInstance(instance);
 
-		terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
-		terminal.startFeed();
+        terminal.setIO(instance.in, instance.out, ConsoleFeed.UTF_ENCODER);
+        terminal.startFeed();
 
-		instance.startInThread();
+        instance.startInThread();
 
-		return true;
-	}
+        return true;
+    }
 
-	public static boolean exec(String program, Terminal terminal, boolean threaded) {
-		return exec(program, terminal, "");
-	}
+    public static boolean exec(String program, Terminal terminal, boolean threaded) {
+        return exec(program, terminal, "");
+    }
 
-	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, boolean threaded) {
-		return pass(program, terminal, instance, "", threaded);
-	}
+    public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, boolean threaded) {
+        return pass(program, terminal, instance, "", threaded);
+    }
 
-	public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
-		return pass(FACTORY.get(), program, terminal, instance, args, threaded);
-	}
+    public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
+        return pass(FACTORY.get(), program, terminal, instance, args, threaded);
+    }
 
-	/**
-	 * Passes a program instance from provided to an interpreted lua program
-	 *
-	 * @param inst sandbox instance
-	 * @param program raw program text
-	 * @param terminal terminal instance
-	 * @param instance program instance
-	 * @param args lua program arguments
-	 * @return the sandbox instance
-	 */
-	public static SandboxProgram pass(SandboxProgram inst, String program,
-	                                  Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
-		inst.restricted = false;
-		inst.contextTerminal = terminal;
-		instance.interpreted = inst;
-		inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program, threaded);
-		return inst;
-	}
+    /**
+     * Passes a program instance from provided to an interpreted lua program
+     *
+     * @param inst sandbox instance
+     * @param program raw program text
+     * @param terminal terminal instance
+     * @param instance program instance
+     * @param args lua program arguments
+     * @return the sandbox instance
+     */
+    public static SandboxProgram pass(SandboxProgram inst, String program,
+                                      Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
+        inst.restricted = false;
+        inst.contextTerminal = terminal;
+        instance.interpreted = inst;
+        inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program, threaded);
+        return inst;
+    }
 
-	public Map<Integer, LuaFrame> framePool = new HashMap<>();
-	
-	protected FSFile file;
-	protected String path;
-	protected InputStream in;
-	protected OutputStream out;
-	protected Computer computer;
-	protected String args;
-	protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	protected List<Integer> allocatedSessions = new ArrayList<>();
-	protected ScriptGlobals globals;
+    public Map<Integer, LuaFrame> framePool = new HashMap<>();
+    
+    protected FSFile file;
+    protected String path;
+    protected InputStream in;
+    protected OutputStream out;
+    protected Computer computer;
+    protected String args;
+    protected SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    protected List<Integer> allocatedSessions = new ArrayList<>();
+    protected ScriptGlobals globals;
 
-	protected Runnable terminator;
-	protected BooleanSupplier terminated = () -> false;
+    protected Runnable terminator;
+    protected BooleanSupplier terminated = () -> false;
 
-	protected FuncPool<SandboxProgram> pool = new FuncPool<>(() -> globals, terminated, this);
+    protected FuncPool<SandboxProgram> pool = new FuncPool<>(() -> globals, terminated, this);
 
-	protected List<String> registeredChannels = new ArrayList<>();
+    protected List<String> registeredChannels = new ArrayList<>();
 
-	protected boolean restricted = true;
+    protected boolean restricted = true;
 
-	protected Terminal contextTerminal = null;
+    protected Terminal contextTerminal = null;
 
-	protected String defaultChunk = null;
+    protected String defaultChunk = null;
 
-	// normal constructor for loading a program from a computer
-	public SandboxProgram(FSFile file, String path) {
-		this.file = file;
-		this.path = path;
-	}
+    // normal constructor for loading a program from a computer
+    public SandboxProgram(FSFile file, String path) {
+        this.file = file;
+        this.path = path;
+    }
 
-	// for program instances that need to be setup for Lua programs
-	// initiated through Java code
-	protected SandboxProgram() {}
+    // for program instances that need to be setup for Lua programs
+    // initiated through Java code
+    protected SandboxProgram() {}
 
-	private void setup(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) {
-		this.in = in;
-		this.out = out;
-		this.computer = computer;
-		if (instance != null) {
-			this.terminated = instance::isTerminated;
-			this.terminator = instance::terminate;
-		}
-		this.args = str;
-	}
+    private void setup(OutputStream out, InputStream in, String str, Computer computer, ProgramInstance instance) {
+        this.in = in;
+        this.out = out;
+        this.computer = computer;
+        if (instance != null) {
+            this.terminated = instance::isTerminated;
+            this.terminator = instance::terminate;
+        }
+        this.args = str;
+    }
 
-	// used to run programs from a file in a computer
-	public void run(OutputStream out, InputStream in, String str, Computer computer,
-	                ProgramInstance instance, boolean threaded) throws Exception {
+    // used to run programs from a file in a computer
+    public void run(OutputStream out, InputStream in, String str, Computer computer,
+                    ProgramInstance instance, boolean threaded) throws Exception {
 
-		setup(out, in, str, computer, instance);
+        setup(out, in, str, computer, instance);
 
-		// if the file is null, something went wrong
-		if (file == null) {
-			print("null file");
-			return;
-		}
+        // if the file is null, something went wrong
+        if (file == null) {
+            print("null file");
+            return;
+        }
 
-		// read from the program file and write it to a buffer
-		ByteArrayOutputStream buf = new ByteArrayOutputStream();
-		try (InputStream is = file.createInput()) {
-			int i;
-			while (true) {
-				if (terminated())
-					break;
-				if (is.available() > 0 || is instanceof ByteArrayInputStream) {
-					i = is.read();
-					if (i == -1) break;
-					buf.write(i);
-				} else Thread.sleep(50);
-			}
-			if (terminated())
-				print(" [" + lang.getString("parse-term") + "]");
-		}
+        // read from the program file and write it to a buffer
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        try (InputStream is = file.createInput()) {
+            int i;
+            while (true) {
+                if (terminated())
+                    break;
+                if (is.available() > 0 || is instanceof ByteArrayInputStream) {
+                    i = is.read();
+                    if (i == -1) break;
+                    buf.write(i);
+                } else Thread.sleep(50);
+            }
+            if (terminated())
+                print(" [" + lang.getString("parse-term") + "]");
+        }
 
-		// parse as a string
-		String raw = new String(buf.toByteArray(), CHARSET);
+        // parse as a string
+        String raw = new String(buf.toByteArray(), CHARSET);
 
-		loadDefaultChunk();
-		compileAndExecute(raw, threaded);
-	}
+        loadDefaultChunk();
+        compileAndExecute(raw, threaded);
+    }
 
-	protected abstract void map();
+    protected abstract void map();
 
-	private void loadDefaultChunk() {
-		FSBlock block = computer.getBlock("/bin/default", "/");
-		if (block instanceof FSFile) {
-			defaultChunk = new LuaFile((FSFile) block, "/bin/default", "/", this::terminated, computer).read();
-		}
-	}
+    private void loadDefaultChunk() {
+        FSBlock block = computer.getBlock("/bin/default", "/");
+        if (block instanceof FSFile) {
+            defaultChunk = new LuaFile((FSFile) block, "/bin/default", "/", this::terminated, computer).read();
+        }
+    }
 
-	public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
-	                   ProgramInstance inst, String raw, boolean threaded) {
-		setup(out, in, str, computer, inst);
-		loadDefaultChunk();
-		compileAndExecute(raw, threaded);
-	}
+    public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
+                       ProgramInstance inst, String raw, boolean threaded) {
+        setup(out, in, str, computer, inst);
+        loadDefaultChunk();
+        compileAndExecute(raw, threaded);
+    }
 
-	// runs a program with the given raw text
-	public void compileAndExecute(String raw, boolean threaded) {
+    // runs a program with the given raw text
+    public void compileAndExecute(String raw, boolean threaded) {
 
-		/*
-		 * It's important to remember how the script abstractions works, if
-		 * a ScriptValue is not longer in use, it should be released (everything
-		 * is released at the end of the engine's lifecycle). This does not mean
-		 * the value itself is invalidated, only the 'handle' for the value.
-		 */
+        /*
+         * It's important to remember how the script abstractions works, if
+         * a ScriptValue is not longer in use, it should be released (everything
+         * is released at the end of the engine's lifecycle). This does not mean
+         * the value itself is invalidated, only the 'handle' for the value.
+         */
 
-		try {
+        try {
 
-			if (Computers.debug)
-				Computers.getInstance().getLogger().info("[DEBUG] compiling and running program " +
-						"(charlen: " + raw.length() + ")");
+            if (Computers.debug)
+                Computers.getInstance().getLogger().info("[DEBUG] compiling and running program " +
+                        "(charlen: " + raw.length() + ")");
 
-			if (contextTerminal == null) {
-				contextTerminal = computer.getTerminal(this);
-			}
+            if (contextTerminal == null) {
+                contextTerminal = computer.getTerminal(this);
+            }
 
-			// this is our function pool, which are a bunch of LuaFunctions mapped to strings
-			// we also use this pool to identify our program with this thread.
-			//
-			// all static functions that were already mapped are automatically added to this pool
-			pool.register(Thread.currentThread());
+            // this is our function pool, which are a bunch of LuaFunctions mapped to strings
+            // we also use this pool to identify our program with this thread.
+            //
+            // all static functions that were already mapped are automatically added to this pool
+            pool.register(Thread.currentThread());
 
-			// Create our globals for the default scripting engine
-			globals = ScriptEngine.newEnvironment(pool, terminated, in, out, Computers.scriptHeapSize);
+            // Create our globals for the default scripting engine
+            globals = ScriptEngine.newEnvironment(pool, terminated, in, out, Computers.scriptHeapSize);
 
-			// map static functions, which are functions that are not associated with any script engine
-			pool.mapStaticFunctions();
+            // map static functions, which are functions that are not associated with any script engine
+            pool.mapStaticFunctions();
 
-			// map functions from this program instance to the pool
-			map();
+            // map functions from this program instance to the pool
+            map();
 
-			// push all our functions to the engine
-			globals.load(pool);
+            // push all our functions to the engine
+            globals.load(pool);
 
-			// Load any extra libraries, these can be registered by other plugins
-			// Note, we only register libraries that are not restricted.
-			Script.LIBS.values().stream()
-					.filter((lib) -> !lib.isRestricted || !restricted)
-					.forEach(globals::load);
+            // Load any extra libraries, these can be registered by other plugins
+            // Note, we only register libraries that are not restricted.
+            Script.LIBS.values().stream()
+                    .filter((lib) -> !lib.isRestricted || !restricted)
+                    .forEach(globals::load);
 
-			if (!restricted)
-				globals.removeRestrictions();
+            if (!restricted)
+                globals.removeRestrictions();
 
-			// our main program chunk and the default chunk
-			ScriptValue chunk, def;
+            // our main program chunk and the default chunk
+            ScriptValue chunk, def;
 
-			// the exit function, if it exists.
-			ScriptValue exit = null;
+            // the exit function, if it exists.
+            ScriptValue exit = null;
 
-			// if there is a default chunk/program to load into the globals, load it!
-			if (defaultChunk != null && !defaultChunk.isEmpty()) {
+            // if there is a default chunk/program to load into the globals, load it!
+            if (defaultChunk != null && !defaultChunk.isEmpty()) {
 
-				// try to load the default chunk
-				def = loadChunk(defaultChunk, "/bin/default");
+                // try to load the default chunk
+                def = loadChunk(defaultChunk, "/bin/default");
 
-				// if the previous method returned a chunk, call it!
-				if (def != null) try {
+                // if the previous method returned a chunk, call it!
+                if (def != null) {
+                    try {
+                        // call the default chunk
+                        def.call();
+                    }
+                    // if the program was interrupted by our debug/interrupt lib
+                    catch (ScriptInterruptException ex) {
 
-					// call the default chunk
-					def.call();
+                        print("\n" + lang.getString("program-term"));
 
-					// release resources
-					def.release();
-				}
-				// if the program was interrupted by our debug/interrupt lib
-				catch (ScriptInterruptException ex) {
+                        // we should return if it was interrupted in the default chunk, cleanup will
+                        // still be done in the lower-most finally block.
+                        return;
+                    }
+                    // error handling
+                    //
+                    // we don't return if we encountered an error in the default chunk,
+                    // instead we continue and attempt to run the main chunk.
+                    catch (ScriptError err) {
+                        handleScriptError(err);
+                    }
+                    finally {
+                        // release resources
+                        def.release();
+                    }
+                }
+            }
 
-					print("\n" + lang.getString("program-term"));
+            // try to load the main chunk
+            chunk = loadChunk(raw, path == null ? "?" : path);
 
-					// we should return if it was interrupted in the default chunk, cleanup will
-					// still be done in the lower-most finally block.
-					return;
-				}
-				// error handling
-				//
-				// we don't return if we encountered an error in the default chunk,
-				// instead we continue and attempt to run the main chunk.
-				catch (ScriptError err) {
-					handleScriptError(err);
-				}
-			}
+            // if the previous method returned null, it didn't compile (and handled the errors)
+            // we should just exit from here
+            if (chunk == null)
+                return;
 
-			// try to load the main chunk
-			chunk = loadChunk(raw, path == null ? "?" : path);
+            ScriptValue mainValue = null, mainArg = null, exitArg = null, mainCallArg = null;
 
-			// if the previous method returned null, it didn't compile (and handled the errors)
-			// we should just exit from here
-			if (chunk == null)
-				return;
+            // if we got to this point, the program compiled just fine.
+            try {
 
-			// if we got to this point, the program compiled just fine.
-			try {
+                // Call the main chunk. This will start executing the Lua program
+                // in this thread, and will return when the chunk has been completely
+                // executed.
+                chunk.call();
 
-				// Call the main chunk. This will start executing the Lua program
-				// in this thread, and will return when the chunk has been completely
-				// executed.
-				chunk.call();
+                // After this point, we can call the main method since the chunk was
+                // just called, and all the methods in said chunk have been declared.
 
-				// release resources
-				chunk.release();
+                mainArg = ValueFactory.getDefaultFactory().translate("main", globals);
+                
+                // get our main function
+                mainValue = globals.get(mainArg);
 
-				// After this point, we can call the main method since the chunk was
-				// just called, and all the methods in said chunk have been declared.
-
-				// get our main function
-				ScriptValue value = globals.get(ValueFactory.getDefaultFactory().translate("main", globals));
-
+                exitArg = ValueFactory.getDefaultFactory().translate("exit", globals);
+				
 				// set the exit function
-				exit = globals.get(ValueFactory.getDefaultFactory().translate("exit", globals));
+				exit = globals.get(exitArg);
 
 				// if the main function exists, call it.
 				//
 				// some programs won't have a main method. That's fine, in that case
 				// most of the code will be in the chunk itself.
-				if (value.isFunction()) {
-					value.getAsFunction().call(ValueFactory.getDefaultFactory().translate(args, globals));
+				if (mainValue.isFunction()) {
+					mainCallArg = ValueFactory.getDefaultFactory().translate(args, globals);
+					mainValue.getAsFunction().call(mainCallArg);
 				}
-
-				// release resources
-				value.release();
 			}
 			// if the program was interrupted by our debug/interrupt lib
 			catch (ScriptInterruptException ex) {
@@ -386,6 +389,10 @@ public abstract class SandboxProgram {
 			}
 			// regardless if we encountered an error or not, we try to call our exit function.
 			finally {
+				releaseAll(mainValue, mainArg, exitArg, mainCallArg);
+				
+				chunk.release();
+				
 				if (exit != null) {
 					// if the exit function exists, and our program has not been terminated
 					if (exit.isFunction() && !terminated()) {
@@ -640,5 +647,13 @@ public abstract class SandboxProgram {
 	}
 	public void resetInterrupt() {
 		globals.resetInterrupt();
+	}
+	private void releaseAll(Object... objects) {
+		for (Object obj : objects) {
+			if (obj instanceof ScriptValue)
+				((ScriptValue) obj).release();
+			if (obj instanceof ScriptFunction)
+				((ScriptFunction) obj).release();
+		}
 	}
 }

@@ -30,6 +30,12 @@ public class Script {
 	// these are mappings to functions for engines that can re-use ScriptFunctions
 	public static Map<ScriptEngine, Map<String, ScriptFunction>> FUNCS = new ConcurrentHashMap<>();
 	public static ThreadMap<Map<ScriptEngine, Map<String, ScriptFunction>>> CONTEXT_FUNCS = new ThreadMap<>();
+	
+	static {
+		CONTEXT_FUNCS.setDefaultPurgeOperation(
+			(value) -> value.values().stream().forEach(
+				(map) -> map.values().stream().forEach(ScriptFunction::release)));
+	}
 
 	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
 	// unique piece of code that I have written.
@@ -307,14 +313,21 @@ public class Script {
 			Object[] arr = new Object[Array.getLength(java)];
 			for (int t = 0; t < arr.length; t++)
 				arr[t] = Array.get(java, t);
-			return G.getValueFactory().list(
-					Arrays.asList(arr).stream()
-							.map(Script::translateToScriptValue)
-							.toArray(ScriptValue[]::new),
-					globals);
+			ScriptValue[] contents = Arrays.asList(arr).stream()
+				.map(Script::translateToScriptValue)
+				.toArray(ScriptValue[]::new);
+			ScriptValue ret = G.getValueFactory().list(contents, globals);
+			/*
+			  Release values that we set as array elements. This is because the elements are copied into
+			  the array rather than their references.
+			*/
+			for (ScriptValue val : contents) {
+				val.release();
+			}
+			return ret;
 		}
 		else {
-			if (Computers.debug) {
+			if (Joint.DEBUG_MODE) {
 				if (Computers.getInstance() != null)
 					Computers.getInstance().getLogger().info("[DEBUG] Wrapping java object: " + java.getClass());
 				else
@@ -330,38 +343,41 @@ public class Script {
 			ScriptValue[] arr = Arrays.asList(args).stream()
 					.map(Script::translateToScriptValue)
 					.toArray(ScriptValue[]::new);
+			ScriptValue value = null;
 			switch (arr.length) {
-				case 0: return func.getAsFunction().call();
-				case 1: return func.getAsFunction().call(arr[0]);
-				case 2: return func.getAsFunction().call(arr[0], arr[1]);
-				case 3: return func.getAsFunction().call(arr[0], arr[1], arr[2]);
+			case 0:
+				value = func.getAsFunction().call();
+				break;
+			case 1:
+				value = func.getAsFunction().call(arr[0]);
+				break;
+			case 2:
+				value = func.getAsFunction().call(arr[0], arr[1]);
+				break;
+			case 3:
+				value = func.getAsFunction().call(arr[0], arr[1], arr[2]);
+				break;
+			case 4:
+				value = func.getAsFunction().call(arr[0], arr[1], arr[2], arr[3]);
+				break;
 			}
-			throw new RuntimeException("function has too many arguments");
+			for (ScriptValue v : arr) {
+				v.release();
+			}
+			return value;
 		};
 	}
 
 	public static FunctionBind javaFunction(ScriptValue value) {
-		return (args) -> coerce(javaCallable(value).call(args));
+		return (args) -> assumeAndRelease(javaCallable(value).call(args));
 	}
 
-	private static Object coerce(ScriptValue value) {
-		if (value.canTranslateBoolean())
-			return value.translateBoolean();
-		else if (value.canTranslateDouble())
-			return value.translateDouble();
-		else if (value.canTranslateString())
-			return value.translateString();
-		else if (value.isFunction())
-			return javaFunction(value);
-		else if (value.isNull())
-			return null;
-		else if (value.canTranslateArray())
-			return value.translateArray(Object[].class);
-		else if (value.canTranslateObj())
-			return value.translateObj();
-		else throw new RuntimeException("could not assume type for: " + value.toString() + " ("
-					+ value.getClass().getSimpleName() + ")");
+	private static Object assumeAndRelease(ScriptValue value) {
+		Object ret = value == null ? null : value.toJava();
+		value.release();
+		return ret;
 	}
+	
 	public static Object translate(Class<?> type, ScriptValue value) {
 		if (type == Void.class) {
 			return null;
@@ -479,20 +495,13 @@ public class Script {
 	// used in native code (don't touch the signature)
 	@SuppressWarnings("unused")
 	public static long methodId(Method method) {
-		//TODO: remove exception gaurd
-		try {
-			int hash = method.hashCode();
-			Class<?>[] args = method.getParameterTypes();
-			int argmask = 0;
-			for (Class<?> arg : args) {
-				argmask = 37 * argmask + arg.hashCode();
-			}
-			return (long) hash << 32 | argmask & 0xFFFFFFFFL;
+		int hash = method.hashCode();
+		Class<?>[] args = method.getParameterTypes();
+		int argmask = 0;
+		for (Class<?> arg : args) {
+			argmask = 37 * argmask + arg.hashCode();
 		}
-		catch (NullPointerException e) {
-			System.out.println(method.getName() + ", " + method.getDeclaringClass());
-			throw e;
-		}
+		return (long) hash << 32 | argmask & 0xFFFFFFFFL;
 	}
 
 	// This is called by engines to further handle exceptions after

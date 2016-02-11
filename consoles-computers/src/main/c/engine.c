@@ -58,6 +58,8 @@ static ffi_type* f_args[1];
 static ffi_type* h_args[2];
 
 static void freewrapper(engine_inst* inst, JNIEnv* env, engine_jfuncwrapper* wrapper);
+static void engine_pushreflect_skip(JNIEnv* env, engine_inst* inst, jobject reflect_method,
+                                    jobject obj_inst, uint8_t skip_first);
 
 /*
  * There are some resources that accumulate over the life of the Lua VM. The reason
@@ -328,7 +330,7 @@ int engine_handleobjcall(lua_State* state) {
     ASSERTEX(env);
     
     if (method) {
-        engine_pushreflect(env, d->engine, method, obj);
+        engine_pushreflect_skip(env, d->engine, method, obj, 1);
         (*env)->DeleteLocalRef(env, method);
     }
     else {
@@ -472,6 +474,9 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
     
     int result = lua_load(state, (lua_Reader) loadchunk, &program, path);
     
+    (*env)->ReleaseStringUTFChars(env, jraw, raw);
+    (*env)->ReleaseStringUTFChars(env, jpath, path);
+    
     if (result) {
         if (lua_isstring(state, -1)) {
             const char* message = lua_tostring(state, -1);
@@ -483,9 +488,6 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
         }
         return 0;
     }
-    
-    (*env)->ReleaseStringUTFChars(env, jraw, raw);
-    (*env)->ReleaseStringUTFChars(env, jpath, path);
     
     engine_value* value = engine_newvalue(env, inst);
     engine_handleregistry(env, inst, state, value);
@@ -648,27 +650,13 @@ static void expass_pop(JNIEnv* env, lua_State* state, engine_jfuncwrapper* wrapp
 static int engine_handlecall_frame(engine_jfuncwrapper* wrapper, lua_State* state) {
 
     ASSERTEX(wrapper->engine->runtime_env);
-
-    // We check if the first argument is userdata, and
-    // then check if that userdata is an interface
-    // for a java object
-    //
+    
     // This is a fix for the ':' operator for function
     // calls on interfaces. We discard the first
     // argument if nessecary.
-    //
-    // technically, this means you can actually
-    // call interface functions with '.' because
-    // they are really just resolved closures
     
-    if (lua_isuserdata(state, 1)) {
-        lua_getmetatable(state, 1);
-        lua_pushstring(state, "__target");
-        lua_rawget(state, -2);
-        if (lua_toboolean(state, -1)) {
-            lua_remove(state, 1);
-        }
-        lua_pop(state, 2);
+    if (wrapper->skip_first) {
+        lua_remove(state, 1);
     }
     
     JNIEnv* env = wrapper->engine->runtime_env;
@@ -1003,6 +991,7 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
     wrapper->data.lambda.id = mid;
     wrapper->obj_inst = (*env)->NewGlobalRef(env, jfunc);
     wrapper->engine = inst;
+    wrapper->skip_first = 0;
     
     lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
 
@@ -1012,7 +1001,8 @@ void engine_pushlambda(JNIEnv* env, engine_inst* inst, jobject jfunc, jobject cl
 // same idea as above, but with reflection types instead (Method). We also do a lookup in
 // this implementation to find methods that have already been wrapped to consverve memory over
 // the lifetime of a lua VM/interpreter.
-void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
+static void engine_pushreflect_skip(JNIEnv* env, engine_inst* inst, jobject reflect_method,
+                                    jobject obj_inst, uint8_t skip_first) {
     
     ASSERTEX(env);
     
@@ -1053,12 +1043,17 @@ void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, 
     wrapper->obj_inst = (*env)->NewGlobalRef(env, obj_inst);
     wrapper->engine = inst;
     wrapper->func = (lua_CFunction) func_binding;
+    wrapper->skip_first = skip_first;
     
     lua_pushcfunction(inst->state, (lua_CFunction) func_binding);
     
     if (engine_debug) {
         printf("C: wrapped java reflect function (id: %ld, ptr: %p)\n", id, func_binding);
     }
+}
+
+void engine_pushreflect(JNIEnv* env, engine_inst* inst, jobject reflect_method, jobject obj_inst) {
+    engine_pushreflect_skip(env, inst, reflect_method, obj_inst, 0);
 }
 
 // this is how we handle function calls from Java

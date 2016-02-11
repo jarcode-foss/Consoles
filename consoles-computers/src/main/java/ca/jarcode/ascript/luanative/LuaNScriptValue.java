@@ -39,21 +39,18 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	  which would grow if this collection was disabled.
 	  
 	  Idealy, this feature should be disabled, and no leaks should ever occur.
-	 */
+	*/
 	public static int releaseRemainingContextValues(long address) {
-		if (TRACK_INSTANCES) {
-			HashMap<Long, LuaNScriptValue> map = TRACKED.get();
-			int n = 0;
-			for (LuaNScriptValue value : map.values()) {
-				if (value.instAddress() == address) {
-					value.release0();
-					++n;
-				}
+		HashMap<Long, LuaNScriptValue> map = TRACKED.get();
+		int n = 0;
+		for (LuaNScriptValue value : map.values()) {
+			if (value.instAddress() == address) {
+				value.release0();
+				++n;
 			}
-			map.clear();
-			return n;
 		}
-		return -1;
+		map.clear();
+		return n;
 	}
 
 	/*
@@ -65,13 +62,10 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	  This only returns values for the current thread.
 	*/
 	public static LuaNScriptValue[] remainingContextValues(long address) {
-		if (TRACK_INSTANCES) {
-			HashMap<Long, LuaNScriptValue> map = TRACKED.get();
-			return map.values().stream()
-				.filter((value) -> value.instAddress() == address)
-				.toArray(LuaNScriptValue[]::new);
-		}
-		return null;
+		HashMap<Long, LuaNScriptValue> map = TRACKED.get();
+		return map.values().stream()
+			.filter((value) -> value.instAddress() == address)
+			.toArray(LuaNScriptValue[]::new);
 	}
 
 	/*

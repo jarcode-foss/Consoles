@@ -1,10 +1,30 @@
 package ca.jarcode.ascript.interfaces;
 
+import ca.jarcode.ascript.Script;
+
 /**
  * A generic script value. It is assumed this type is immutable, unless it represents the set
  * of globals for the underlying scripting language and interpreter.
  */
 public interface ScriptValue {
+
+	default Object toJava() {
+		if (canTranslateBoolean())
+			return translateBoolean();
+		else if (canTranslateDouble())
+			return translateDouble();
+		else if (canTranslateString())
+			return translateString();
+		else if (isFunction())
+			return Script.javaFunction(this);
+		else if (isNull())
+			return null;
+		else if (canTranslateArray())
+			return translateArray(Object[].class);
+		else if (canTranslateObj())
+			return translateObj();
+		else throw new RuntimeException("Could not assume type");
+	}
 
 	Object translateObj();
 	boolean canTranslateObj();

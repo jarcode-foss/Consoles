@@ -240,8 +240,8 @@ public final class InterpretedProgram extends SandboxProgram {
 			"by calling soundList().")
 	public void $sound(
 			@Arg(name="name",info="name of the sound to play") String name,
-			@Arg(name="volume",info="volume of the sound") ScriptValue v1,
-			@Arg(name="pitch",info="pitch of the sound") ScriptValue v2) {
+			@Arg(name="volume",info="volume of the sound") Float v1,
+			@Arg(name="pitch",info="pitch of the sound") Float v2) {
 		delay(20);
 		Sound match = Arrays.asList(Sound.values()).stream()
 				.filter(s -> s.name().equals(name.toUpperCase()))
@@ -250,8 +250,7 @@ public final class InterpretedProgram extends SandboxProgram {
 			throw new IllegalArgumentException(name + " is not a qualified sound");
 		}
 		schedule(() -> computer.getConsole().getLocation().getWorld()
-				.playSound(computer.getConsole().getLocation(), match,
-						(float) v1.translateDouble(), (float) v2.translateDouble()));
+				.playSound(computer.getConsole().getLocation(), match, v1, v2));
 	}
 	@FunctionManual("Clears the terminal.")
 	public Boolean $clear() {
@@ -277,7 +276,7 @@ public final class InterpretedProgram extends SandboxProgram {
 	}
 	@FunctionManual("Loads the specified file from /lib or from the folder of the current program")
 	public ScriptValue $require(
-			@Arg(name="module",info="Name of the lua module to load.") String path) {
+			@Arg(name="file",info="Path of the lua file to load.") String path) {
 		delay(10);
 		FSBlock block = computer.getBlock(path, "/lib");
 		LuaFile file = block instanceof FSFile ? new LuaFile((FSFile) block, path,
@@ -300,20 +299,28 @@ public final class InterpretedProgram extends SandboxProgram {
 			}
 		}
 		String text = file.read();
-		ScriptValue value;
+		ScriptValue value = null;
 		try {
 			value = globals.load(text);
 		}
 		catch (ScriptError err) {
-			if (Computers.debug)
+			if (Computers.debug) {
 				err.printStackTrace();
+			}
 			println("lua:" + ChatColor.RED + " " + String.format(lang.getString("lua-require-compile-fail"), path));
 			return null;
 		}
-		ScriptValue result = value.call();
-		// release resoureces, because we won't be using
-		// this value to reference the loaded chunk anymore
-		value.release();
+		ScriptValue result;
+		try {
+			result = value.call();
+		}
+		finally {
+			// release resources, because we won't be using
+			// this value to reference the loaded chunk anymore
+			value.release();
+		}
+		// This isn't a memory leak, when translating values, this gets passed right through and released
+		// after calling.
 		return result;
 	}
 

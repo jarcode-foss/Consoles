@@ -117,14 +117,23 @@ public class NativeLayerTask {
 		try {
 			globals = LuaNEngine.newEnvironment(pool, null, System.in, System.out, -1);
 
-			globals.set(
-					globals.getValueFactory().translate("testIntegralValue", globals),
-					globals.getValueFactory().translate(42, globals)
-			);
+			ScriptValue skey, svalue;
 
-			assert globals.get(
-					globals.getValueFactory().translate("testIntegralValue", globals)
-			).translateInt() == 42;
+			skey = globals.getValueFactory().translate("testIntegralValue", globals);
+			svalue = globals.getValueFactory().translate(42, globals);
+			
+			globals.set(skey, svalue);
+
+			skey.release();
+			svalue.release();
+
+			skey = globals.getValueFactory().translate("testIntegralValue", globals);
+			svalue = globals.get(skey);
+			
+			assert svalue.translateInt() == 42;
+
+			skey.release();
+			svalue.release();
 
 			pool.mapStaticFunctions();
 
@@ -167,7 +176,7 @@ public class NativeLayerTask {
 		else if (value.isFunction())
 			return "function";
 		else if (value.canTranslateString())
-			return "str: '" + value + "'";
+			return "str: '" + value.translateString() + "'";
 		else if (value.canTranslateDouble())
 			return Double.toString(value.translateDouble());
 		else if (value.canTranslateLong())
@@ -191,7 +200,7 @@ public class NativeLayerTask {
 	}
 
 	public void loadAndCallChunk(String test) throws Throwable {
-
+		
 		try {
 			// load our program into a string
 			String program;
@@ -221,7 +230,7 @@ public class NativeLayerTask {
 			log("Calling program chunk");
 			logn(STARTED);
 			stdout.print("\n");
-			chunk.call();
+			chunk.call().release();
 			stdout.print("\n");
 		}
 		catch (Throwable e) {
@@ -231,22 +240,26 @@ public class NativeLayerTask {
 
 	public void loadAndCallTests(boolean passDirectory) {
 
+		ScriptValue fkey = null, testFunction = null, result = null, skey = null;
+		
 		try {
 			logs("Indexing test() function");
 			logn(DONE);
 			stdout.print("\n");
-			ScriptValue testFunction = globals.get(globals.getValueFactory().translate("test", globals));
+			fkey = globals.getValueFactory().translate("test", globals);
+			testFunction = globals.get(fkey);
+			fkey.release();
 			stdout.print("\n");
 
 			logs("Calling test() function");
 			logn(STARTED);
 			stdout.print("\n");
-
-			ScriptValue result;
-			if (passDirectory)
-				result = testFunction.getAsFunction().call(
-						globals.getValueFactory().translate(System.getProperty("user.dir"), globals)
-				);
+			
+			if (passDirectory) {
+				skey = globals.getValueFactory().translate(System.getProperty("user.dir"), globals);
+				result = testFunction.getAsFunction().call(skey);
+				skey.release();
+			}
 			else
 				result = testFunction.call();
 
@@ -261,9 +274,21 @@ public class NativeLayerTask {
 			} else {
 				throw new RuntimeException("non-integral response returned from test() lua function");
 			}
+			testFunction.release();
+			result.release();
 		}
 		catch (ScriptError e) {
 			throw wrapException(e, false);
+		}
+		finally {
+			if (fkey != null)
+				fkey.release();
+			if (testFunction != null)
+				testFunction.release();
+			if (result != null)
+				result.release();
+			if (skey != null)
+				skey.release();
 		}
 	}
 
@@ -277,6 +302,9 @@ public class NativeLayerTask {
 	}
 
 	public void cleanup() throws InterruptedException {
+		if (chunk != null) {
+			chunk.release();
+		}
 		if (globals != null) {
 			globals.close();
 		}
@@ -344,12 +372,17 @@ public class NativeLayerTask {
 	}
 
 	public void $submitPartialCallback(PartialFunctionBind bind) {
-		assert bind.call(5, 3).translateInt() == 8;
+		ScriptValue ret = bind.call(5, 3);
+		assert ret.translateInt() == 8;
+		ret.release();
 	}
 
 	public void $submitValueCallback(ScriptValue value) {
 		ScriptValue four = globals.getValueFactory().translate(4, globals);
-		assert value.getAsFunction().call(four, four).translateInt() == 8;
+		ScriptValue ret = value.getAsFunction().call(four, four);
+		assert ret.translateInt() == 8;
+		ret.release();
+		four.release();
 	}
 
 	public void logs(String message) {
