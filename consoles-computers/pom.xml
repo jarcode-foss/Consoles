@@ -145,10 +145,10 @@
             </plugin>
 
             <!--
-            I wrote a maven plugin for this project. Instead of working around the (terrible)
-            abstractions that the maven NAR plugin provides, I just made a simple plugin that allows
-            me to use a compiler with certain arguments, recursively against a source folder, and with
-            certain compile targets.
+                I wrote a maven plugin for this project. Instead of working around the (terrible)
+                abstractions that the maven NAR plugin provides, I just made a simple plugin that allows
+                me to use a compiler with certain arguments, recursively against a source folder, and with
+                certain compile targets.
             -->
             <plugin>
                 <groupId>ca.jarcode</groupId>
@@ -164,7 +164,7 @@
                         <configuration>
                             <!-- Add ELF32 if you're on an ancient 32-bit system (w/ comma). -->
                             <targetPlatforms>ELF64</targetPlatforms>
-                            <arguments><!-- -O2 --> -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -I/usr/include/luajit-2.0 -I/usr/include/luajit -fPIC</arguments>
+                            <arguments><!-- -O2 --> -ggdb -Wall -pthread -D_REENTRANT -I${env.JAVA_HOME}/include -I${env.JAVA_HOME}/include/linux -Itarget/include -fPIC</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -174,9 +174,24 @@
                             <goal>link</goal>
                         </goals>
                         <configuration>
+                            <!--
+                                We link directly against Lua 5.3, however, all lua 5.x versions
+                                should work just fine if you're compiling manually (versions are
+                                incompatible due to various symbol and API changes.)
+                                
+                                LuaJIT 2.x has a serious problem in that you cannot initialize
+                                states with a custom allocator. This makes it impossible to properly
+                                sandbox Lua code for Consoles. This problem is due to how the
+                                VM uses 32-bit pointers for its garbage collector and needs to
+                                allocate memory in the 32-bit range.
+                                
+                                If LuaJIT 3.x ever comes out, apparently it will have a new garbage
+                                collector to solve this issue. Hopefully with that update, we can
+                                have some method to limit memory usage for each state.
+                            -->
                             <!-- Add ELF32 if you're on an ancient 32-bit system (w/ comma). -->
                             <targetPlatforms>ELF64</targetPlatforms>
-                            <arguments>-lluajit-5.1 -pthread -lffi -Wl,-z,defs</arguments>
+                            <arguments>-l:liblua.so.5.3 -pthread -lffi -Wl,-z,defs</arguments>
                             <library>true</library>
                             <targetName>computerimpl</targetName>
                         </configuration>
@@ -185,13 +200,13 @@
             </plugin>
 
             <!--
-            The native layer for the Lua API <-> Java needs to pass various tests, this is because
-            issues with JNI calls will not be checked on normal execution in the server, and will
-            lead to obscure errors. Instead, we check it during the debug phase.
-
-            Additonally, we run tests without a Spigot/Craftbukkit server instance. This makes
-            debugging segfaults much easier since the JVM will be unlikely to throw bogus
-            segfaults at us with its signal handling.
+                The native layer for the Lua API <-> Java needs to pass various tests, this is because
+                issues with JNI calls will not be checked on normal execution in the server, and will
+                lead to obscure errors. Instead, we check it during the debug phase.
+                
+                Additonally, we run tests without a Spigot/Craftbukkit server instance. This makes
+                debugging segfaults much easier since the JVM will be unlikely to throw bogus
+                segfaults at us with its signal handling.
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -207,13 +222,25 @@
 
                     <!-- Run in alphabetical order -->
                     <runOrder>alphabetical</runOrder>
-                    
+
+                    <!--
+                        Add -Xcheck:jni if your JVM does not spam your console for not checking
+                        exceptions after every JNI call. The OpenJDK 8 VM does this, so unless
+                        you are having issues due to bad JNI usage, do not use this flag to
+                        prevent tons of spam on tests.
+                        
+                        (and there's nothing wrong with not checking exceptions in JNI code after
+                        every call if you can safely assume it will not throw one)
+                        
+                        Putting LuaN in debug mode (via engine.h) is much better if you want to
+                        debug JNI calls.
+                    -->
                     <argLine></argLine>
 
                     <!-- Do not timeout -->
                     <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
 
-                    <!-- Pass through system propertery for debugging tests -->
+                    <!-- Pass through system propertery for debugging tests, use this for segfaults -->
                     <systemProperties>
                         <property>
                             <name>debugTests</name>

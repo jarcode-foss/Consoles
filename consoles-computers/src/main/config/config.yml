@@ -75,7 +75,7 @@ frame-rendering: true
 # Size (in kilobytes) of the chunks that wget downloads every
 # 300ms. Increasing this value will result in higher download
 # speeds.
-wget-chunk-size: 2
+wget-chunk-size: 6
 
 # This is a hack to disable the spigot watchdog thread. If
 # you are debugging the server an need to prevent the
@@ -86,17 +86,14 @@ disable-watchdog: false
 #
 #   PROGRAM SETTINGS
 #
-
+ 
 # The script interpreter to use. The provided options are:
 #
-#  - luajit: a lua interpreter that uses a JIT compiler
-#    for very fast execution (experimental, native)
-#
 #  - lua: default lua interpreter and environment
-#    (experimental, native)
+#    (default, native)
 #
 #  - luaj: a lua interpreter that precompiles logic
-#    to java bytecode prior to execution (default, java)
+#    to java bytecode prior to execution (fallback, java)
 #
 # Depending on the interpreter, security and sandboxing is
 # subject to the implementation. For example, interpreters
@@ -106,9 +103,14 @@ disable-watchdog: false
 # OutOfMemoryErrors in your server.
 #
 # Interpreters/VMs that operate through the native layer
-# do not have to respect the suggested heap size and operate
-# outside of the Java heap.
-script-engine: luaj
+# respect the suggested heap size and operate outside of
+# the Java heap.
+#
+# LuaJIT theoretically can be supported through the LuaN
+# layer, however in practise there is a problem with
+# LuaJIT's garbage collector and allocator needing to
+# use pointers that are in the 32-bit address space.
+script-engine: lua
 
 # This is the interval (in instructions) in which kill
 # interrupts are checked in programs. This applies to
@@ -126,16 +128,10 @@ max-time-without-interrupt: 7000
 
 # Suggested heap size for each individual script (in kilobytes)
 #
-# This currently does not work for LuaJ (JVM-based), and both
-# the standard Lua interpreter and LuaJIT need to be compiled
-# with custom stack sizes to change heap sizes, rather than
-# this variable.
+# This currently does not work for LuaJ (JVM-based), engine,
+# will govern the allocator for the Lua and LuaJIT backends.
 #
-# LuaJIT by default is compiled with the macro 'LUAI_MAXSTACK'
-# set to 65500, which results in less that 64 KB of heap space
-# for scripts.
-#
-# The only thing this setting is used for is for non-standard
-# Lua VMs that have the ability to set stack sizes without
-# recompiling.
-script-heap-size: 65536
+# The default value is set very low for sandboxing reasons. If
+# you have only a few players using computers, you can increase
+# this value.
+script-heap-size: 16384

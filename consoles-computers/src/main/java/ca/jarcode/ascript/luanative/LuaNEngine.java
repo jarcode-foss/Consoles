@@ -161,7 +161,7 @@ public class LuaNEngine implements ScriptEngine {
 		}
 		
 		long ptr; // this is actually a pointer (sue me)
-		ptr = L.setupinst(IMPL.val, heap, Joint.INTERRUPT_CHECK_INTERVAL);
+		ptr = L.setupinst(IMPL.val, heap * 1024, Joint.INTERRUPT_CHECK_INTERVAL);
 		
 		ScriptValue globals = L.wrapglobals(ptr);
 		if (globals == null || globals.isNull()) {

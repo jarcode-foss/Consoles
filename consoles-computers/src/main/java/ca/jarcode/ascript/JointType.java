@@ -23,11 +23,16 @@ import static ca.jarcode.consoles.computer.CompileTarget.*;
 
 public enum JointType {
 	LUA(".lua", "--!", PREFER_NATIVE,
-			engine("luaj", LuaJEngine::install, LuaJEngine::newEnvironment,
-					THREAD_SENSITIVE, JAVA),
-			engine("luajit", () -> LuaNEngine.install(LuaNImpl.JIT), LuaNEngine::newEnvironment,
-					THREAD_SENSITIVE, ELF32, ELF64)
-	);
+		engine("luaj", LuaJEngine::install,
+			   LuaJEngine::newEnvironment,
+			   THREAD_SENSITIVE, JAVA),
+		engine("luajit", () -> LuaNEngine.install(LuaNImpl.JIT),
+			   LuaNEngine::newEnvironment,
+			   THREAD_SENSITIVE, ELF32, ELF64),
+		engine("lua", () -> LuaNEngine.install(LuaNImpl.DEFAULT),
+			   LuaNEngine::newEnvironment,
+			   THREAD_SENSITIVE, ELF32, ELF64)
+		);
 
 	public static class Accessor {
 		final Runnable INSTALLER;

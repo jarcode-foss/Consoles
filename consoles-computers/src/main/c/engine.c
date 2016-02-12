@@ -2,7 +2,6 @@
 #include <jni_md.h>
 
 #include <lua.h>
-#include <luajit.h> 
 #include <lauxlib.h>
 #include <lualib.h>
 
@@ -169,8 +168,7 @@ static void hook(engine_inst* inst, lua_State* state, lua_Debug* debug) {
     // there is an SO answer on this problem, and somehow the
     // accepted solution is to use setjmp/longjmp. That is a terrible
     // solution, because we're dealing with our own ffi functions
-    // (unsafe to jmp out of), and luajit (jit compiled, lots of
-    // undefined stuff could happen), and other internal ffi usages.
+    // (unsafe to jmp out of), and an undefined lua implementation.
     
     if (!(inst->killed) && maxtime > 0) {
         struct timeval last;
@@ -359,6 +357,34 @@ JNIEXPORT void JNICALL Java_jni_LuaEngine_setup(JNIEnv* env, jobject object) {
     }
 }
 
+struct engine_alloc_info {
+    jlong used;
+    jlong max;
+};
+
+static void* engine_alloc_heap(void *ud, void *ptr, size_t osize, size_t nsize) {
+    
+    struct engine_alloc_info* info = (struct engine_alloc_info*) ud;
+
+    if(ptr == NULL) {
+        osize = 0;
+    }
+
+    if (nsize == 0) {
+        free(ptr);
+        info->used -= osize; /* substract old size from used memory */
+        return NULL;
+    }
+    else {
+        if (info->used + (nsize - osize) > info->max) /* too much memory in use */
+            return NULL;
+        ptr = realloc(ptr, nsize);
+        if (ptr) /* reallocation successful? */
+            info->used += (nsize - osize);
+        return ptr;
+    }
+}
+
 JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
 (JNIEnv* env, jobject this, jint mode, jlong heap, jint interval) {
     
@@ -375,10 +401,14 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
     if (ffi_prep_closure_loc(instance->closure, &hook_cif, &handle_hook, instance, hook_binding) != FFI_OK) {
         abort_ffi_prep();
     }
-    
-    lua_State* state = lua_open();
+
+    struct engine_alloc_info* alloc_info = malloc(sizeof(struct engine_alloc_info));
+    *alloc_info = (struct engine_alloc_info) {.used = 0, .max = heap};
+    lua_State* state = lua_newstate(engine_alloc_heap, alloc_info);
     
     // set LuaJIT mode
+    // ignored, LuaJIT support dropped
+    /*
     switch (mode) {
         case 1:
             luaJIT_setmode(state, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
@@ -387,6 +417,7 @@ JNIEXPORT jlong JNICALL Java_jni_LuaEngine_setupinst
             luaJIT_setmode(state, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_OFF);
             break;
     }
+    */
     
     luaopen_base(state);
     luaopen_table(state);
@@ -471,8 +502,14 @@ JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlo
     const char* path = (*env)->GetStringUTFChars(env, jpath, 0);
 
     struct engine_program program = {raw, 0};
-    
+
+    /* 5.2 and newer has an extra argument for lua_load for binary/text mode */
+#if LUA_VERSION_NUM >= 502
+    int result = lua_load(state, (lua_Reader) loadchunk, &program, path, NULL);
+#else
+    /* Lua 5.1 and LuaJIT 2.x */
     int result = lua_load(state, (lua_Reader) loadchunk, &program, path);
+#endif
     
     (*env)->ReleaseStringUTFChars(env, jraw, raw);
     (*env)->ReleaseStringUTFChars(env, jpath, path);

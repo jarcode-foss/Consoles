@@ -38,6 +38,10 @@
 #ifndef ENGINE_H_
 #define ENGINE_H_
 
+#if LUA_VERSION_NUM < 500
+#error "Only Lua 5.x and LuaJIT 2.x versions are supported"
+#endif
+
 #define ENGINE_CDEBUG 0
 
 // debugging macros

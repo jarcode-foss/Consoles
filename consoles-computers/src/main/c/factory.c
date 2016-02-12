@@ -112,9 +112,15 @@ engine_value* engine_popvalue(JNIEnv* env, engine_inst* inst, lua_State* state) 
     }
     else if (lua_isstring(state, -1)) {
         v->type = ENGINE_STRING;
-        
+
+        /* Sublte differences in string handling */
+#if LUA_VERSION_NUM < 502
         size_t len = lua_strlen(state, -1);
         const char* lstring = lua_tostring(state, -1);
+#else
+        size_t len;
+        const char* lstring = lua_tolstring(state, -1, &len);
+#endif
         char* s = malloc(sizeof(char) * (len + 1));
         s[len] = '\0';
 

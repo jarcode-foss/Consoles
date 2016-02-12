@@ -57,7 +57,7 @@ public class Computers extends JavaPlugin {
 	// max heap size for scripts (in kilobytes)
 	public static int scriptHeapSize = 64 * 1024;
 	// script interpreter to use
-	public static String scriptEngine = "luaj";
+	public static String scriptEngine = "luajit";
 	// amount of instructions to wait before checking
 	public static int interruptCheckInterval = 200;
 	// debug mode
@@ -143,11 +143,11 @@ public class Computers extends JavaPlugin {
 			);
 			getLogger().warning("");
 			if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-				getLogger().warning("Installing luajit and libffi (also called 'libffi6') " +
+				getLogger().warning("Installing lua 5.3 and libffi (also called 'libffi6') " +
 						"and restarting your server should resolve the issue.");
 				getLogger().warning("On Ubuntu/Debian, you can run: ");
 				getLogger().warning("");
-				getLogger().warning("\tapt-get install luajit libffi6");
+				getLogger().warning("\tapt-get install lua5.3 libffi6");
 				getLogger().warning("");
 			}
 		}
