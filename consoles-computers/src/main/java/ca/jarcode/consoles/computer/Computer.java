@@ -218,7 +218,6 @@ public abstract class Computer implements Runnable {
 		getCurrentTerminal().advanceLine();
 		ComputerHandler.getInstance().updateBlocks(this);
 		console.repaint();
-		String[] text = lang.getString("computer-startup-messages").split("\r");
 		bootTask();
 	}
 	private void bootTask() {

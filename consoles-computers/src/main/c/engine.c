@@ -494,7 +494,8 @@ static const char* loadchunk(lua_State* state, void* data, size_t* size) {
     return program->str;
 }
 
-JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load(JNIEnv* env, jobject this, jlong ptr, jstring jraw, jstring jpath) {
+JNIEXPORT jobject JNICALL Java_jni_LuaEngine_load
+(JNIEnv* env, jobject this, jlong ptr, jstring jraw, jstring jpath) {
     engine_inst* inst = (engine_inst*) (uintptr_t) ptr;
     lua_State* state = inst->state;
     
