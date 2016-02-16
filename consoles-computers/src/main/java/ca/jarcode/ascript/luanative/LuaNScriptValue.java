@@ -43,13 +43,16 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	public static int releaseRemainingContextValues(long address) {
 		HashMap<Long, LuaNScriptValue> map = TRACKED.get();
 		int n = 0;
-		for (LuaNScriptValue value : map.values()) {
+		Iterator<Map.Entry<Long, LuaNScriptValue>> it = map.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<Long, LuaNScriptValue> entry = it.next();
+			LuaNScriptValue value = entry.getValue();
 			if (value.instAddress() == address) {
 				value.release0();
+				it.remove();
 				++n;
 			}
 		}
-		map.clear();
 		return n;
 	}
 
@@ -69,9 +72,12 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	}
 
 	/*
-	  this is a 32 or 64 bit address that points to the implementaion of this class
+	  This is a 32 or 64 bit address that points to the implementaion of this class
+	  
+	  This value is volatile to prevent multiple threads having a window to release
+	  a value at the same time (causing a double-free).
 	*/
-	private long __address;
+	private volatile long __address;
 
 	/*
 	  this constructor is private, but it's called from native code.
@@ -125,11 +131,18 @@ public class LuaNScriptValue implements ScriptValue, ScriptFunction {
 	public void release() {
 		if (__address != 0) {
 			if (TRACK_INSTANCES) {
-				TRACKED.get().remove(__address);
+				if (TRACKED.get().remove(__address) == null) {
+					/*
+					  If this happens, release() is being called in a thread that
+					  a script value wasn't created in.
+					*/
+					throw new LuaNError("value is untracked, but has a non-null address");
+				}
 			}
 			release0();
 			__address = 0;
 		}
+		else throw new LuaNError("value already released");
 	}
 	
 	// internal release

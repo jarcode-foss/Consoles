@@ -25,8 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collectors;
 
 import static ca.jarcode.consoles.Lang.lang;
@@ -126,13 +125,22 @@ public abstract class SandboxProgram {
         return exec(program, terminal, "");
     }
 
-    public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, boolean threaded) {
+    public static SandboxProgram pass(String program, Terminal terminal,
+									  ProgramInstance instance, boolean threaded) {
         return pass(program, terminal, instance, "", threaded);
     }
 
-    public static SandboxProgram pass(String program, Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
-        return pass(FACTORY.get(), program, terminal, instance, args, threaded);
+    public static SandboxProgram pass(String program, Terminal terminal,
+									  ProgramInstance instance, String args,
+									  boolean threaded) {
+        return pass(program, terminal, instance, args, threaded, (unused) -> {});
     }
+
+	public static SandboxProgram pass(String program, Terminal terminal,
+									  ProgramInstance instance, String args,
+									  boolean threaded, Consumer<SandboxProgram> poolHook) {
+        return pass(FACTORY.get(), program, terminal, instance, args, threaded, poolHook);
+	}
 
     /**
      * Passes a program instance from provided to an interpreted lua program
@@ -145,11 +153,14 @@ public abstract class SandboxProgram {
      * @return the sandbox instance
      */
     public static SandboxProgram pass(SandboxProgram inst, String program,
-                                      Terminal terminal, ProgramInstance instance, String args, boolean threaded) {
+                                      Terminal terminal, ProgramInstance instance,
+									  String args, boolean threaded,
+									  Consumer<SandboxProgram> poolHook) {
         inst.restricted = false;
         inst.contextTerminal = terminal;
         instance.interpreted = inst;
-        inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(), instance, program, threaded);
+        inst.runRaw(instance.stdout, instance.stdin, args, terminal.getComputer(),
+					instance, program, threaded, poolHook);
         return inst;
     }
 
@@ -243,16 +254,25 @@ public abstract class SandboxProgram {
             defaultChunk = new LuaFile((FSFile) block, "/bin/default", "/", this::terminated, computer).read();
         }
     }
-
-    public void runRaw(OutputStream out, InputStream in, String str, Computer computer,
-                       ProgramInstance inst, String raw, boolean threaded) {
+    public void runRaw(OutputStream out, InputStream in,
+					   String str, Computer computer,
+                       ProgramInstance inst, String raw,
+					   boolean threaded) {
+		runRaw(out, in, str, computer, inst, raw, threaded, (unused) -> {});
+	}
+    public void runRaw(OutputStream out, InputStream in,
+					   String str, Computer computer,
+                       ProgramInstance inst, String raw,
+					   boolean threaded, Consumer<SandboxProgram> poolHook) {
         setup(out, in, str, computer, inst);
         loadDefaultChunk();
-        compileAndExecute(raw, threaded);
+        compileAndExecute(raw, threaded, poolHook);
     }
-
+	public void compileAndExecute(String raw, boolean threaded) {
+		compileAndExecute(raw, threaded, (unused) -> {});
+	}
     // runs a program with the given raw text
-    public void compileAndExecute(String raw, boolean threaded) {
+    public void compileAndExecute(String raw, boolean threaded, Consumer<SandboxProgram> poolHook) {
 
         /*
          * It's important to remember how the script abstractions works, if
@@ -285,6 +305,8 @@ public abstract class SandboxProgram {
 
             // map functions from this program instance to the pool
             map();
+
+			poolHook.accept(this);
 
             // push all our functions to the engine
             globals.load(pool);
@@ -346,7 +368,7 @@ public abstract class SandboxProgram {
             // we should just exit from here
             if (chunk == null)
                 return;
-
+			
             ScriptValue mainValue = null, mainArg = null, exitArg = null, mainCallArg = null;
 
             // if we got to this point, the program compiled just fine.
@@ -450,8 +472,9 @@ public abstract class SandboxProgram {
 			if (globals != null)
 				globals.close();
 
+			// if this program owns its own thread, cleanup.
 			if (threaded)
-				globals.cleanupThreadContext();
+				Script.cleanupThreadContext(globals);
 		}
 	}
 
@@ -652,7 +675,7 @@ public abstract class SandboxProgram {
 		for (Object obj : objects) {
 			if (obj instanceof ScriptValue)
 				((ScriptValue) obj).release();
-			if (obj instanceof ScriptFunction)
+			else if (obj instanceof ScriptFunction)
 				((ScriptFunction) obj).release();
 		}
 	}

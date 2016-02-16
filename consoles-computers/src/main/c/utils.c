@@ -10,6 +10,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <stdarg.h>
+
 #include "engine.h"
 
 static int ABORT_SLEEP_TIME = 1000;
@@ -26,6 +28,16 @@ void classreg(JNIEnv* env, const char* name, jclass* mem, jmp_buf err_buf) {
     (*env)->DeleteLocalRef(env, local);
     CHECKEX(env, err_buf);
     if (!(*mem)) longjmp(err_buf, 1);
+}
+inline jint throwf(JNIEnv* env, const char* format, ...) {
+    va_list argptr;
+    jint ret;
+    va_start(argptr, format);
+    char buf[128];
+    vsnprintf(buf, 128, format, argptr);
+    ret = exclass ? (*env)->ThrowNew(env, exclass, buf) : 0;
+    va_end(argptr);
+    return ret;
 }
 inline jint throw(JNIEnv* env, const char* message) {
     if (exclass)
@@ -77,5 +89,5 @@ void engine_fatal_exception(JNIEnv* env) {
     }
     printf("C: SEVERE: unexpected java exception, exiting...\n");
     
-    exit(EXIT_FAILURE); // exit immidiately, preventing anything else from happening so we can debug.
+    abort(); // exit immidiately, preventing anything else from happening so we can debug.
 }

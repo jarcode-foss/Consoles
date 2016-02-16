@@ -29,9 +29,7 @@ static jmethodID value_constructor;
 
 // class 'Array'
 static jclass class_array;
-static jmethodID id_newarray;
-static jmethodID id_arrayset;
-static jmethodID id_release;
+static jmethodID id_newarray, id_arrayset, id_release;
 static jfieldID id_address;
 
 static uint8_t setup = 0;
@@ -97,13 +95,40 @@ engine_value* engine_newsharedvalue(JNIEnv* env) {
 }
 
 static void valuefree(JNIEnv* env, engine_value* value) {
+    
+    if (value->type & ENGINE_MARKED) {
+        // If this happens, we got lucky, but it's possible these can turn into memory corruption errors.
+
+        int type_unmasked = (int) (value->type & ~ENGINE_MARKED);
+        // Print to stderr, this is a severe issue
+        fprintf(stderr, "## SEVERE ##: double free for value type %d\n", type_unmasked);
+
+        // throw exception
+        throwf(env, "C: double free for value type %d", type_unmasked);
+        return;
+    }
     if (value->type == ENGINE_ARRAY) {
         if (value->data.array.values) {
+            
+            size_t size = value->data.array.length;
+            
             // recursive free
             size_t t;
-            for (t = 0; t < value->data.array.length; ++t) {
-                engine_releasevalue(env, value->data.array.values[t]);
+            for (t = 0; t < size; ++t) {
+                
+                if (value->data.array.values[t]) {
+                    engine_releasevalue(env, value->data.array.values[t]);
+                }
+
+                // This should never happen. If it does, the array contained an already
+                // released value (which ... should never happen because array values are
+                // always copied in). For some reason, it does happen.
+                if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
+                    value->type |= ENGINE_MARKED;
+                    return;
+                }
             }
+            
             // free actual array
             free(value->data.array.values);
             value->data.array.values = 0;
@@ -131,11 +156,16 @@ static void valuefree(JNIEnv* env, engine_value* value) {
     else if (value->type == ENGINE_JAVA_OBJECT) {
         (*env)->DeleteGlobalRef(env, value->data.obj);
     }
+    value->type |= ENGINE_MARKED;
     (*env)->DeleteGlobalRef(env, value->ref);
     free(value);
 }
 
 void engine_releasevalue(JNIEnv* env, engine_value* value) {
+    if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
+        fprintf(stderr, "SEVERE: tried to call LuaNScriptValue.release() with exception pending\n");
+        return;
+    }
     // call back into Java, since there might be additional code for tracking engine_value instances
     (*env)->CallVoidMethod(env, value->ref, id_release, (jlong) (intptr_t) value);
 }
@@ -242,7 +272,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tran
         return value->data.obj;
     }
     else {
-        throw(env, "C: tried to translate value to object");
+        throwf(env, "C: tried to translate value to object (%d)", (int) value->type);
         return 0;
     }
 }
@@ -270,7 +300,7 @@ JNIEXPORT jstring JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tran
         return (*env)->NewStringUTF(env, value->data.str);
     }
     else {
-        throw(env, "C: tried to translate value to string");
+        throwf(env, "C: tried to translate value to string (%d)", (int) value->type);
         return 0;
     }
 }
@@ -302,7 +332,7 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_transl
         return (jlong) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to long");
+        throwf(env, "C: tried to translate value to long (%d)", (int) value->type);
         return 0;
     }
 }
@@ -334,7 +364,7 @@ JNIEXPORT jshort JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_trans
         return (jshort) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to short");
+        throwf(env, "C: tried to translate value to short (%d)", (int) value->type);
         return 0;
     }
 }
@@ -366,7 +396,7 @@ JNIEXPORT jbyte JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_transl
         return (jbyte) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to byte");
+        throwf(env, "C: tried to translate value to byte (%d)", (int) value->type);
         return 0;
     }
 }
@@ -398,7 +428,7 @@ JNIEXPORT jint JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_transla
         return (jint) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to int");
+        throwf(env, "C: tried to translate value to int (%d)", (int) value->type);
         return 0;
     }
 }
@@ -430,7 +460,7 @@ JNIEXPORT jfloat JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_trans
         return (jfloat) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to float");
+        throwf(env, "C: tried to translate value to float (%d)", (int) value->type);
         return 0;
     }
 }
@@ -462,7 +492,7 @@ JNIEXPORT jdouble JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tran
         return (jdouble) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to double");
+        throwf(env, "C: tried to translate value to double (%d)", (int) value->type);
         return 0;
     }
 }
@@ -492,7 +522,7 @@ JNIEXPORT jboolean JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tra
         return (jboolean) value->data.i;
     }
     else {
-        throw(env, "C: tried to translate value to byte");
+        throwf(env, "C: tried to translate value to byte (%d)", (int) value->type);
         return 0;
     }
 }
@@ -542,7 +572,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_tran
     engine_value* value = findnative(env, this);
     if (!value) return 0;
     if (value->type != ENGINE_ARRAY) {
-        throw(env, "C: tried to translate value to array");
+        throwf(env, "C: tried to translate value to array (%d)", (int) value->type);
         return 0;
     }
     // get array component type
@@ -636,7 +666,7 @@ JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_set
         }
     }
     else {
-        throw(env, "J->C: tried to set non-global value");
+        throwf(env, "J->C: tried to set non-global value (%d)", (int) this_value->type);
     }
 }
 
@@ -673,12 +703,9 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_get
         if (t < value->data.array.length && t >= 0) {
             // get value pointer from array
             engine_value* result = key->data.array.values[t];
-            // just in case this happens, handle it
-            // actual null values have their own type
-            if (result == 0) {
-                throw(env, "J->C: internal error: result after indexing array"
-                      " with valid key is null pointer (bad value table?)");
-                return 0;
+            
+            if (result == NULL) {
+                return NULL;
             }
             // lookup value and get object counterpart
             return engine_wrap(env, value_copy(env, result));

@@ -96,7 +96,7 @@ public class ProgramInstance implements Runnable {
 			}
 		}
 		catch (Throwable e) {
-			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  " (" + e.getCause()) + ")");
+			write(e.getClass().getSimpleName() + (e.getCause() == null ? "" :  (" (" + e.getCause() + ")")));
 			Computers.getInstance().getLogger().severe(lang.getString("uncaught-program-error"));
 			if (Computers.debug)
 				e.printStackTrace();

@@ -57,14 +57,14 @@ static inline void setup_closure(thread_datum* d) {
     int ret = pthread_key_create(&(d->key), 0);
     if (ret) {
         fprintf(stderr, "\nFailed pthread key creation for thread datum (%d)\n", ret);
-        exit(EXIT_FAILURE);
+        abort();
     }
 }
 
 static inline void abort_ffi() {
     fprintf(stderr, "\nFailed FFI call for thread datum\n");
     fflush(stderr);
-    exit(EXIT_FAILURE);
+    abort();
 }
 
 static void handle_bind(ffi_cif* cif, void* ret, void* args[], void* user_data) {

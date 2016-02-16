@@ -17,9 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
+import java.util.function.*;
 
 import static ca.jarcode.consoles.computer.ProgramUtils.parseFlags;
 import static ca.jarcode.consoles.computer.ProgramUtils.schedule;
@@ -42,19 +41,20 @@ import static ca.jarcode.consoles.computer.ProgramUtils.splitArguments;
 )
 @SuppressWarnings("unused")
 public class EditProgram extends FSProvidedProgram {
-	private static final String DEFAULT_CONFIG = "-- This is preloaded by the edit program to " +
-			"set configuration values. You may edit this to your preference.\n\n" +
-			"-- Color mappings set for certain symbols\n" +
-			"symbolColor(\"()\", \"9\")\n" +
-			"symbolColor(\"{}\", \"d\")\n" +
-			"-- Color used for code comments\n" +
-			"commentColor(\"2\")\n" +
-			"-- String color\n" +
-			"stringColor(\"a\")\n" +
-			"-- Lua keyword color\n" +
-			"keywordColor(\"c\")\n" +
-			"-- Raw map color of line numbers on the left side of the editor\n" +
-			"lineNumberColor(36)";
+	private static final String DEFAULT_CONFIG =
+		"-- This is preloaded by the edit program to " +
+		"set configuration values. You may edit this to your preference.\n\n" +
+		"-- Color mappings set for certain symbols\n" +
+		"symbolColor(\"()\", \"9\")\n" +
+		"symbolColor(\"{}\", \"d\")\n" +
+		"-- Color used for code comments\n" +
+		"commentColor(\"2\")\n" +
+		"-- String color\n" +
+		"stringColor(\"a\")\n" +
+		"-- Lua keyword color\n" +
+		"keywordColor(\"c\")\n" +
+		"-- Raw map color of line numbers on the left side of the editor\n" +
+		"lineNumberColor(36)";
 
 	Charset charset = Charset.forName("UTF-8");
 
@@ -170,12 +170,21 @@ public class EditProgram extends FSProvidedProgram {
 		List<String> keyColorList = new ArrayList<>();
 		byte numberColor = 36;
 
-		void scheduleCreate(Computer computer, FSFile file, FSFile config, String content, int index, boolean stripped)
+		void scheduleCreate(Computer computer, FSFile file, FSFile config,
+							String content, int index, boolean stripped)
 				throws IOException, InterruptedException {
-
-			SandboxProgram inst = SandboxProgram.FACTORY.get();
-			Script.find(EditorInstance.class, this, inst.getPool());
-			SandboxProgram.pass(inst, readFully(config), computer.getTerminal(EditProgram.this), instance, "", true);
+			
+			SandboxProgram.pass(
+				/* read config into string */
+				readFully(config),
+				/* associate same terminal instance */
+				computer.getTerminal(EditProgram.this),
+				/* pass instance, args, and thread info */
+				instance, "", true,
+				/* pass hook for loading our own functions */
+				(sandbox) -> {
+					Script.find(EditorInstance.class, this, sandbox.getPool());
+				});
 
 			schedule(() -> {
 				EditorComponent component = new EditorComponent(computer.getViewWidth(),

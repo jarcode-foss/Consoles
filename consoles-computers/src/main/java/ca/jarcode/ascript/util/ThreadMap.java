@@ -21,10 +21,9 @@ public class ThreadMap<V> {
 	}
 
 	public void purge() {
-		if (defaultPurgeOp == null) {
-			throw new IllegalStateException("Default purge operation is null");
+		if (defaultPurgeOp != null) {
+			purge(defaultPurgeOp);
 		}
-		purge(defaultPurgeOp);
 	}
 
 	public void purge(Consumer<V> onRemove) {

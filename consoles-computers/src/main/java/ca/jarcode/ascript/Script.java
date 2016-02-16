@@ -30,12 +30,6 @@ public class Script {
 	// these are mappings to functions for engines that can re-use ScriptFunctions
 	public static Map<ScriptEngine, Map<String, ScriptFunction>> FUNCS = new ConcurrentHashMap<>();
 	public static ThreadMap<Map<ScriptEngine, Map<String, ScriptFunction>>> CONTEXT_FUNCS = new ThreadMap<>();
-	
-	static {
-		CONTEXT_FUNCS.setDefaultPurgeOperation(
-			(value) -> value.values().stream().forEach(
-				(map) -> map.values().stream().forEach(ScriptFunction::release)));
-	}
 
 	// this helps hugely with making binds for Lua<->Java, but it is definitely the most
 	// unique piece of code that I have written.
@@ -525,7 +519,9 @@ public class Script {
 		}
 	}
 
-	public static void cleanupThreadContext() {
-		ScriptEngine.getDefaultEngine().cleanupThreadContext();
+	public static void cleanupThreadContext(ScriptGlobals G) {
+		G.getEngine().cleanupThreadContext();
+		CONTEXT_FUNCS.get().get(G.getEngine())
+			.values().stream().forEach(ScriptFunction::release);
 	}
 }

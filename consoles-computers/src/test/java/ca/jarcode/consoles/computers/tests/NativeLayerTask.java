@@ -258,7 +258,6 @@ public class NativeLayerTask {
 			if (passDirectory) {
 				skey = globals.getValueFactory().translate(System.getProperty("user.dir"), globals);
 				result = testFunction.getAsFunction().call(skey);
-				skey.release();
 			}
 			else
 				result = testFunction.call();
@@ -274,15 +273,11 @@ public class NativeLayerTask {
 			} else {
 				throw new RuntimeException("non-integral response returned from test() lua function");
 			}
-			testFunction.release();
-			result.release();
 		}
 		catch (ScriptError e) {
 			throw wrapException(e, false);
 		}
 		finally {
-			if (fkey != null)
-				fkey.release();
 			if (testFunction != null)
 				testFunction.release();
 			if (result != null)

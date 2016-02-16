@@ -730,7 +730,7 @@ static int engine_handlecall_frame(engine_jfuncwrapper* wrapper, lua_State* stat
 #if ENGINE_CDEBUG > 0
     if (passed < 0 || passed > 5000) {
         printf("FATAL: corrupt Lua API stack\n");
-        exit(EXIT_FAILURE);
+        abort();
     }
 #endif
     

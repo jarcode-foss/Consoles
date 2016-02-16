@@ -80,6 +80,9 @@
 // lua_setglobal functions
 #define ENGINE_LUA_GLOBALS 10
 
+// this is OR'd on the value's type before free()'ing the value
+#define ENGINE_MARKED 0x10
+
 // this macro does not replace _all_ instances of the class string.
 #define ENGINE_CLASS "java/lang/Class"
 
@@ -93,6 +96,7 @@
 #define ENGINE_ERR_CLASS "ca/jarcode/ascript/luanative/LuaNError"
 #define ENGINE_VALUE_CLASS "ca/jarcode/ascript/luanative/LuaNScriptValue"
 #define ENGINE_VALUE_INTERFACE "ca/jarcode/ascript/interfaces/ScriptValue"
+#define ENGINE_OBJECT "ca/jarcode/ascript/luanative/LuaNObject"
 #define ENGINE_THREAD_DATUM_CLASS "ca/jarcode/ascript/luanative/LuaNThreadDatum"
 
 // we call all of our userdata objects an 'interface', since they work as a way to lookup methods
@@ -362,6 +366,7 @@ extern engine_value* engine_call(JNIEnv* env,engine_inst* inst, lua_State* state
 
 /* Throw LuaNError to Java, with the given message */
 extern jint throw(JNIEnv* env, const char* message);
+extern jint throwf(JNIEnv* env, const char* format, ...);
 
 /* Abruptly abort */
 extern void engine_abort(void);

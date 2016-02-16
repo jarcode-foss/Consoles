@@ -53,10 +53,8 @@ debug-hook: false
 # properly pass arguments to the newly spawned process.
 #
 # By default, this command will start GDB in a seperate
-# terminal on Linux. You can uncomment the second line
-# if you need a command for a headless server install.
-debug-command: "x-terminal-emulator,-e,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont,-ex,handle SIGSEGV pass"
-#debug-command: "screen,-S,%N,-X,gdb,-p,%I,-ex,catch syscall exit exit_group,-ex,cont,-ex,handle SIGSEGV pass"
+# terminal on Linux, and sets up signal handling for the JVM.
+debug-command: "x-terminal-emulator,-e,gdb,-p,%I,-ex,handle SIGSEGV pass noprint nostop,-ex,handle SIGABRT pass print stop,-ex,cont"
 
 #
 #   FUNCTION SETTINGS

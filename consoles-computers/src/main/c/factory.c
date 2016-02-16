@@ -27,7 +27,7 @@ void engine_handleregistry(JNIEnv* env, engine_inst* inst, lua_State* state, eng
     if (!lua_isfunction(state, -1) && !lua_iscfunction(state, -1)) {
         fprintf(stderr, "FATAL: engine_handleregistry(...) called without function on top of stack");
         fflush(stderr);
-        exit(EXIT_FAILURE);
+        abort();
     }
     
     // make copy of function, and put it on the top of the stack
@@ -489,7 +489,7 @@ JNIEXPORT jobject JNICALL Java_ca_jarcode_ascript_luanative_LuaNValueFactory_lis
     value->data.array.values = len ? malloc(sizeof(engine_inst*) * len) : 0;
     value->data.array.length = (size_t) len;
     if (engine_debug) {
-        printf("C: creating engine array from Java array, size: %lu\n", (unsigned long) value->data.array.length);
+        printf("C: creating engine array from Java array, size: %lu\n", (unsigned long) len);
     }
     int t;
     for (t = 0; t < len; t++) {
