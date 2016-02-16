@@ -11,35 +11,25 @@
 #include <LuaNScriptValue.h>
 
 #include "engine.h"
+#include "ln_obj.h"
 
 /*
  * 
  * This unit is a native implementation of LuaNScriptValue. It serves as a buffer
  * for Java to interact with Lua values, by storing everything in a C struct.
  * 
- * The internal data (engine_value*) is only visible from the thread context that
- * the value was originally created in.
- * 
  * Written by Levi Webb (Jarcode)
  * 
  */
 
-static jclass value_type;
-static jmethodID value_constructor;
-
 // class 'Array'
 static jclass class_array;
-static jmethodID id_newarray, id_arrayset, id_release;
-static jfieldID id_address;
+static jmethodID id_newarray, id_arrayset;
 
 static uint8_t setup = 0;
 
-static inline void handle_null_const(jmethodID v, const char* message) {
-    if (v == 0) {
-        fprintf(stderr, "\nC: failed to find value constructor (%s)\n", message);
-        engine_abort();
-    }
-}
+// declare engine_value as a C struct wrapped in a LuaNObject, with 2 reference slots
+LN_DECLARE(engine_value, ENGINE_VALUE_CLASS, 2)
 
 static inline engine_value* findnative(JNIEnv* env, jobject ref) {
     jlong value = (*env)->GetLongField(env, ref, id_address);
@@ -54,17 +44,12 @@ static inline engine_value* findnative(JNIEnv* env, jobject ref) {
 
 void setup_value(JNIEnv* env, jmp_buf handle) {
     if (!setup) {
-        classreg(env, ENGINE_VALUE_CLASS, &value_type, handle);
         classreg(env, "java/lang/reflect/Array", &class_array, handle); // for generic array setting
-        value_constructor = method_resolve(env, value_type, "<init>", "(J)V", handle);
-        handle_null_const(value_constructor, ENGINE_VALUE_CLASS);
         id_newarray = static_method_resolve
             (env, class_array, "newInstance", "(Ljava/lang/Class;I)Ljava/lang/Object;", handle);
         id_arrayset = static_method_resolve
             (env, class_array, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V", handle);
-        id_release = method_resolve(env, value_type, "release", "()V", handle);
-        id_address = field_resolve(env, value_type, "__address", "J", handle);
-        
+        ln_setup(env, engine_value, handle);
         setup = 1;
     }
 }
@@ -77,97 +62,19 @@ engine_value* engine_newvalue(JNIEnv* env, engine_inst* inst) {
 }
 
 engine_value* engine_newsharedvalue(JNIEnv* env) {
-    engine_value* v = malloc(sizeof(engine_value));
+    jobject new_obj = ln_new(env, engine_value);
+    engine_value* v = ln_struct(env, engine_value, new_obj);
+    v->ref = new_obj;
     
 #if ENGINE_CDEBUG > 0 // initialize debug signature, if needed
     v->DEBUG_SIGNATURE = ENGINE_DEBUG_SIGNATURE;
 #endif // ENGINE_CDEBUG
-    v->inst = NULL;
     
-    jobject obj = (*env)->NewObject(env, value_type, value_constructor, (jlong) (intptr_t) v);
+    v->inst = NULL;
     
     ASSERTEX(env);
     
-    v->ref = (*env)->NewGlobalRef(env, obj);
-    (*env)->SetLongField(env, obj, id_address, (jlong) (intptr_t) v);
-    (*env)->DeleteLocalRef(env, obj);
     return v;
-}
-
-static void valuefree(JNIEnv* env, engine_value* value) {
-    
-    if (value->type & ENGINE_MARKED) {
-        // If this happens, we got lucky, but it's possible these can turn into memory corruption errors.
-
-        int type_unmasked = (int) (value->type & ~ENGINE_MARKED);
-        // Print to stderr, this is a severe issue
-        fprintf(stderr, "## SEVERE ##: double free for value type %d\n", type_unmasked);
-
-        // throw exception
-        throwf(env, "C: double free for value type %d", type_unmasked);
-        return;
-    }
-    if (value->type == ENGINE_ARRAY) {
-        if (value->data.array.values) {
-            
-            size_t size = value->data.array.length;
-            
-            // recursive free
-            size_t t;
-            for (t = 0; t < size; ++t) {
-                
-                if (value->data.array.values[t]) {
-                    engine_releasevalue(env, value->data.array.values[t]);
-                }
-
-                // This should never happen. If it does, the array contained an already
-                // released value (which ... should never happen because array values are
-                // always copied in). For some reason, it does happen.
-                if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-                    value->type |= ENGINE_MARKED;
-                    return;
-                }
-            }
-            
-            // free actual array
-            free(value->data.array.values);
-            value->data.array.values = 0;
-        }
-    }
-    else if (value->type == ENGINE_STRING) {
-        // strings in our values are either copied from java or lua,
-        // we need to free the string when we parse the stack
-        if (value->data.str) {
-            free(value->data.str);
-            value->data.str = 0;
-        }
-    }
-    // clear global references to reflection method
-    else if (value->type == ENGINE_JAVA_REFLECT_FUNCTION) {
-        (*env)->DeleteGlobalRef(env, value->data.rfunc.obj_inst);
-        (*env)->DeleteGlobalRef(env, value->data.rfunc.reflect_method);
-    }
-    // clear global references to lambda method and argument class array
-    else if (value->type == ENGINE_JAVA_LAMBDA_FUNCTION) {
-        (*env)->DeleteGlobalRef(env, value->data.lfunc.lambda);
-        (*env)->DeleteGlobalRef(env, value->data.lfunc.class_array);
-    }
-    // clear global references to object
-    else if (value->type == ENGINE_JAVA_OBJECT) {
-        (*env)->DeleteGlobalRef(env, value->data.obj);
-    }
-    value->type |= ENGINE_MARKED;
-    (*env)->DeleteGlobalRef(env, value->ref);
-    free(value);
-}
-
-void engine_releasevalue(JNIEnv* env, engine_value* value) {
-    if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "SEVERE: tried to call LuaNScriptValue.release() with exception pending\n");
-        return;
-    }
-    // call back into Java, since there might be additional code for tracking engine_value instances
-    (*env)->CallVoidMethod(env, value->ref, id_release, (jlong) (intptr_t) value);
 }
 
 inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
@@ -176,44 +83,6 @@ inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
 
 inline jobject engine_wrap(JNIEnv* env, engine_value* value) {
     return value->ref;
-}
-
-inline engine_value* value_copy(JNIEnv* env, engine_value* value) {
-    engine_value* copy = engine_newvalue(env, value->inst);
-    copy->type = value->type;
-    switch (value->type) {
-        case ENGINE_ARRAY: {
-            // deep copy
-            copy->data.array.values = malloc(sizeof(engine_value*) * value->data.array.length);
-            copy->data.array.length = value->data.array.length;
-            size_t t;
-            for (t = 0; t < value->data.array.length; ++t) {
-                copy->data.array.values[t] = value_copy(env, value->data.array.values[t]);
-            }
-            break;
-        }
-        case ENGINE_JAVA_LAMBDA_FUNCTION:
-            copy->data.lfunc.lambda = (*env)->NewGlobalRef(env, value->data.lfunc.lambda);
-            copy->data.lfunc.class_array = (*env)->NewGlobalRef(env, value->data.lfunc.class_array);
-            break;
-        case ENGINE_JAVA_REFLECT_FUNCTION:
-            copy->data.rfunc.reflect_method = (*env)->NewGlobalRef(env, value->data.rfunc.reflect_method);
-            copy->data.rfunc.obj_inst = (*env)->NewGlobalRef(env, value->data.rfunc.obj_inst);
-            break;
-        case ENGINE_JAVA_OBJECT:
-            copy->data.obj = (*env)->NewGlobalRef(env, value->data.obj);
-            break;
-        case ENGINE_STRING: {
-            size_t len = (strlen(value->data.str) + 1);
-            copy->data.str = malloc(sizeof(char) * len);
-            memcpy(copy->data.str, value->data.str, len);
-            break;
-        }
-        default:
-            memcpy(&(copy->data), &(value->data), sizeof(engine_data));
-            break;
-    }
-    return copy;
 }
 
 /*
@@ -226,19 +95,6 @@ JNIEXPORT jlong JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_instAd
     engine_value* value = findnative(env, this);
     if (value) return (jlong) (intptr_t) value->inst;
     else return 0;
-}
-
-/*
- * Class:     ca_jarcode_ascript_luanative_LuaNScriptValue
- * Method:    release0
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_ca_jarcode_ascript_luanative_LuaNScriptValue_release0
-(JNIEnv* env, jobject this) {
-    jlong value = (*env)->GetLongField(env, this, id_address);
-    if (value) {
-        valuefree(env, (engine_value*) (intptr_t) value);
-    }
 }
 
 /*

@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "engine.h"
+#include "ln_obj.h"
 
 static jclass class_lobj;
 static jclass class_object;
@@ -48,6 +49,27 @@ void ln_newrefstack(JNIEnv* env, jobject ln_obj, size_t idx, size_t size) {
     (*env)->DeleteLocalRef(env, new_arr);
 }
 
+// performs __refs[idx] = new byte[size]
+void ln_newrefbuf(JNIEnv* env, jobject ln_obj, size_t idx, size_t size) {
+    jobject arr_obj = (*env)->GetObjectField(env, ln_obj, id_orefs);
+    jobject new_arr = (*env)->NewByteArray(env, size, class_object, NULL);
+    (*env)->SetObjectArrayElement(env, arr_obj, (jsize) idx, new_arr);
+    (*env)->DeleteLocalRef(env, arr_obj);
+    (*env)->DeleteLocalRef(env, new_arr);
+}
+
+// performs __refs[idx] = new byte[size] { ['init' data] }
+void ln_newrefbufi(JNIEnv* env, jobject ln_obj, size_t idx, size_t size, void* init) {
+    jobject arr_obj = (*env)->GetObjectField(env, ln_obj, id_orefs);
+    jobject new_arr = (*env)->NewByteArray(env, size, class_object, NULL);
+    void* arr = (void*) (*env)->GetByteArrayElements(env, new_arr, &make_jni_copies);
+    memcpy(arr, init, size);
+    (*env)->ReleaseByteArrayElements(env, new_arr, (jbyte*) arr, 0);
+    (*env)->SetObjectArrayElement(env, arr_obj, (jsize) idx, new_arr);
+    (*env)->DeleteLocalRef(env, arr_obj);
+    (*env)->DeleteLocalRef(env, new_arr);
+}
+
 // performs __refs[idx][nidx], assuming __refs[idx]'s type == Object[]
 jobject ln_getrefn(JNIEnv* env, jobject ln_obj, size_t idx, size_t nidx) {
     jobject arr_obj = (*env)->GetObjectField(env, ln_obj, id_orefs);
@@ -58,10 +80,25 @@ jobject ln_getrefn(JNIEnv* env, jobject ln_obj, size_t idx, size_t nidx) {
     return n_element;
 }
 
+// resolves 'id' as byte[], returns the result as char*
+void* ln_getrefbuf(JNIEnv* env, jobject ln_obj, ln_id id) {
+    jobject arr_obj = ln_resolve(env, ln_obj, id);
+    void* result = (void*) (*env)->GetByteArrayElements(env, arr_obj, &make_jni_copies);
+    (*env)->DeleteLocalRef(env, arr_obj);
+    return result;
+}
+
+// resolves 'id' as byte[], releases elements pointed to by 'str'
+void ln_releasebuf(JNIENv* env, jobject ln_obj, ln_id id, void* buf) {
+    jobject arr_obj = ln_resolve(env, ln_obj, id);
+    (*env)->ReleaseByteArrayElements(env, arr_obj, (jbyte*) buf, 0);
+    (*env)->DeleteLocalRef(env, arr_obj);
+}
+
 // returns __data as void*
 void* ln_getdata(JNIEnv* env, jobject ln_obj) {
     jobject arr_obj = (*env)->GetObjectField(env, ln_obj, id_odata);
-    jobject result = (void*) (*env)->GetByteArrayElements(env, arr_obj, &make_jni_copies);
+    void* result = (void*) (*env)->GetByteArrayElements(env, arr_obj, &make_jni_copies);
     (*env)->DeleteLocalRef(env, arr_obj);
     return result;
 }

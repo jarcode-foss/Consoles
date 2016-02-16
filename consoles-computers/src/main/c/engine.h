@@ -3,11 +3,14 @@
 
 #include <lua.h>
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #include <ffi.h>
 
 #include <setjmp.h>
+
+#include "ln_obj.h"
 
 /*
  * Engine header file - this header (and the implementation) interfaces with the lua API and JNI for
@@ -257,9 +260,6 @@ struct engine_inst_ {
     int interval; // interval in which a hook is executed
 };
 
-
-// IF COPIED MAKE SURE TO CREATE NEW GLOBAL REFS
-
 /*
  * reflected java function
  */
@@ -280,7 +280,7 @@ typedef struct {
  * tiny userdata type passed to lua, managed completely by lua
  */
 typedef struct {
-    jobject obj;          // jobject, global _floating_ reference
+    jobject obj;          // jobject, global reference, cleaned up by lua
     engine_inst* engine;
     uint8_t released;
 } engine_userdata;
@@ -291,33 +291,60 @@ typedef struct engine_value_ engine_value;
 /*
  * engine data, used for easy sizeof's and a member of the engine_value struct
  */
+
+// reference indexes/slots for values
+#define LN_VALUE_REF_PRIMARY 0
+#define LN_VALUE_REF_SECONDARY 1
+
+// macro for getting array element at index 'N', need to be cleaned up (delete local refs)
+#define LN_VALUE_ELEM(E, V, N) (ln_getrefn(E, V->ref, LN_VALUE_REF_PRIMARY, N))
+
+// primary and secondary reference slots, need to be cleaned up (delete local refs)
+#define LV_VALUE_P(E, V) ln_getref(E, V->ref, LN_VALUE_REF_PRIMARY)
+#define LV_VALUE_S(E, V) ln_getref(E, V->ref, LN_VALUE_REF_SECONDARY)
+
+// designated initilizers for lfunc and rfunc, need to be cleaned up (delete local refs)
+#define LN_VALUE_LFUNC(E, V) ((engine_lfunc) {.lambda = LV_VALUE_P(E, V), .class_array = LV_VALUE_S(E, V)})
+#define LN_VALUE_RFUNC(E, V) ((engine_lfunc) {.obj_inst = LV_VALUE_P(E, V), .reflect_method = LV_VALUE_S(E, V)})
+
+// helper for cleaning up values
+#define LN_VALUE_CLEANUP(E, V) ln_releasedata(E, V->ref, V)
+
+/* Returns the C structure for a value */
+static inline engine_value* engine_unwrap(JNIEnv* env, jobject obj) {
+    engine_value* ret = ln_struct(env, engine_value, obj);
+    ret->ref = obj;
+    return ret;
+}
+
+/* Returns the Java object for a value */
+#define engine_wrap(E, V) (V->ref)
+
 typedef union engine_data_ {
     long i;               // int, long, short, boolean, or byte
     double d;             // float or double
-    char* str;            // null-terminated string
-    jobject obj;          // object (userdata)
-    engine_lfunc lfunc;   // java function (lambda)
-    engine_luafunc func;  // lua function
-    engine_rfunc rfunc;   // reflected java function
-    struct {              // array
-        engine_value** values;   // pointer to block of memory containing pointers to engine values
-        size_t length;           // length of memory block
-    } array;
+    
+                          // objects, engine_lfunc, and engine_rfunc are resolved
+                          // from LN_VALUE_REF_PRIMARY and LN_VALUE_REF_SECONDARY
+    
+                          // strings are the same, except they are stored as byte[]
+                          // in the java reference stack (primary)
+
+    engine_luafunc luafunc;
+    
+    size_t arraylen;      // if value is an array, the length is only stored
+                          // values are stored in __refs[0][n]
+    
     lua_State* state;     // pointer to pointer of lua_State at runtime
 } engine_data;
 
-/*
- * a 'middleground' engine value
- * 
- * LuaJIT has no copies of this value, this is _only_ associated with a java object in a pair map.
- */
 struct engine_value_ {
 #if ENGINE_CDEBUG > 0
     uint64_t DEBUG_SIGNATURE;
 #endif // ENGINE_CDEBUG
     engine_data data;    // data
     uint8_t type;        // type of value
-    jobject ref;         // global reference to the script value
+    jobject ref;         // reference to a local object for this value, set when the structure is in use
     
     // engine instance, we need this to parse and clean the value stack
     // if this value is null, we assume that this is a shared value (to be used across VMs)
@@ -334,12 +361,6 @@ extern engine_value* engine_newsharedvalue(JNIEnv* env);
 
 /* Same as calling release() from Java */
 extern void engine_releasevalue(JNIEnv* env, engine_value* value);
-
-/* Returns the Java object for a value */
-extern engine_value* engine_unwrap(JNIEnv* env, jobject obj);
-
-/* Returns the C structure for a value */
-extern jobject engine_wrap(JNIEnv* env, engine_value* value);
 
 /* Get information about a Java lambda (ascript.func.* types) */
 extern void engine_getlambdainfo(JNIEnv* env, engine_inst* inst, jclass jfunctype,
